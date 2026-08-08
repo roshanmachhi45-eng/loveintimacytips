@@ -3,13 +3,12 @@ import { useState } from 'react';
 import { Heart, Menu, Search, X } from 'lucide-react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
-import { BRAND } from '../lib/brand';
 
 const navLinks = [
   { label: 'Home', to: '/' },
   { label: 'Blog', to: '/#blog' },
   { label: 'Categories', to: '/#blog' },
-  { label: 'About', to: '/about' },
+  { label: 'About Us', to: '/about' },
 ];
 
 export default function Navbar() {
@@ -24,47 +23,43 @@ export default function Navbar() {
     setMenuOpen(false);
   };
 
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-
-    if (element) {
-      requestAnimationFrame(() => {
-        element.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-      });
-    }
-  };
-
   const goToSection = (sectionId: string) => {
     closeMenu();
     setSearchOpen(false);
 
-    // Already on the Home page
-    if (location.pathname === '/') {
-      scrollToSection(sectionId);
+    const scrollToSection = () => {
+      const element = document.getElementById(sectionId);
 
-      // Keep the URL hash synchronized with the section.
-      window.history.replaceState(null, '', `/#${sectionId}`);
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+    };
+
+    if (location.pathname === '/') {
+      window.history.replaceState(
+        null,
+        '',
+        `/#${sectionId}`
+      );
+
+      window.setTimeout(scrollToSection, 50);
       return;
     }
 
-    // Go to Home first when the user is on another page.
     navigate(`/#${sectionId}`);
 
-    // Give React Router time to render Home.
-    window.setTimeout(() => {
-      scrollToSection(sectionId);
-    }, 350);
+    window.setTimeout(scrollToSection, 400);
   };
 
-  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSearch = (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
 
-    const query = searchQuery.trim();
-
-    if (!query) {
+    if (!searchQuery.trim()) {
       return;
     }
 
@@ -76,9 +71,9 @@ export default function Navbar() {
 
   return (
     <>
-      {/* =========================
+      {/* =====================================================
           MAIN NAVBAR
-      ========================== */}
+      ====================================================== */}
       <header className="fixed top-0 left-0 right-0 z-50 px-3 sm:px-5 pt-3">
         <div className="max-w-6xl mx-auto">
           <nav
@@ -95,35 +90,59 @@ export default function Navbar() {
             "
             aria-label="Main navigation"
           >
-            {/* =========================
+            {/* =================================================
                 LOVEONS BRAND
-            ========================== */}
+            ================================================== */}
             <Link
               to="/"
               onClick={closeMenu}
               className="flex items-center gap-2.5 shrink-0"
-              aria-label={`${BRAND.name} home`}
+              aria-label="Loveons.com home"
             >
-              {/* Original SVG logo - unchanged */}
+              {/* Original SVG logo — unchanged */}
               <Logo
                 className="w-9 h-9 shrink-0"
-                alt={`${BRAND.name} logo`}
+                alt="Loveons.com logo"
               />
 
-              <div className="hidden sm:block leading-none">
-                <span className="font-display font-bold text-lg tracking-tight text-rose-600">
-                  {BRAND.name}
+              <div className="leading-none">
+                <span
+                  className="
+                    block
+                    font-display
+                    font-bold
+                    text-lg
+                    tracking-tight
+                    text-rose-600
+                  "
+                >
+                  Loveons.com
                 </span>
 
-                <span className="block mt-1 text-[8px] tracking-[0.12em] text-gray-400">
+                <span
+                  className="
+                    block
+                    mt-1
+                    text-[10px]
+                    text-[#6f5263]
+                  "
+                  style={{
+                    fontFamily:
+                      '"Segoe Script", "Brush Script MT", "Lucida Handwriting", cursive',
+                    fontStyle: 'italic',
+                    fontWeight: 600,
+                  }}
+                >
                   Love, made meaningful.
                 </span>
               </div>
             </Link>
 
-            {/* =========================
+            {/* =================================================
                 DESKTOP NAVIGATION
-            ========================== */}
+                Only regular links.
+                No calculator button here.
+            ================================================== */}
             <div className="hidden lg:flex items-center gap-1">
               {navLinks.map((link) => {
                 const isHashLink = link.to.includes('#');
@@ -137,13 +156,16 @@ export default function Navbar() {
                       type="button"
                       onClick={() => goToSection(sectionId)}
                       className="
-                        px-3.5 py-2.5
+                        px-3.5
+                        py-2.5
                         rounded-xl
-                        text-sm font-medium
+                        text-sm
+                        font-medium
                         text-gray-600
                         hover:text-rose-600
                         hover:bg-rose-50
-                        transition-all duration-200
+                        transition-all
+                        duration-200
                       "
                     >
                       {link.label}
@@ -158,10 +180,13 @@ export default function Navbar() {
                     end={link.to === '/'}
                     onClick={closeMenu}
                     className={({ isActive }) => `
-                      px-3.5 py-2.5
+                      px-3.5
+                      py-2.5
                       rounded-xl
-                      text-sm font-medium
-                      transition-all duration-200
+                      text-sm
+                      font-medium
+                      transition-all
+                      duration-200
                       ${
                         isActive
                           ? 'bg-rose-50 text-rose-600'
@@ -175,17 +200,22 @@ export default function Navbar() {
               })}
             </div>
 
-            {/* =========================
+            {/* =================================================
                 RIGHT SIDE
-            ========================== */}
+            ================================================== */}
             <div className="flex items-center gap-1.5">
               {/* Search */}
               <button
                 type="button"
-                onClick={() => setSearchOpen((value) => !value)}
+                onClick={() =>
+                  setSearchOpen((value) => !value)
+                }
                 className="
-                  w-10 h-10
-                  flex items-center justify-center
+                  w-10
+                  h-10
+                  flex
+                  items-center
+                  justify-center
                   rounded-xl
                   text-gray-500
                   hover:text-rose-600
@@ -201,50 +231,19 @@ export default function Navbar() {
                 />
               </button>
 
-              {/* =========================
-                  DESKTOP LOVE CALCULATOR
-                  Hidden below lg so it
-                  cannot replace hamburger
-              ========================== */}
-              <button
-                type="button"
-                onClick={() => goToSection('calculator')}
-                className="
-                  hidden lg:flex
-                  items-center gap-2
-                  h-10
-                  px-4
-                  rounded-xl
-                  bg-gradient-to-r
-                  from-rose-500
-                  to-fuchsia-500
-                  text-white
-                  text-sm font-semibold
-                  shadow-[0_6px_20px_rgba(244,63,94,0.24)]
-                  hover:shadow-[0_8px_25px_rgba(244,63,94,0.32)]
-                  hover:-translate-y-0.5
-                  active:translate-y-0
-                  transition-all duration-200
-                "
-              >
-                <Heart
-                  className="w-4 h-4 fill-current"
-                  aria-hidden="true"
-                />
-
-                <span>Love Calculator</span>
-              </button>
-
-              {/* =========================
-                  MOBILE HAMBURGER
-              ========================== */}
+              {/* =================================================
+                  HAMBURGER
+                  ALWAYS VISIBLE — DESKTOP + MOBILE
+              ================================================== */}
               <button
                 type="button"
                 onClick={() => setMenuOpen(true)}
                 className="
-                  lg:hidden
-                  w-10 h-10
-                  flex items-center justify-center
+                  w-10
+                  h-10
+                  flex
+                  items-center
+                  justify-center
                   rounded-xl
                   text-gray-600
                   hover:text-rose-600
@@ -262,9 +261,9 @@ export default function Navbar() {
             </div>
           </nav>
 
-          {/* =========================
+          {/* =================================================
               SEARCH PANEL
-          ========================== */}
+          ================================================== */}
           {searchOpen && (
             <div
               className="
@@ -281,9 +280,12 @@ export default function Navbar() {
                 <div className="relative">
                   <Search
                     className="
-                      absolute left-3 top-1/2
+                      absolute
+                      left-3
+                      top-1/2
                       -translate-y-1/2
-                      w-4 h-4
+                      w-4
+                      h-4
                       text-rose-400
                     "
                     aria-hidden="true"
@@ -299,11 +301,15 @@ export default function Navbar() {
                     placeholder="Search articles, tips, and more..."
                     className="
                       w-full
-                      pl-10 pr-4 py-3
+                      pl-10
+                      pr-4
+                      py-3
                       rounded-xl
-                      border border-rose-100
+                      border
+                      border-rose-100
                       bg-white
-                      text-sm text-gray-800
+                      text-sm
+                      text-gray-800
                       placeholder:text-gray-400
                       outline-none
                       focus:border-rose-300
@@ -320,48 +326,64 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* =========================
-          MOBILE OVERLAY
-      ========================== */}
+      {/* =====================================================
+          MENU OVERLAY
+          Works on desktop + mobile
+      ====================================================== */}
       {menuOpen && (
         <button
           type="button"
           className="
-            fixed inset-0
+            fixed
+            inset-0
             z-[60]
             bg-black/30
             backdrop-blur-sm
-            lg:hidden
           "
           onClick={closeMenu}
           aria-label="Close menu"
         />
       )}
 
-      {/* =========================
-          MOBILE DRAWER
-      ========================== */}
+      {/* =====================================================
+          NAVIGATION DRAWER
+          Works on desktop + mobile
+      ====================================================== */}
       <aside
         className={`
-          fixed top-0 right-0
+          fixed
+          top-0
+          right-0
           z-[70]
           h-full
           w-[min(88vw,360px)]
           bg-white
           shadow-2xl
-          flex flex-col
-          transition-transform duration-300 ease-out
-          lg:hidden
-          ${menuOpen ? 'translate-x-0' : 'translate-x-full'}
+          flex
+          flex-col
+          transition-transform
+          duration-300
+          ease-out
+          ${
+            menuOpen
+              ? 'translate-x-0'
+              : 'translate-x-full'
+          }
         `}
-        aria-label="Mobile navigation"
+        aria-label="Navigation menu"
       >
-        {/* Drawer Header */}
+        {/* =================================================
+            DRAWER HEADER
+        ================================================== */}
         <div
           className="
-            flex items-center justify-between
-            px-5 py-5
-            border-b border-rose-100
+            flex
+            items-center
+            justify-between
+            px-5
+            py-5
+            border-b
+            border-rose-100
           "
         >
           <Link
@@ -369,22 +391,53 @@ export default function Navbar() {
             onClick={closeMenu}
             className="flex items-center gap-2"
           >
+            {/* Original SVG logo */}
             <Logo
               className="w-8 h-8"
-              alt={`${BRAND.name} logo`}
+              alt="Loveons.com logo"
             />
 
-            <span className="font-display font-bold text-lg text-rose-600">
-              {BRAND.name}
-            </span>
+            <div className="leading-none">
+              <span
+                className="
+                  block
+                  font-display
+                  font-bold
+                  text-lg
+                  text-rose-600
+                "
+              >
+                Loveons.com
+              </span>
+
+              <span
+                className="
+                  block
+                  mt-1
+                  text-[9px]
+                  text-[#6f5263]
+                "
+                style={{
+                  fontFamily:
+                    '"Segoe Script", "Brush Script MT", "Lucida Handwriting", cursive',
+                  fontStyle: 'italic',
+                  fontWeight: 600,
+                }}
+              >
+                Love, made meaningful.
+              </span>
+            </div>
           </Link>
 
           <button
             type="button"
             onClick={closeMenu}
             className="
-              w-10 h-10
-              flex items-center justify-center
+              w-10
+              h-10
+              flex
+              items-center
+              justify-center
               rounded-xl
               text-gray-500
               hover:text-rose-600
@@ -400,16 +453,29 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Drawer Links */}
-        <nav className="flex-1 px-5 py-6 flex flex-col gap-2">
+        {/* =================================================
+            MENU LINKS
+        ================================================== */}
+        <nav
+          className="
+            flex-1
+            px-5
+            py-6
+            flex
+            flex-col
+            gap-2
+          "
+        >
           {/* Home */}
           <Link
             to="/"
             onClick={closeMenu}
             className="
-              px-4 py-3
+              px-4
+              py-3
               rounded-xl
-              text-sm font-medium
+              text-sm
+              font-medium
               text-gray-700
               hover:text-rose-600
               hover:bg-rose-50
@@ -425,9 +491,11 @@ export default function Navbar() {
             onClick={() => goToSection('blog')}
             className="
               text-left
-              px-4 py-3
+              px-4
+              py-3
               rounded-xl
-              text-sm font-medium
+              text-sm
+              font-medium
               text-gray-700
               hover:text-rose-600
               hover:bg-rose-50
@@ -443,9 +511,11 @@ export default function Navbar() {
             onClick={() => goToSection('blog')}
             className="
               text-left
-              px-4 py-3
+              px-4
+              py-3
               rounded-xl
-              text-sm font-medium
+              text-sm
+              font-medium
               text-gray-700
               hover:text-rose-600
               hover:bg-rose-50
@@ -455,45 +525,54 @@ export default function Navbar() {
             Categories
           </button>
 
-          {/* About */}
+          {/* About Us */}
           <Link
             to="/about"
             onClick={closeMenu}
             className="
-              px-4 py-3
+              px-4
+              py-3
               rounded-xl
-              text-sm font-medium
+              text-sm
+              font-medium
               text-gray-700
               hover:text-rose-600
               hover:bg-rose-50
               transition-all
             "
           >
-            About
+            About Us
           </Link>
 
-          {/* =========================
-              MOBILE LOVE CALCULATOR
-          ========================== */}
+          {/* =================================================
+              LOVE CALCULATOR
+              ONLY INSIDE MENU
+          ================================================== */}
           <button
             type="button"
             onClick={() => goToSection('calculator')}
             className="
               mt-4
               w-full
-              flex items-center justify-center gap-2
-              px-4 py-3.5
+              flex
+              items-center
+              justify-center
+              gap-2
+              px-4
+              py-3.5
               rounded-xl
               bg-gradient-to-r
               from-rose-500
               to-fuchsia-500
               text-white
-              text-sm font-semibold
+              text-sm
+              font-semibold
               shadow-[0_8px_22px_rgba(244,63,94,0.24)]
               hover:shadow-[0_10px_28px_rgba(244,63,94,0.30)]
               hover:-translate-y-0.5
               active:translate-y-0
-              transition-all duration-200
+              transition-all
+              duration-200
             "
           >
             <Heart
@@ -505,16 +584,27 @@ export default function Navbar() {
           </button>
         </nav>
 
-        {/* Drawer Footer */}
-        <div className="px-5 py-5 border-t border-rose-100">
+        {/* =================================================
+            DRAWER FOOTER
+        ================================================== */}
+        <div
+          className="
+            px-5
+            py-5
+            border-t
+            border-rose-100
+          "
+        >
           <p className="text-xs text-gray-400 text-center">
-            © {new Date().getFullYear()} {BRAND.name}. All Rights Reserved.
+            © {new Date().getFullYear()} Loveons.com.
+            All Rights Reserved.
           </p>
         </div>
       </aside>
     </>
   );
 }
+
 
 
 
