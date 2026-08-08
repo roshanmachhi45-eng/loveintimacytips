@@ -24,42 +24,54 @@ export default function Navbar() {
     setMenuOpen(false);
   };
 
-  const goToSection = (sectionId: string) => {
-    closeMenu();
-    setSearchOpen(false);
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
 
-    if (location.pathname === '/') {
-      const element = document.getElementById(sectionId);
-
-      if (element) {
+    if (element) {
+      requestAnimationFrame(() => {
         element.scrollIntoView({
           behavior: 'smooth',
           block: 'start',
         });
-      }
+      });
+    }
+  };
 
+  const goToSection = (sectionId: string) => {
+    closeMenu();
+    setSearchOpen(false);
+
+    // Already on the Home page
+    if (location.pathname === '/') {
+      scrollToSection(sectionId);
+
+      // Keep the URL hash synchronized with the section.
+      window.history.replaceState(null, '', `/#${sectionId}`);
       return;
     }
 
+    // Go to Home first when the user is on another page.
     navigate(`/#${sectionId}`);
 
+    // Give React Router time to render Home.
     window.setTimeout(() => {
-      document.getElementById(sectionId)?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }, 300);
+      scrollToSection(sectionId);
+    }, 350);
   };
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    const query = searchQuery.trim();
+
+    if (!query) {
+      return;
+    }
+
     setSearchOpen(false);
     setMenuOpen(false);
 
-    if (searchQuery.trim()) {
-      goToSection('blog');
-    }
+    goToSection('blog');
   };
 
   return (
@@ -84,8 +96,7 @@ export default function Navbar() {
             aria-label="Main navigation"
           >
             {/* =========================
-                ORIGINAL SVG LOGO
-                NO BOX / NO BACKGROUND
+                LOVEONS BRAND
             ========================== */}
             <Link
               to="/"
@@ -93,6 +104,7 @@ export default function Navbar() {
               className="flex items-center gap-2.5 shrink-0"
               aria-label={`${BRAND.name} home`}
             >
+              {/* Original SVG logo - unchanged */}
               <Logo
                 className="w-9 h-9 shrink-0"
                 alt={`${BRAND.name} logo`}
@@ -103,8 +115,8 @@ export default function Navbar() {
                   {BRAND.name}
                 </span>
 
-                <span className="block mt-1 text-[8px] uppercase tracking-[0.25em] text-gray-400">
-                  Love • Connect • Grow
+                <span className="block mt-1 text-[8px] tracking-[0.12em] text-gray-400">
+                  Love, made meaningful.
                 </span>
               </div>
             </Link>
@@ -167,7 +179,6 @@ export default function Navbar() {
                 RIGHT SIDE
             ========================== */}
             <div className="flex items-center gap-1.5">
-
               {/* Search */}
               <button
                 type="button"
@@ -184,18 +195,22 @@ export default function Navbar() {
                 aria-label="Search"
                 aria-expanded={searchOpen}
               >
-                <Search className="w-5 h-5" strokeWidth={1.8} />
+                <Search
+                  className="w-5 h-5"
+                  strokeWidth={1.8}
+                />
               </button>
 
               {/* =========================
-                  LOVE CALCULATOR
-                  CONNECTED TO #calculator
+                  DESKTOP LOVE CALCULATOR
+                  Hidden below lg so it
+                  cannot replace hamburger
               ========================== */}
               <button
                 type="button"
                 onClick={() => goToSection('calculator')}
                 className="
-                  hidden sm:flex
+                  hidden lg:flex
                   items-center gap-2
                   h-10
                   px-4
@@ -212,11 +227,17 @@ export default function Navbar() {
                   transition-all duration-200
                 "
               >
-                <Heart className="w-4 h-4 fill-current" />
+                <Heart
+                  className="w-4 h-4 fill-current"
+                  aria-hidden="true"
+                />
+
                 <span>Love Calculator</span>
               </button>
 
-              {/* Mobile Menu Button */}
+              {/* =========================
+                  MOBILE HAMBURGER
+              ========================== */}
               <button
                 type="button"
                 onClick={() => setMenuOpen(true)}
@@ -233,7 +254,10 @@ export default function Navbar() {
                 aria-label="Open menu"
                 aria-expanded={menuOpen}
               >
-                <Menu className="w-6 h-6" strokeWidth={1.8} />
+                <Menu
+                  className="w-6 h-6"
+                  strokeWidth={1.8}
+                />
               </button>
             </div>
           </nav>
@@ -262,6 +286,7 @@ export default function Navbar() {
                       w-4 h-4
                       text-rose-400
                     "
+                    aria-hidden="true"
                   />
 
                   <input
@@ -332,7 +357,13 @@ export default function Navbar() {
         aria-label="Mobile navigation"
       >
         {/* Drawer Header */}
-        <div className="flex items-center justify-between px-5 py-5 border-b border-rose-100">
+        <div
+          className="
+            flex items-center justify-between
+            px-5 py-5
+            border-b border-rose-100
+          "
+        >
           <Link
             to="/"
             onClick={closeMenu}
@@ -362,12 +393,16 @@ export default function Navbar() {
             "
             aria-label="Close menu"
           >
-            <X className="w-5 h-5" />
+            <X
+              className="w-5 h-5"
+              strokeWidth={1.8}
+            />
           </button>
         </div>
 
         {/* Drawer Links */}
         <nav className="flex-1 px-5 py-6 flex flex-col gap-2">
+          {/* Home */}
           <Link
             to="/"
             onClick={closeMenu}
@@ -384,6 +419,7 @@ export default function Navbar() {
             Home
           </Link>
 
+          {/* Blog */}
           <button
             type="button"
             onClick={() => goToSection('blog')}
@@ -401,6 +437,7 @@ export default function Navbar() {
             Blog
           </button>
 
+          {/* Categories */}
           <button
             type="button"
             onClick={() => goToSection('blog')}
@@ -418,6 +455,7 @@ export default function Navbar() {
             Categories
           </button>
 
+          {/* About */}
           <Link
             to="/about"
             onClick={closeMenu}
@@ -434,7 +472,9 @@ export default function Navbar() {
             About
           </Link>
 
-          {/* Mobile Calculator */}
+          {/* =========================
+              MOBILE LOVE CALCULATOR
+          ========================== */}
           <button
             type="button"
             onClick={() => goToSection('calculator')}
@@ -450,11 +490,17 @@ export default function Navbar() {
               text-white
               text-sm font-semibold
               shadow-[0_8px_22px_rgba(244,63,94,0.24)]
+              hover:shadow-[0_10px_28px_rgba(244,63,94,0.30)]
               hover:-translate-y-0.5
+              active:translate-y-0
               transition-all duration-200
             "
           >
-            <Heart className="w-4 h-4 fill-current" />
+            <Heart
+              className="w-4 h-4 fill-current"
+              aria-hidden="true"
+            />
+
             <span>Love Calculator</span>
           </button>
         </nav>
@@ -469,5 +515,6 @@ export default function Navbar() {
     </>
   );
 }
+
 
 
