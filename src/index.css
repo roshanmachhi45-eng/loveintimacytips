@@ -1,124 +1,370 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* =========================================================
+   LOVEONS — FUTURISTIC DESIGN FOUNDATION
+   Phase 1: Global Design System
+   ========================================================= */
+
 :root {
-  --rose-50: #fff1f2;
-  --rose-100: #ffe4e6;
-  --rose-300: #fda4af;
-  --rose-400: #fb7185;
-  --rose-500: #f43f5e;
-  --rose-600: #e11d48;
-  --mauve-400: #c084fc;
-  --mauve-500: #a855f7;
+  /* Brand Colors */
+  --loveons-rose-50: #fff5f7;
+  --loveons-rose-100: #ffe8ed;
+  --loveons-rose-200: #fecdd6;
+  --loveons-rose-300: #fda4b3;
+  --loveons-rose-400: #fb7185;
+  --loveons-rose-500: #f43f5e;
+  --loveons-rose-600: #e11d48;
+  --loveons-rose-700: #be123c;
+
+  /* Secondary Accent */
+  --loveons-purple-400: #c084fc;
+  --loveons-purple-500: #a855f7;
+
+  /* Neutral Colors */
+  --loveons-white: #ffffff;
+  --loveons-black: #0f0f14;
+  --loveons-text: #27232a;
+  --loveons-muted: #716b75;
+  --loveons-border: rgba(244, 63, 94, 0.12);
+
+  /* Surfaces */
+  --loveons-surface: rgba(255, 255, 255, 0.72);
+  --loveons-surface-solid: #ffffff;
+
+  /* Background */
+  --loveons-background-start: #fff5f7;
+  --loveons-background-middle: #fff7fb;
+  --loveons-background-end: #f7f4ff;
+
+  /* Shadows */
+  --loveons-shadow-sm: 0 4px 16px rgba(190, 18, 60, 0.06);
+  --loveons-shadow-md: 0 12px 35px rgba(190, 18, 60, 0.09);
+  --loveons-shadow-lg: 0 24px 60px rgba(190, 18, 60, 0.12);
+  --loveons-shadow-glow: 0 0 45px rgba(244, 63, 94, 0.14);
+
+  /* Radius */
+  --loveons-radius-sm: 10px;
+  --loveons-radius-md: 16px;
+  --loveons-radius-lg: 24px;
+  --loveons-radius-xl: 32px;
+
+  /* Motion */
+  --loveons-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --loveons-transition: 220ms var(--loveons-ease);
 }
+
+/* =========================================================
+   DARK MODE FOUNDATION
+   ========================================================= */
+
+.dark {
+  --loveons-background-start: #120b10;
+  --loveons-background-middle: #171018;
+  --loveons-background-end: #100d18;
+
+  --loveons-surface: rgba(28, 20, 29, 0.78);
+  --loveons-surface-solid: #1c141d;
+
+  --loveons-text: #fff7fa;
+  --loveons-muted: #c5b9c0;
+  --loveons-border: rgba(253, 164, 179, 0.14);
+
+  --loveons-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.22);
+  --loveons-shadow-md: 0 12px 35px rgba(0, 0, 0, 0.28);
+  --loveons-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.38);
+  --loveons-shadow-glow: 0 0 50px rgba(244, 63, 94, 0.12);
+}
+
+/* =========================================================
+   GLOBAL RESET
+   ========================================================= */
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  font-family: 'Inter', sans-serif;
-  background: linear-gradient(135deg, #fff1f2 0%, #fdf2f8 50%, #f5f3ff 100%);
+  margin: 0;
+  min-width: 320px;
   min-height: 100vh;
+
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+
+  color: var(--loveons-text);
+
+  background:
+    radial-gradient(
+      circle at 15% 10%,
+      rgba(244, 63, 94, 0.08),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 85% 15%,
+      rgba(192, 132, 252, 0.09),
+      transparent 30%
+    ),
+    linear-gradient(
+      135deg,
+      var(--loveons-background-start) 0%,
+      var(--loveons-background-middle) 50%,
+      var(--loveons-background-end) 100%
+    );
+
+  transition:
+    background-color 300ms ease,
+    color 300ms ease;
+
+  overflow-x: hidden;
 }
 
-.font-display {
-  font-family: 'Playfair Display', serif;
+/* =========================================================
+   TYPOGRAPHY
+   ========================================================= */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-family: "Playfair Display", Georgia, serif;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
 }
 
-/* Drawer overlay */
-.drawer-overlay {
-  transition: opacity 0.3s ease;
+p {
+  margin: 0;
+  text-wrap: pretty;
 }
 
-/* Smooth transitions */
-.slide-in {
-  animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+a {
+  color: inherit;
+  text-decoration: none;
 }
 
-.fade-in {
-  animation: fadeIn 0.5s ease forwards;
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
-@keyframes slideIn {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+/* =========================================================
+   IMAGE BEHAVIOR
+   ========================================================= */
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+img {
+  height: auto;
 }
 
-@keyframes pulse-ring {
-  0% { transform: scale(0.8); opacity: 1; }
-  100% { transform: scale(1.4); opacity: 0; }
+/* =========================================================
+   SELECTION
+   ========================================================= */
+
+::selection {
+  background: rgba(244, 63, 94, 0.18);
+  color: var(--loveons-rose-700);
 }
 
-@keyframes shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(244, 63, 94, 0.35) transparent;
 }
 
-.shimmer-btn {
-  background: linear-gradient(90deg, #f43f5e, #e879a0, #a855f7, #e879a0, #f43f5e);
-  background-size: 200% auto;
-  animation: shimmer 3s linear infinite;
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.loading-dot {
-  animation: loadingDot 1.4s ease-in-out infinite;
-}
-.loading-dot:nth-child(2) { animation-delay: 0.2s; }
-.loading-dot:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes loadingDot {
-  0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
-  40% { transform: scale(1); opacity: 1; }
+*::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.result-card {
-  animation: fadeIn 0.6s ease forwards;
+*::-webkit-scrollbar-thumb {
+  background: rgba(244, 63, 94, 0.3);
+  border-radius: 999px;
 }
 
-.result-card:nth-child(2) { animation-delay: 0.15s; }
-.result-card:nth-child(3) { animation-delay: 0.3s; }
-
-/* Avatar card hover */
-.avatar-card {
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.avatar-card:hover {
-  transform: translateY(-4px) scale(1.03);
-}
-.avatar-card.selected {
-  transform: translateY(-2px) scale(1.05);
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(244, 63, 94, 0.5);
 }
 
-/* Gender btn */
-.gender-btn {
-  transition: all 0.2s ease;
+/* =========================================================
+   LOVEONS REUSABLE UI UTILITIES
+   ========================================================= */
+
+@layer components {
+  .loveons-glass {
+    background: var(--loveons-surface);
+    border: 1px solid var(--loveons-border);
+    box-shadow: var(--loveons-shadow-md);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .loveons-glass-soft {
+    background: rgba(255, 255, 255, 0.52);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: var(--loveons-shadow-sm);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .dark .loveons-glass-soft {
+    background: rgba(28, 20, 29, 0.58);
+    border-color: rgba(253, 164, 179, 0.1);
+  }
+
+  .loveons-gradient-text {
+    background: linear-gradient(
+      135deg,
+      var(--loveons-rose-600),
+      var(--loveons-rose-400),
+      var(--loveons-purple-400)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .loveons-gradient-bg {
+    background:
+      radial-gradient(
+        circle at 20% 20%,
+        rgba(244, 63, 94, 0.13),
+        transparent 35%
+      ),
+      radial-gradient(
+        circle at 80% 20%,
+        rgba(192, 132, 252, 0.12),
+        transparent 35%
+      ),
+      linear-gradient(
+        135deg,
+        var(--loveons-background-start),
+        var(--loveons-background-end)
+      );
+  }
+
+  .loveons-card {
+    border-radius: var(--loveons-radius-lg);
+    border: 1px solid var(--loveons-border);
+    background: var(--loveons-surface);
+    box-shadow: var(--loveons-shadow-sm);
+    transition:
+      transform var(--loveons-transition),
+      box-shadow var(--loveons-transition),
+      border-color var(--loveons-transition);
+  }
+
+  .loveons-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--loveons-shadow-md);
+    border-color: rgba(244, 63, 94, 0.2);
+  }
+
+  .loveons-focus {
+    outline: none;
+  }
+
+  .loveons-focus:focus-visible {
+    outline: 3px solid rgba(244, 63, 94, 0.28);
+    outline-offset: 3px;
+  }
 }
 
-/* Score counter animation */
-@keyframes countUp {
-  from { opacity: 0; transform: scale(0.5); }
-  to { opacity: 1; transform: scale(1); }
+/* =========================================================
+   PREMIUM MOTION
+   ========================================================= */
+
+@keyframes loveons-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
 }
 
-.score-number {
-  animation: countUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+@keyframes loveons-pulse-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.85;
+    transform: scale(1.04);
+  }
 }
 
-/* Heart pulse */
-@keyframes heartPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.15); }
+.loveons-float {
+  animation: loveons-float 5s ease-in-out infinite;
 }
 
-.heart-pulse {
-  animation: heartPulse 1.5s ease-in-out infinite;
+.loveons-pulse-glow {
+  animation: loveons-pulse-glow 4s ease-in-out infinite;
+}
+
+/* =========================================================
+   REDUCED MOTION ACCESSIBILITY
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* =========================================================
+   MOBILE POLISH
+   ========================================================= */
+
+@media (max-width: 640px) {
+  body {
+    background:
+      radial-gradient(
+        circle at 20% 5%,
+        rgba(244, 63, 94, 0.07),
+        transparent 32%
+      ),
+      linear-gradient(
+        160deg,
+        var(--loveons-background-start),
+        var(--loveons-background-end)
+      );
+  }
 }
