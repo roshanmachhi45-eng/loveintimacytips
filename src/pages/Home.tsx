@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Heart } from 'lucide-react';
+import { ArrowRight, Heart, Sparkles } from 'lucide-react';
 
 import InputCard from '../components/InputCard';
 import ResultsDisplay from '../components/ResultsDisplay';
@@ -28,6 +28,14 @@ const initialPerson: Person = {
   height: '',
 };
 
+/*
+ * Hero image
+ *
+ * Future image changes:
+ * Replace only this path/file.
+ */
+const HERO_IMAGE = '/images/loveons-hero.webp';
+
 export default function Home() {
   const [person1, setPerson1] = useState<Person>({
     ...initialPerson,
@@ -38,9 +46,7 @@ export default function Home() {
   });
 
   const [experience, setExperience] = useState('');
-
   const [loading, setLoading] = useState(false);
-
   const [result, setResult] =
     useState<RecommendationResult | null>(null);
 
@@ -221,66 +227,204 @@ export default function Home() {
         path="/"
       />
 
-      <div
-        id="calculator"
-        className="max-w-md mx-auto scroll-mt-20"
-      >
-        <InputCard
-          person1={person1}
-          person2={person2}
-          experience={experience}
-          onChangePerson1={updatePerson1}
-          onChangePerson2={updatePerson2}
-          onChangeExperience={(value) => {
-            setExperience(value);
-            setValidationError('');
-          }}
-          onGenerate={handleGenerate}
-          loading={loading}
-          validationError={validationError}
-        />
-      </div>
-
-      {(loading || result) && (
+      {/* =====================================================
+          FUTURISTIC LIGHT HERO
+          ===================================================== */}
+      <section className="relative overflow-hidden px-4 pb-10 pt-6 sm:px-6 sm:pb-14 sm:pt-8 lg:px-8 lg:pb-16">
+        {/* Soft futuristic background glow */}
         <div
-          id="results"
-          className="max-w-md mx-auto mt-8 scroll-mt-20"
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
         >
-          {loading && (
-            <div className="bg-white rounded-3xl shadow-xl shadow-rose-100 border border-rose-100 p-10 text-center fade-in">
-              <div className="relative inline-flex mb-4">
-                <span
-                  className="absolute inline-flex h-16 w-16 rounded-full bg-rose-400 opacity-40"
-                  style={{
-                    animation:
-                      'pulse-ring 1.5s ease-out infinite',
-                  }}
-                />
+          <div className="absolute left-[-180px] top-20 h-80 w-80 rounded-full bg-pink-200/40 blur-3xl" />
+          <div className="absolute right-[-160px] top-0 h-96 w-96 rounded-full bg-purple-200/30 blur-3xl" />
+          <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-rose-100/40 blur-3xl" />
+        </div>
 
-                <span className="relative inline-flex h-16 w-16 rounded-full bg-gradient-to-br from-rose-400 to-purple-500 items-center justify-center">
-                  <Heart className="w-7 h-7 text-white fill-white" />
-                </span>
+        <div className="mx-auto max-w-7xl">
+          <div className="overflow-hidden rounded-[2rem] border border-white/80 bg-white/70 shadow-[0_20px_70px_rgba(236,72,153,0.12)] backdrop-blur-xl sm:rounded-[2.5rem]">
+            <div className="grid items-stretch lg:grid-cols-2">
+              
+              {/* LEFT — HERO CONTENT */}
+              <div className="flex flex-col justify-center px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16 xl:px-16">
+                
+                <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-rose-100 bg-white/80 px-3.5 py-2 text-xs font-semibold text-rose-500 shadow-sm">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Better relationships start here
+                </div>
+
+                <h1 className="max-w-xl text-4xl font-bold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.6rem] xl:text-[4rem]">
+                  Build stronger
+                  <br />
+                  relationships with
+                  <span className="mt-1 block bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">
+                    love & understanding
+                  </span>
+                </h1>
+
+                <p className="mt-5 max-w-xl text-base leading-7 text-slate-500 sm:text-lg">
+                  Discover personalized relationship guidance,
+                  meaningful insights, and simple tools designed
+                  to help you and your partner grow closer.
+                </p>
+
+                {/* CTA buttons */}
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      document
+                        .getElementById('calculator')
+                        ?.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start',
+                        });
+                    }}
+                    className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-rose-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-rose-200"
+                  >
+                    <Heart className="h-4 w-4 fill-white" />
+                    Explore Your Connection
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      document
+                        .getElementById('blog')
+                        ?.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start',
+                        });
+                    }}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-6 py-3.5 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                  >
+                    Discover Relationship Tips
+                  </button>
+                </div>
+
+                {/* Trust points */}
+                <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-slate-400 sm:text-sm">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
+                    Personalized guidance
+                  </span>
+
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-purple-400" />
+                    Private & simple
+                  </span>
+
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-pink-400" />
+                    Made for couples
+                  </span>
+                </div>
               </div>
 
-              <p className="font-display text-lg font-bold text-gray-700 mb-1">
-                Analyzing your connection...
-              </p>
+              {/* RIGHT — HERO IMAGE */}
+              <div className="relative min-h-[330px] overflow-hidden sm:min-h-[440px] lg:min-h-[600px]">
+                <img
+                  src={HERO_IMAGE}
+                  alt="Couple sharing a loving moment"
+                  className="absolute inset-0 h-full w-full object-cover object-center"
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
+                />
 
-              <p className="text-sm text-gray-400">
-                Crafting personalized recommendations
-              </p>
+                {/* Soft image overlay for seamless light-mode integration */}
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 bg-gradient-to-r from-white/15 via-transparent to-transparent lg:from-white/25"
+                />
+
+                {/* Decorative glow */}
+                <div
+                  aria-hidden="true"
+                  className="absolute bottom-6 right-6 h-24 w-24 rounded-full bg-pink-300/20 blur-2xl"
+                />
+              </div>
             </div>
-          )}
-
-          {result && (
-            <ResultsDisplay
-              result={result}
-              onReset={handleReset}
-            />
-          )}
+          </div>
         </div>
+      </section>
+
+      {/* =====================================================
+          EXISTING LOVE CALCULATOR
+          DO NOT CHANGE ITS LOGIC
+          ===================================================== */}
+      <section
+        id="calculator"
+        className="scroll-mt-24 px-4 pb-10 sm:px-6 lg:px-8"
+      >
+        <div className="mx-auto max-w-md">
+          <InputCard
+            person1={person1}
+            person2={person2}
+            experience={experience}
+            onChangePerson1={updatePerson1}
+            onChangePerson2={updatePerson2}
+            onChangeExperience={(value) => {
+              setExperience(value);
+              setValidationError('');
+            }}
+            onGenerate={handleGenerate}
+            loading={loading}
+            validationError={validationError}
+          />
+        </div>
+      </section>
+
+      {/* =====================================================
+          EXISTING RESULTS
+          ONLY APPEARS AFTER CALCULATION
+          ===================================================== */}
+      {(loading || result) && (
+        <section
+          id="results"
+          className="scroll-mt-24 px-4 pb-10 sm:px-6 lg:px-8"
+        >
+          <div className="mx-auto mt-2 max-w-md">
+            {loading && (
+              <div className="fade-in rounded-3xl border border-rose-100 bg-white p-10 text-center shadow-xl shadow-rose-100">
+                <div className="relative mb-4 inline-flex">
+                  <span
+                    className="absolute inline-flex h-16 w-16 rounded-full bg-rose-400 opacity-40"
+                    style={{
+                      animation:
+                        'pulse-ring 1.5s ease-out infinite',
+                    }}
+                  />
+
+                  <span className="relative inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-purple-500">
+                    <Heart className="h-7 w-7 fill-white text-white" />
+                  </span>
+                </div>
+
+                <p className="mb-1 text-lg font-bold text-gray-700">
+                  Analyzing your connection...
+                </p>
+
+                <p className="text-sm text-gray-400">
+                  Crafting personalized recommendations
+                </p>
+              </div>
+            )}
+
+            {result && (
+              <ResultsDisplay
+                result={result}
+                onReset={handleReset}
+              />
+            )}
+          </div>
+        </section>
       )}
 
+      {/* =====================================================
+          EXISTING BLOG
+          ===================================================== */}
       {!result && !loading && <BlogSection />}
     </>
   );
