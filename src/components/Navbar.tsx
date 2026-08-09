@@ -1,16 +1,18 @@
 
 import { useEffect, useRef, useState } from 'react';
+
 import {
+  CalendarDays,
   Calculator,
   ChevronDown,
+  Gift,
+  Heart,
   Info,
   Menu,
   Search,
   X,
-  Heart,
-  Gift,
-  CalendarDays,
 } from 'lucide-react';
+
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import Logo from './Logo';
@@ -34,25 +36,35 @@ const CATEGORIES = [
 const TOOLS = [
   {
     label: 'Love Calculator',
-    to: '/#calculator',
     icon: Calculator,
   },
   {
     label: 'Compatibility Test',
-    to: '/#calculator',
     icon: Heart,
   },
   {
     label: 'Anniversary Calculator',
-    to: '/#calculator',
     icon: CalendarDays,
   },
   {
     label: 'Date Ideas Generator',
-    to: '/#calculator',
     icon: Gift,
   },
 ];
+
+function navClass(active = false) {
+  return `
+    flex items-center gap-1.5
+    rounded-xl px-3.5 py-2.5
+    text-sm font-semibold
+    transition-all duration-200
+    ${
+      active
+        ? 'bg-rose-50 text-rose-600'
+        : 'text-gray-600 hover:bg-rose-50 hover:text-rose-600'
+    }
+  `;
+}
 
 export default function Navbar() {
   const location = useLocation();
@@ -65,9 +77,11 @@ export default function Navbar() {
   const [searchValue, setSearchValue] = useState('');
 
   const searchRef = useRef<HTMLInputElement>(null);
+  const categoriesRef = useRef<HTMLDivElement>(null);
+  const toolsRef = useRef<HTMLDivElement>(null);
 
   /*
-   * Close menus when route changes.
+   * Close menus after route changes.
    */
   useEffect(() => {
     setMenuOpen(false);
@@ -77,7 +91,7 @@ export default function Navbar() {
   }, [location.pathname]);
 
   /*
-   * Prevent background scrolling while mobile drawer is open.
+   * Prevent page scrolling while the hamburger drawer is open.
    */
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
@@ -88,70 +102,120 @@ export default function Navbar() {
   }, [menuOpen]);
 
   /*
-   * Focus search field when opened.
+   * Focus search input when search opens.
    */
   useEffect(() => {
-    if (searchOpen) {
-      setTimeout(() => {
-        searchRef.current?.focus();
-      }, 50);
-    }
+    if (!searchOpen) return;
+
+    const timer = window.setTimeout(() => {
+      searchRef.current?.focus();
+    }, 50);
+
+    return () => window.clearTimeout(timer);
   }, [searchOpen]);
 
   /*
-   * Scroll to an existing Home section.
+   * Close desktop dropdowns when clicking outside.
    */
-  function goToSection(id: string) {
-    closeAll();
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      const target = event.target as Node;
 
-    if (location.pathname !== '/') {
-      navigate(`/#${id}`);
+      if (
+        categoriesRef.current &&
+        !categoriesRef.current.contains(target)
+      ) {
+        setCategoriesOpen(false);
+      }
 
-      setTimeout(() => {
-        document
-          .getElementById(id)
-          ?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
-          });
-      }, 250);
-
-      return;
+      if (
+        toolsRef.current &&
+        !toolsRef.current.contains(target)
+      ) {
+        setToolsOpen(false);
+      }
     }
 
-    setTimeout(() => {
-      document
-        .getElementById(id)
-        ?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-    }, 50);
+    document.addEventListener('mousedown', handleOutsideClick);
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        handleOutsideClick
+      );
+    };
+  }, []);
+
+  /*
+   * Close everything.
+   */
+  function closeEverything() {
+    setMenuOpen(false);
+    setCategoriesOpen(false);
+    setToolsOpen(false);
+    setSearchOpen(false);
   }
 
   /*
-   * Blog category selection.
+   * Open / close hamburger drawer.
    */
-  function selectCategory(category: string) {
-    closeAll();
+  function toggleMenu() {
+    setMenuOpen((current) => !current);
+    setCategoriesOpen(false);
+    setToolsOpen(false);
+    setSearchOpen(false);
+  }
+
+  /*
+   * Go to an existing section on Home.
+   */
+  function goToSection(id: string) {
+    closeEverything();
 
     if (location.pathname !== '/') {
       navigate('/');
 
-      setTimeout(() => {
+      window.setTimeout(() => {
+        document.getElementById(id)?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }, 300);
+
+      return;
+    }
+
+    window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 50);
+  }
+
+  /*
+   * Select blog category.
+   */
+  function selectCategory(category: string) {
+    setCategoriesOpen(false);
+    setToolsOpen(false);
+    setMenuOpen(false);
+
+    if (location.pathname !== '/') {
+      navigate('/');
+
+      window.setTimeout(() => {
         window.dispatchEvent(
           new CustomEvent<string>(CATEGORY_EVENT, {
             detail: category,
           })
         );
 
-        document
-          .getElementById('blog')
-          ?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
-          });
-      }, 250);
+        document.getElementById('blog')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }, 300);
 
       return;
     }
@@ -162,20 +226,27 @@ export default function Navbar() {
       })
     );
 
-    setTimeout(() => {
-      document
-        .getElementById('blog')
-        ?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
+    window.setTimeout(() => {
+      document.getElementById('blog')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
     }, 50);
   }
 
+  /*
+   * Show all blog articles.
+   */
   function selectAllCategories() {
     selectCategory('');
   }
 
+  /*
+   * Search UI.
+   *
+   * Actual search-results page can be connected later
+   * without changing the navbar design.
+   */
   function submitSearch(event: React.FormEvent) {
     event.preventDefault();
 
@@ -184,23 +255,15 @@ export default function Navbar() {
     if (!query) return;
 
     setSearchOpen(false);
-    setSearchValue('');
 
-    navigate(`/search?q=${encodeURIComponent(query)}`);
-  }
-
-  function closeAll() {
-    setMenuOpen(false);
-    setCategoriesOpen(false);
-    setToolsOpen(false);
-    setSearchOpen(false);
-  }
-
-  function toggleMenu() {
-    setMenuOpen((value) => !value);
-    setCategoriesOpen(false);
-    setToolsOpen(false);
-    setSearchOpen(false);
+    /*
+     * Keep the query available for the future search system.
+     */
+    window.dispatchEvent(
+      new CustomEvent<string>('loveons:search', {
+        detail: query,
+      })
+    );
   }
 
   return (
@@ -232,19 +295,23 @@ export default function Navbar() {
             <button
               type="button"
               onClick={toggleMenu}
-              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-label={
+                menuOpen ? 'Close navigation menu' : 'Open navigation menu'
+              }
               aria-expanded={menuOpen}
               className="
-                flex h-10 w-10 shrink-0
+                relative z-[120]
+                mr-2 flex h-10 w-10 shrink-0
                 items-center justify-center
                 rounded-xl
                 text-gray-600
-                transition-all
+                transition-all duration-200
                 hover:bg-rose-50
                 hover:text-rose-600
                 focus:outline-none
                 focus:ring-2
                 focus:ring-rose-200
+                sm:mr-3
               "
             >
               {menuOpen ? (
@@ -255,15 +322,15 @@ export default function Navbar() {
             </button>
 
             {/* =================================================
-                LOGO
+                LOGO + NAME
             ================================================== */}
             <Link
               to="/"
-              onClick={closeAll}
+              onClick={closeEverything}
+              aria-label="Loveons.com Home"
               className="
-                ml-2 flex shrink-0
-                items-center gap-2
-                transition-transform
+                flex shrink-0 items-center gap-2
+                transition-transform duration-200
                 hover:scale-[1.02]
               "
             >
@@ -272,10 +339,11 @@ export default function Navbar() {
               <span
                 className="
                   whitespace-nowrap
-                  text-[20px] sm:text-[22px]
+                  text-[20px]
                   font-extrabold
                   tracking-[-0.03em]
                   text-rose-600
+                  sm:text-[22px]
                 "
               >
                 Loveons.com
@@ -283,9 +351,10 @@ export default function Navbar() {
             </Link>
 
             {/* =================================================
-                DESKTOP NAV
+                DESKTOP NAVIGATION
             ================================================== */}
             <nav
+              aria-label="Main navigation"
               className="
                 ml-auto hidden
                 items-center gap-1
@@ -295,15 +364,10 @@ export default function Navbar() {
               {/* HOME */}
               <Link
                 to="/"
-                onClick={closeAll}
-                className="
-                  rounded-xl px-3.5 py-2.5
-                  text-sm font-semibold
-                  text-gray-600
-                  transition-all
-                  hover:bg-rose-50
-                  hover:text-rose-600
-                "
+                onClick={closeEverything}
+                className={navClass(
+                  location.pathname === '/'
+                )}
               >
                 Home
               </Link>
@@ -312,14 +376,9 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => goToSection('blog')}
-                className="
-                  rounded-xl px-3.5 py-2.5
-                  text-sm font-semibold
-                  text-gray-600
-                  transition-all
-                  hover:bg-rose-50
-                  hover:text-rose-600
-                "
+                className={navClass(
+                  location.hash === '#blog'
+                )}
               >
                 Blog
               </button>
@@ -328,15 +387,9 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => goToSection('calculator')}
-                className="
-                  flex items-center gap-1.5
-                  rounded-xl px-3.5 py-2.5
-                  text-sm font-semibold
-                  text-gray-600
-                  transition-all
-                  hover:bg-rose-50
-                  hover:text-rose-600
-                "
+                className={navClass(
+                  location.hash === '#calculator'
+                )}
               >
                 <Calculator className="h-4 w-4" />
                 Love Calculator
@@ -345,19 +398,25 @@ export default function Navbar() {
               {/* =================================================
                   CATEGORIES
               ================================================== */}
-              <div className="relative">
+              <div
+                ref={categoriesRef}
+                className="relative"
+              >
                 <button
                   type="button"
-                  onClick={() => {
-                    setCategoriesOpen((value) => !value);
-                    setToolsOpen(false);
-                  }}
                   aria-expanded={categoriesOpen}
+                  onClick={() => {
+                    setCategoriesOpen(
+                      (current) => !current
+                    );
+                    setToolsOpen(false);
+                    setSearchOpen(false);
+                  }}
                   className={`
                     flex items-center gap-1.5
                     rounded-xl px-3.5 py-2.5
                     text-sm font-semibold
-                    transition-all
+                    transition-all duration-200
                     ${
                       categoriesOpen
                         ? 'bg-rose-50 text-rose-600'
@@ -369,8 +428,12 @@ export default function Navbar() {
 
                   <ChevronDown
                     className={`
-                      h-4 w-4 transition-transform
-                      ${categoriesOpen ? 'rotate-180' : ''}
+                      h-4 w-4 transition-transform duration-200
+                      ${
+                        categoriesOpen
+                          ? 'rotate-180'
+                          : ''
+                      }
                     `}
                   />
                 </button>
@@ -379,7 +442,7 @@ export default function Navbar() {
                   <div
                     className="
                       absolute right-0 top-full mt-3
-                      z-[120]
+                      z-[130]
                       w-[280px]
                       overflow-hidden
                       rounded-2xl
@@ -390,7 +453,13 @@ export default function Navbar() {
                     "
                   >
                     <div className="px-3 pb-2 pt-2">
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-rose-500">
+                      <p
+                        className="
+                          text-xs font-bold uppercase
+                          tracking-[0.14em]
+                          text-rose-500
+                        "
+                      >
                         Blog Categories
                       </p>
 
@@ -403,10 +472,11 @@ export default function Navbar() {
                       type="button"
                       onClick={selectAllCategories}
                       className="
-                        w-full rounded-xl
-                        px-3 py-2.5
+                        flex w-full items-center
+                        rounded-xl px-3 py-2.5
                         text-left text-sm font-semibold
                         text-gray-700
+                        transition-colors
                         hover:bg-rose-50
                         hover:text-rose-600
                       "
@@ -421,17 +491,27 @@ export default function Navbar() {
                         <button
                           key={category}
                           type="button"
-                          onClick={() => selectCategory(category)}
+                          onClick={() =>
+                            selectCategory(category)
+                          }
                           className="
                             flex w-full items-center
                             rounded-xl px-3 py-2.5
                             text-left text-sm
                             text-gray-600
+                            transition-colors
                             hover:bg-rose-50
                             hover:text-rose-600
                           "
                         >
-                          <span className="mr-2 h-1.5 w-1.5 rounded-full bg-rose-300" />
+                          <span
+                            className="
+                              mr-2 h-1.5 w-1.5
+                              rounded-full
+                              bg-rose-300
+                            "
+                          />
+
                           {category}
                         </button>
                       ))}
@@ -443,19 +523,25 @@ export default function Navbar() {
               {/* =================================================
                   TOOLS
               ================================================== */}
-              <div className="relative">
+              <div
+                ref={toolsRef}
+                className="relative"
+              >
                 <button
                   type="button"
-                  onClick={() => {
-                    setToolsOpen((value) => !value);
-                    setCategoriesOpen(false);
-                  }}
                   aria-expanded={toolsOpen}
+                  onClick={() => {
+                    setToolsOpen(
+                      (current) => !current
+                    );
+                    setCategoriesOpen(false);
+                    setSearchOpen(false);
+                  }}
                   className={`
                     flex items-center gap-1.5
                     rounded-xl px-3.5 py-2.5
                     text-sm font-semibold
-                    transition-all
+                    transition-all duration-200
                     ${
                       toolsOpen
                         ? 'bg-rose-50 text-rose-600'
@@ -467,8 +553,12 @@ export default function Navbar() {
 
                   <ChevronDown
                     className={`
-                      h-4 w-4 transition-transform
-                      ${toolsOpen ? 'rotate-180' : ''}
+                      h-4 w-4 transition-transform duration-200
+                      ${
+                        toolsOpen
+                          ? 'rotate-180'
+                          : ''
+                      }
                     `}
                   />
                 </button>
@@ -477,7 +567,7 @@ export default function Navbar() {
                   <div
                     className="
                       absolute right-0 top-full mt-3
-                      z-[120]
+                      z-[130]
                       w-[280px]
                       rounded-2xl
                       border border-rose-100
@@ -487,7 +577,13 @@ export default function Navbar() {
                     "
                   >
                     <div className="px-3 pb-2 pt-2">
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-rose-500">
+                      <p
+                        className="
+                          text-xs font-bold uppercase
+                          tracking-[0.14em]
+                          text-rose-500
+                        "
+                      >
                         Love Tools
                       </p>
 
@@ -503,16 +599,15 @@ export default function Navbar() {
                         <button
                           key={tool.label}
                           type="button"
-                          onClick={() => {
-                            if (tool.to.includes('#calculator')) {
-                              goToSection('calculator');
-                            }
-                          }}
+                          onClick={() =>
+                            goToSection('calculator')
+                          }
                           className="
                             flex w-full items-center gap-3
                             rounded-xl px-3 py-3
                             text-left text-sm
                             text-gray-600
+                            transition-colors
                             hover:bg-rose-50
                             hover:text-rose-600
                           "
@@ -542,15 +637,10 @@ export default function Navbar() {
               {/* ABOUT */}
               <Link
                 to="/about"
-                onClick={closeAll}
-                className="
-                  flex items-center gap-1.5
-                  rounded-xl px-3.5 py-2.5
-                  text-sm font-semibold
-                  text-gray-600
-                  hover:bg-rose-50
-                  hover:text-rose-600
-                "
+                onClick={closeEverything}
+                className={navClass(
+                  location.pathname === '/about'
+                )}
               >
                 <Info className="h-4 w-4" />
                 About Us
@@ -560,24 +650,34 @@ export default function Navbar() {
             {/* =================================================
                 SEARCH
             ================================================== */}
-            <div className="relative ml-1 sm:ml-2">
+            <div className="relative z-[130] ml-1 sm:ml-2">
               <button
                 type="button"
+                aria-label={
+                  searchOpen
+                    ? 'Close search'
+                    : 'Open search'
+                }
+                aria-expanded={searchOpen}
                 onClick={() => {
-                  setSearchOpen((value) => !value);
+                  setSearchOpen(
+                    (current) => !current
+                  );
                   setMenuOpen(false);
                   setCategoriesOpen(false);
                   setToolsOpen(false);
                 }}
-                aria-label="Search"
                 className="
                   flex h-10 w-10
                   items-center justify-center
                   rounded-xl
                   text-gray-600
-                  transition-all
+                  transition-all duration-200
                   hover:bg-rose-50
                   hover:text-rose-600
+                  focus:outline-none
+                  focus:ring-2
+                  focus:ring-rose-200
                 "
               >
                 {searchOpen ? (
@@ -592,9 +692,10 @@ export default function Navbar() {
                   onSubmit={submitSearch}
                   className="
                     absolute right-0 top-[52px]
-                    z-[130]
+                    z-[140]
                     flex w-[280px]
                     items-center
+                    overflow-hidden
                     rounded-2xl
                     border border-rose-100
                     bg-white
@@ -608,8 +709,13 @@ export default function Navbar() {
                   <input
                     ref={searchRef}
                     value={searchValue}
-                    onChange={(e) => setSearchValue(e.target.value)}
+                    onChange={(event) =>
+                      setSearchValue(
+                        event.target.value
+                      )
+                    }
                     placeholder="Search Loveons..."
+                    aria-label="Search Loveons"
                     className="
                       min-w-0 flex-1
                       border-0
@@ -618,6 +724,7 @@ export default function Navbar() {
                       text-sm
                       text-gray-700
                       outline-none
+                      placeholder:text-gray-400
                     "
                   />
 
@@ -629,6 +736,7 @@ export default function Navbar() {
                       px-3 py-2
                       text-xs font-semibold
                       text-white
+                      transition-colors
                       hover:bg-rose-600
                     "
                   >
@@ -642,41 +750,57 @@ export default function Navbar() {
       </header>
 
       {/* =====================================================
-          MOBILE OVERLAY
+          DRAWER BACKDROP
+          IMPORTANT:
+          NO lg:hidden HERE
+          So hamburger works on desktop AND mobile.
       ====================================================== */}
       {menuOpen && (
         <div
           className="
-            fixed inset-0 z-[90]
+            fixed inset-0
+            z-[105]
             bg-black/20
             backdrop-blur-[2px]
-            lg:hidden
           "
           onClick={() => setMenuOpen(false)}
+          aria-hidden="true"
         />
       )}
 
       {/* =====================================================
-          MOBILE DRAWER
+          FUTURISTIC LEFT DRAWER
+          IMPORTANT:
+          NO lg:hidden HERE
       ====================================================== */}
       <aside
+        aria-label="Navigation menu"
+        aria-hidden={!menuOpen}
         className={`
-          fixed left-0 top-0 z-[110]
-          h-full w-[310px] max-w-[88vw]
+          fixed left-0 top-0
+          z-[115]
+          h-screen
+          w-[310px]
+          max-w-[88vw]
           border-r border-rose-100
           bg-white
           shadow-[15px_0_50px_rgba(244,63,94,0.14)]
-          transition-transform duration-300
-          lg:hidden
-          ${menuOpen ? 'translate-x-0' : '-translate-x-full'}
+          transition-transform
+          duration-300
+          ease-out
+          ${
+            menuOpen
+              ? 'translate-x-0'
+              : '-translate-x-full'
+          }
         `}
-        aria-hidden={!menuOpen}
       >
         <div className="flex h-full flex-col">
           {/* DRAWER HEADER */}
           <div
             className="
               flex h-[76px]
+              shrink-0
               items-center
               justify-between
               border-b border-rose-100
@@ -685,12 +809,19 @@ export default function Navbar() {
           >
             <Link
               to="/"
-              onClick={closeAll}
+              onClick={closeEverything}
               className="flex items-center gap-2"
             >
               <Logo className="h-10 w-10" />
 
-              <span className="text-lg font-extrabold text-rose-600">
+              <span
+                className="
+                  text-lg
+                  font-extrabold
+                  tracking-[-0.03em]
+                  text-rose-600
+                "
+              >
                 Loveons.com
               </span>
             </Link>
@@ -698,15 +829,16 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setMenuOpen(false)}
+              aria-label="Close menu"
               className="
                 flex h-10 w-10
                 items-center justify-center
                 rounded-xl
                 text-gray-500
+                transition-colors
                 hover:bg-rose-50
                 hover:text-rose-600
               "
-              aria-label="Close menu"
             >
               <X className="h-5 w-5" />
             </button>
@@ -718,15 +850,17 @@ export default function Navbar() {
               {/* HOME */}
               <Link
                 to="/"
-                onClick={closeAll}
-                className="
+                onClick={closeEverything}
+                className={`
                   block rounded-xl
                   px-4 py-3
                   text-sm font-semibold
-                  text-gray-600
-                  hover:bg-rose-50
-                  hover:text-rose-600
-                "
+                  ${
+                    location.pathname === '/'
+                      ? 'bg-rose-50 text-rose-600'
+                      : 'text-gray-600 hover:bg-rose-50 hover:text-rose-600'
+                  }
+                `}
               >
                 Home
               </Link>
@@ -734,7 +868,9 @@ export default function Navbar() {
               {/* BLOG */}
               <button
                 type="button"
-                onClick={() => goToSection('blog')}
+                onClick={() =>
+                  goToSection('blog')
+                }
                 className="
                   block w-full
                   rounded-xl
@@ -749,10 +885,12 @@ export default function Navbar() {
                 Blog
               </button>
 
-              {/* CALCULATOR */}
+              {/* LOVE CALCULATOR */}
               <button
                 type="button"
-                onClick={() => goToSection('calculator')}
+                onClick={() =>
+                  goToSection('calculator')
+                }
                 className="
                   flex w-full items-center gap-3
                   rounded-xl
@@ -768,13 +906,18 @@ export default function Navbar() {
                 Love Calculator
               </button>
 
-              {/* CATEGORIES */}
+              {/* =================================================
+                  MOBILE CATEGORIES
+              ================================================== */}
               <div>
                 <button
                   type="button"
-                  onClick={() =>
-                    setCategoriesOpen((value) => !value)
-                  }
+                  onClick={() => {
+                    setCategoriesOpen(
+                      (current) => !current
+                    );
+                    setToolsOpen(false);
+                  }}
                   className="
                     flex w-full items-center
                     justify-between
@@ -786,12 +929,17 @@ export default function Navbar() {
                     hover:text-rose-600
                   "
                 >
-                  Categories
+                  <span>Categories</span>
 
                   <ChevronDown
                     className={`
-                      h-4 w-4 transition-transform
-                      ${categoriesOpen ? 'rotate-180' : ''}
+                      h-4 w-4
+                      transition-transform
+                      ${
+                        categoriesOpen
+                          ? 'rotate-180'
+                          : ''
+                      }
                     `}
                   />
                 </button>
@@ -799,8 +947,8 @@ export default function Navbar() {
                 {categoriesOpen && (
                   <div
                     className="
-                      ml-4
-                      max-h-[300px]
+                      ml-3 mt-1
+                      max-h-[320px]
                       overflow-y-auto
                       border-l-2
                       border-rose-100
@@ -827,7 +975,9 @@ export default function Navbar() {
                       <button
                         key={category}
                         type="button"
-                        onClick={() => selectCategory(category)}
+                        onClick={() =>
+                          selectCategory(category)
+                        }
                         className="
                           block w-full rounded-lg
                           px-3 py-2
@@ -844,13 +994,18 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* TOOLS */}
+              {/* =================================================
+                  MOBILE TOOLS
+              ================================================== */}
               <div>
                 <button
                   type="button"
-                  onClick={() =>
-                    setToolsOpen((value) => !value)
-                  }
+                  onClick={() => {
+                    setToolsOpen(
+                      (current) => !current
+                    );
+                    setCategoriesOpen(false);
+                  }}
                   className="
                     flex w-full items-center
                     justify-between
@@ -862,12 +1017,17 @@ export default function Navbar() {
                     hover:text-rose-600
                   "
                 >
-                  Tools
+                  <span>Tools</span>
 
                   <ChevronDown
                     className={`
-                      h-4 w-4 transition-transform
-                      ${toolsOpen ? 'rotate-180' : ''}
+                      h-4 w-4
+                      transition-transform
+                      ${
+                        toolsOpen
+                          ? 'rotate-180'
+                          : ''
+                      }
                     `}
                   />
                 </button>
@@ -875,7 +1035,7 @@ export default function Navbar() {
                 {toolsOpen && (
                   <div
                     className="
-                      ml-4
+                      ml-3 mt-1
                       border-l-2
                       border-rose-100
                       pl-3
@@ -888,7 +1048,11 @@ export default function Navbar() {
                         <button
                           key={tool.label}
                           type="button"
-                          onClick={() => goToSection('calculator')}
+                          onClick={() =>
+                            goToSection(
+                              'calculator'
+                            )
+                          }
                           className="
                             flex w-full items-center gap-3
                             rounded-lg
@@ -911,16 +1075,18 @@ export default function Navbar() {
               {/* ABOUT */}
               <Link
                 to="/about"
-                onClick={closeAll}
-                className="
+                onClick={closeEverything}
+                className={`
                   flex items-center gap-3
                   rounded-xl
                   px-4 py-3
                   text-sm font-semibold
-                  text-gray-600
-                  hover:bg-rose-50
-                  hover:text-rose-600
-                "
+                  ${
+                    location.pathname === '/about'
+                      ? 'bg-rose-50 text-rose-600'
+                      : 'text-gray-600 hover:bg-rose-50 hover:text-rose-600'
+                  }
+                `}
               >
                 <Info className="h-4 w-4" />
                 About Us
@@ -932,6 +1098,7 @@ export default function Navbar() {
     </>
   );
 }
+
 
 
 
