@@ -1,5 +1,6 @@
 
 import { useEffect, useRef, useState } from 'react';
+
 import {
   ChevronDown,
   Heart,
@@ -8,11 +9,12 @@ import {
   X,
   Calculator,
   Sparkles,
-  Video,
-  Wrench,
   Info,
+  Gift,
+  CalendarDays,
 } from 'lucide-react';
-import { NavLink, Link, useLocation } from 'react-router-dom';
+
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 
 import Logo from './Logo';
 
@@ -32,42 +34,11 @@ const CATEGORIES = [
   'Romance',
 ];
 
-const NAV_ITEMS = [
-  {
-    label: 'Home',
-    to: '/',
-  },
-  {
-    label: 'Blog',
-    to: '/blog',
-  },
-  {
-    label: 'Love Calculator',
-    to: '/love-calculator',
-    icon: Calculator,
-  },
-  {
-    label: 'Love Quiz',
-    to: '/love-quiz',
-    icon: Sparkles,
-  },
-  {
-    label: 'Videos',
-    to: '/videos',
-    icon: Video,
-  },
-];
-
 const TOOL_ITEMS = [
   {
     label: 'Love Calculator',
     to: '/love-calculator',
     icon: Calculator,
-  },
-  {
-    label: 'Love Quiz',
-    to: '/love-quiz',
-    icon: Sparkles,
   },
   {
     label: 'Compatibility Test',
@@ -77,12 +48,12 @@ const TOOL_ITEMS = [
   {
     label: 'Anniversary Calculator',
     to: '/anniversary-calculator',
-    icon: Calculator,
+    icon: CalendarDays,
   },
   {
     label: 'Date Ideas Generator',
     to: '/date-ideas',
-    icon: Sparkles,
+    icon: Gift,
   },
 ];
 
@@ -98,6 +69,7 @@ function getNavLinkClass(isActive: boolean) {
 
 export default function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -110,7 +82,7 @@ export default function Navbar() {
   const toolsRef = useRef<HTMLDivElement>(null);
 
   /*
-   * Close menus whenever route changes.
+   * Close menus whenever the route changes.
    */
   useEffect(() => {
     setMenuOpen(false);
@@ -120,14 +92,16 @@ export default function Navbar() {
   }, [location.pathname]);
 
   /*
-   * Focus search automatically.
+   * Focus search input when opened.
    */
   useEffect(() => {
-    if (searchOpen) {
-      setTimeout(() => {
-        searchRef.current?.focus();
-      }, 50);
-    }
+    if (!searchOpen) return;
+
+    const timer = window.setTimeout(() => {
+      searchRef.current?.focus();
+    }, 50);
+
+    return () => window.clearTimeout(timer);
   }, [searchOpen]);
 
   /*
@@ -160,7 +134,7 @@ export default function Navbar() {
   }, []);
 
   /*
-   * Prevent body scrolling while mobile menu is open.
+   * Prevent background scrolling while mobile menu is open.
    */
   useEffect(() => {
     if (menuOpen) {
@@ -176,54 +150,75 @@ export default function Navbar() {
 
   /*
    * Select a blog category.
-   * BlogSection already listens to this event.
+   *
+   * If the Blog page is already open, BlogSection receives
+   * the event immediately.
+   *
+   * If the user is on another page, we first navigate to
+   * /blog and then send the category event after the page mounts.
    */
   function selectCategory(category: string) {
-    window.dispatchEvent(
-      new CustomEvent<string>(CATEGORY_EVENT, {
-        detail: category,
-      })
-    );
-
     setCategoriesOpen(false);
     setMenuOpen(false);
 
-    /*
-     * If the Blog section exists on the current page,
-     * scroll to it.
-     */
-    requestAnimationFrame(() => {
-      const blogSection = document.getElementById('blog');
+    if (location.pathname === '/blog') {
+      window.dispatchEvent(
+        new CustomEvent<string>(CATEGORY_EVENT, {
+          detail: category,
+        })
+      );
 
-      if (blogSection) {
-        blogSection.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-      }
-    });
+      requestAnimationFrame(() => {
+        const blogSection = document.getElementById('blog');
+
+        if (blogSection) {
+          blogSection.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+        }
+      });
+
+      return;
+    }
+
+    navigate('/blog');
+
+    window.setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent<string>(CATEGORY_EVENT, {
+          detail: category,
+        })
+      );
+    }, 150);
   }
 
   function selectAllCategories() {
-    window.dispatchEvent(
-      new CustomEvent<string>(CATEGORY_EVENT, {
-        detail: '',
-      })
-    );
-
     setCategoriesOpen(false);
     setMenuOpen(false);
 
-    requestAnimationFrame(() => {
-      const blogSection = document.getElementById('blog');
+    if (location.pathname === '/blog') {
+      window.dispatchEvent(
+        new CustomEvent<string>(CATEGORY_EVENT, {
+          detail: '',
+        })
+      );
 
-      if (blogSection) {
-        blogSection.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-      }
-    });
+      requestAnimationFrame(() => {
+        const blogSection = document.getElementById('blog');
+
+        if (blogSection) {
+          blogSection.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+        }
+      });
+
+      return;
+    }
+
+    navigate('/blog');
   }
 
   function submitSearch(event: React.FormEvent) {
@@ -231,53 +226,56 @@ export default function Navbar() {
 
     const query = searchValue.trim();
 
-    if (!query) {
-      return;
-    }
+    if (!query) return;
 
-    /*
-     * Search is intentionally kept URL based so the future
-     * search page can use the same Navbar without changing it.
-     */
-    window.location.href = `/search?q=${encodeURIComponent(query)}`;
+    setSearchOpen(false);
+    setSearchValue('');
+
+    navigate(`/search?q=${encodeURIComponent(query)}`);
   }
 
   function closeEverything() {
     setMenuOpen(false);
     setCategoriesOpen(false);
     setToolsOpen(false);
+    setSearchOpen(false);
   }
 
   return (
     <>
-      {/* =====================================================
-          DESKTOP + MOBILE NAVBAR
-      ====================================================== */}
       <header className="sticky top-0 z-50 px-3 pt-3 sm:px-5">
         <div
           className="
             relative mx-auto max-w-7xl
             rounded-2xl
             border border-white/80
-            bg-white/90
+            bg-white/95
             shadow-[0_12px_40px_rgba(244,63,94,0.10)]
             backdrop-blur-xl
           "
         >
+          {/* =====================================================
+              MAIN NAVBAR
+          ====================================================== */}
           <div
             className="
-              flex h-[68px] items-center
+              relative flex h-[68px] items-center
               px-3 sm:px-5 lg:px-6
             "
           >
             {/* =================================================
-                LEFT SIDE — HAMBURGER
+                LEFT — HAMBURGER
             ================================================== */}
             <button
               type="button"
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((value) => !value)}
+              onClick={() => {
+                setMenuOpen((value) => !value);
+                setCategoriesOpen(false);
+                setToolsOpen(false);
+                setSearchOpen(false);
+              }}
               className="
                 mr-2 flex h-10 w-10 shrink-0
                 items-center justify-center
@@ -300,19 +298,32 @@ export default function Navbar() {
             </button>
 
             {/* =================================================
-                LOGO
+                LOGO + LOVEONS.COM
             ================================================== */}
             <Link
               to="/"
               aria-label="Loveons.com Home"
               onClick={closeEverything}
               className="
-                flex shrink-0 items-center
+                flex shrink-0 items-center gap-2
                 transition-transform duration-200
                 hover:scale-[1.02]
               "
             >
-              <Logo className="h-10 w-auto sm:h-11" />
+              <Logo className="h-10 w-10 sm:h-11 sm:w-11" />
+
+              <span
+                className="
+                  whitespace-nowrap
+                  text-[20px]
+                  font-extrabold
+                  tracking-[-0.03em]
+                  text-rose-600
+                  sm:text-[22px]
+                "
+              >
+                Loveons.com
+              </span>
             </Link>
 
             {/* =================================================
@@ -326,30 +337,41 @@ export default function Navbar() {
                 lg:flex
               "
             >
-              {NAV_ITEMS.map((item) => {
-                const Icon = item.icon;
+              {/* HOME */}
+              <NavLink
+                to="/"
+                end
+                className={({ isActive }) =>
+                  getNavLinkClass(isActive)
+                }
+              >
+                Home
+              </NavLink>
 
-                return (
-                  <NavLink
-                    key={item.label}
-                    to={item.to}
-                    end={item.to === '/'}
-                    className={({ isActive }) =>
-                      getNavLinkClass(isActive)
-                    }
-                  >
-                    {Icon && (
-                      <Icon className="h-4 w-4" />
-                    )}
+              {/* BLOG */}
+              <NavLink
+                to="/blog"
+                className={({ isActive }) =>
+                  getNavLinkClass(isActive)
+                }
+              >
+                Blog
+              </NavLink>
 
-                    <span>{item.label}</span>
-                  </NavLink>
-                );
-              })}
+              {/* LOVE CALCULATOR */}
+              <NavLink
+                to="/love-calculator"
+                className={({ isActive }) =>
+                  getNavLinkClass(isActive)
+                }
+              >
+                <Calculator className="h-4 w-4" />
+                Love Calculator
+              </NavLink>
 
-              {/* ===============================================
+              {/* =================================================
                   CATEGORIES
-              ================================================ */}
+              ================================================== */}
               <div
                 ref={categoriesRef}
                 className="relative"
@@ -374,14 +396,11 @@ export default function Navbar() {
                   `}
                 >
                   Categories
+
                   <ChevronDown
                     className={`
                       h-4 w-4 transition-transform duration-200
-                      ${
-                        categoriesOpen
-                          ? 'rotate-180'
-                          : ''
-                      }
+                      ${categoriesOpen ? 'rotate-180' : ''}
                     `}
                   />
                 </button>
@@ -390,7 +409,7 @@ export default function Navbar() {
                   <div
                     className="
                       absolute right-0 top-full mt-3
-                      w-[270px]
+                      w-[280px]
                       overflow-hidden
                       rounded-2xl
                       border border-rose-100
@@ -400,7 +419,12 @@ export default function Navbar() {
                     "
                   >
                     <div className="px-3 pb-2 pt-2">
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-rose-500">
+                      <p
+                        className="
+                          text-xs font-bold uppercase
+                          tracking-[0.14em] text-rose-500
+                        "
+                      >
                         Blog Categories
                       </p>
 
@@ -445,7 +469,14 @@ export default function Navbar() {
                             hover:text-rose-600
                           "
                         >
-                          <span className="mr-2 h-1.5 w-1.5 rounded-full bg-rose-300" />
+                          <span
+                            className="
+                              mr-2 h-1.5 w-1.5
+                              rounded-full
+                              bg-rose-300
+                            "
+                          />
+
                           {category}
                         </button>
                       ))}
@@ -454,9 +485,9 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* ===============================================
+              {/* =================================================
                   TOOLS
-              ================================================ */}
+              ================================================== */}
               <div
                 ref={toolsRef}
                 className="relative"
@@ -485,11 +516,7 @@ export default function Navbar() {
                   <ChevronDown
                     className={`
                       h-4 w-4 transition-transform duration-200
-                      ${
-                        toolsOpen
-                          ? 'rotate-180'
-                          : ''
-                      }
+                      ${toolsOpen ? 'rotate-180' : ''}
                     `}
                   />
                 </button>
@@ -498,7 +525,7 @@ export default function Navbar() {
                   <div
                     className="
                       absolute right-0 top-full mt-3
-                      w-[270px]
+                      w-[280px]
                       rounded-2xl
                       border border-rose-100
                       bg-white
@@ -507,7 +534,12 @@ export default function Navbar() {
                     "
                   >
                     <div className="px-3 pb-2 pt-2">
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-rose-500">
+                      <p
+                        className="
+                          text-xs font-bold uppercase
+                          tracking-[0.14em] text-rose-500
+                        "
+                      >
                         Love Tools
                       </p>
 
@@ -568,21 +600,58 @@ export default function Navbar() {
             </nav>
 
             {/* =================================================
-                SEARCH
+                SEARCH BUTTON
+                Absolute overlay prevents navbar shifting
             ================================================== */}
-            <div className="ml-2 flex items-center sm:ml-3">
-              {searchOpen ? (
+            <div className="relative ml-1 sm:ml-2">
+              <button
+                type="button"
+                aria-label="Open search"
+                aria-expanded={searchOpen}
+                onClick={() => {
+                  setSearchOpen((value) => !value);
+                  setMenuOpen(false);
+                  setCategoriesOpen(false);
+                  setToolsOpen(false);
+                }}
+                className="
+                  flex h-10 w-10
+                  items-center justify-center
+                  rounded-xl
+                  text-gray-600
+                  transition-all duration-200
+                  hover:bg-rose-50
+                  hover:text-rose-600
+                  focus:outline-none
+                  focus:ring-2
+                  focus:ring-rose-200
+                "
+              >
+                {searchOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Search className="h-5 w-5" />
+                )}
+              </button>
+
+              {searchOpen && (
                 <form
                   onSubmit={submitSearch}
                   className="
-                    flex items-center
+                    absolute right-0 top-[52px]
+                    z-[60]
+                    flex w-[280px]
+                    items-center
                     overflow-hidden
-                    rounded-xl
+                    rounded-2xl
                     border border-rose-100
                     bg-white
+                    p-1
+                    shadow-[0_20px_60px_rgba(244,63,94,0.18)]
+                    sm:w-[340px]
                   "
                 >
-                  <Search className="ml-3 h-4 w-4 text-gray-400" />
+                  <Search className="ml-3 h-4 w-4 shrink-0 text-gray-400" />
 
                   <input
                     ref={searchRef}
@@ -590,64 +659,42 @@ export default function Navbar() {
                     onChange={(event) =>
                       setSearchValue(event.target.value)
                     }
-                    placeholder="Search..."
-                    aria-label="Search"
+                    placeholder="Search articles, tools..."
+                    aria-label="Search articles and tools"
                     className="
-                      w-[130px]
+                      min-w-0 flex-1
                       border-0
                       bg-transparent
-                      px-2.5 py-2.5
+                      px-2.5 py-3
                       text-sm
                       text-gray-700
                       outline-none
                       placeholder:text-gray-400
-                      sm:w-[190px]
                     "
                   />
 
                   <button
-                    type="button"
-                    aria-label="Close search"
-                    onClick={() => {
-                      setSearchOpen(false);
-                      setSearchValue('');
-                    }}
+                    type="submit"
                     className="
-                      mr-1 flex h-8 w-8
-                      items-center justify-center
-                      rounded-lg
-                      text-gray-400
-                      hover:bg-rose-50
-                      hover:text-rose-600
+                      mr-1 rounded-xl
+                      bg-rose-500
+                      px-3 py-2
+                      text-xs font-semibold
+                      text-white
+                      transition-colors
+                      hover:bg-rose-600
                     "
                   >
-                    <X className="h-4 w-4" />
+                    Search
                   </button>
                 </form>
-              ) : (
-                <button
-                  type="button"
-                  aria-label="Open search"
-                  onClick={() => setSearchOpen(true)}
-                  className="
-                    flex h-10 w-10
-                    items-center justify-center
-                    rounded-xl
-                    text-gray-600
-                    transition-all
-                    hover:bg-rose-50
-                    hover:text-rose-600
-                  "
-                >
-                  <Search className="h-5 w-5" />
-                </button>
               )}
             </div>
           </div>
 
-          {/* =================================================
+          {/* =====================================================
               MOBILE MENU
-          ================================================== */}
+          ====================================================== */}
           {menuOpen && (
             <div
               className="
@@ -657,51 +704,73 @@ export default function Navbar() {
               "
             >
               <div className="space-y-1">
-                {NAV_ITEMS.map((item) => {
-                  const Icon = item.icon;
+                {/* HOME */}
+                <NavLink
+                  to="/"
+                  end
+                  onClick={closeEverything}
+                  className={({ isActive }) => `
+                    flex items-center gap-3
+                    rounded-xl px-4 py-3
+                    text-sm font-semibold
+                    ${
+                      isActive
+                        ? 'bg-rose-50 text-rose-600'
+                        : 'text-gray-600 hover:bg-rose-50 hover:text-rose-600'
+                    }
+                  `}
+                >
+                  Home
+                </NavLink>
 
-                  return (
-                    <NavLink
-                      key={item.label}
-                      to={item.to}
-                      end={item.to === '/'}
-                      onClick={() => setMenuOpen(false)}
-                      className={({ isActive }) => `
-                        flex items-center gap-3
-                        rounded-xl px-4 py-3
-                        text-sm font-semibold
-                        ${
-                          isActive
-                            ? 'bg-rose-50 text-rose-600'
-                            : 'text-gray-600 hover:bg-rose-50 hover:text-rose-600'
-                        }
-                      `}
-                    >
-                      {Icon ? (
-                        <Icon className="h-4 w-4" />
-                      ) : (
-                        <span className="h-4 w-4" />
-                      )}
+                {/* BLOG */}
+                <NavLink
+                  to="/blog"
+                  onClick={closeEverything}
+                  className={({ isActive }) => `
+                    flex items-center gap-3
+                    rounded-xl px-4 py-3
+                    text-sm font-semibold
+                    ${
+                      isActive
+                        ? 'bg-rose-50 text-rose-600'
+                        : 'text-gray-600 hover:bg-rose-50 hover:text-rose-600'
+                    }
+                  `}
+                >
+                  Blog
+                </NavLink>
 
-                      {item.label}
-                    </NavLink>
-                  );
-                })}
+                {/* LOVE CALCULATOR */}
+                <NavLink
+                  to="/love-calculator"
+                  onClick={closeEverything}
+                  className={({ isActive }) => `
+                    flex items-center gap-3
+                    rounded-xl px-4 py-3
+                    text-sm font-semibold
+                    ${
+                      isActive
+                        ? 'bg-rose-50 text-rose-600'
+                        : 'text-gray-600 hover:bg-rose-50 hover:text-rose-600'
+                    }
+                  `}
+                >
+                  <Calculator className="h-4 w-4" />
+                  Love Calculator
+                </NavLink>
 
                 {/* MOBILE CATEGORIES */}
                 <div className="rounded-xl">
                   <button
                     type="button"
                     onClick={() =>
-                      setCategoriesOpen(
-                        (value) => !value
-                      )
+                      setCategoriesOpen((value) => !value)
                     }
                     className="
                       flex w-full items-center
                       justify-between
-                      rounded-xl
-                      px-4 py-3
+                      rounded-xl px-4 py-3
                       text-sm font-semibold
                       text-gray-600
                       hover:bg-rose-50
@@ -726,7 +795,10 @@ export default function Navbar() {
                     <div
                       className="
                         ml-3 mt-1
-                        border-l-2 border-rose-100
+                        max-h-[300px]
+                        overflow-y-auto
+                        border-l-2
+                        border-rose-100
                         pl-3
                       "
                     >
@@ -774,15 +846,12 @@ export default function Navbar() {
                   <button
                     type="button"
                     onClick={() =>
-                      setToolsOpen(
-                        (value) => !value
-                      )
+                      setToolsOpen((value) => !value)
                     }
                     className="
                       flex w-full items-center
                       justify-between
-                      rounded-xl
-                      px-4 py-3
+                      rounded-xl px-4 py-3
                       text-sm font-semibold
                       text-gray-600
                       hover:bg-rose-50
@@ -807,7 +876,8 @@ export default function Navbar() {
                     <div
                       className="
                         ml-3 mt-1
-                        border-l-2 border-rose-100
+                        border-l-2
+                        border-rose-100
                         pl-3
                       "
                     >
@@ -818,9 +888,7 @@ export default function Navbar() {
                           <NavLink
                             key={tool.label}
                             to={tool.to}
-                            onClick={() =>
-                              setMenuOpen(false)
-                            }
+                            onClick={closeEverything}
                             className="
                               flex items-center gap-3
                               rounded-lg
@@ -832,6 +900,7 @@ export default function Navbar() {
                             "
                           >
                             <Icon className="h-4 w-4" />
+
                             {tool.label}
                           </NavLink>
                         );
@@ -843,7 +912,7 @@ export default function Navbar() {
                 {/* ABOUT */}
                 <NavLink
                   to="/about"
-                  onClick={() => setMenuOpen(false)}
+                  onClick={closeEverything}
                   className={({ isActive }) => `
                     flex items-center gap-3
                     rounded-xl px-4 py-3
@@ -866,6 +935,7 @@ export default function Navbar() {
     </>
   );
 }
+
 
   
 
