@@ -1,6 +1,12 @@
 
 import { useState } from 'react';
-import { ArrowRight, Heart, Sparkles } from 'lucide-react';
+import {
+  ArrowRight,
+  Calculator,
+  Heart,
+  Sparkles,
+  X,
+} from 'lucide-react';
 
 import InputCard from '../components/InputCard';
 import ResultsDisplay from '../components/ResultsDisplay';
@@ -47,11 +53,19 @@ export default function Home() {
 
   const [experience, setExperience] = useState('');
   const [loading, setLoading] = useState(false);
+
   const [result, setResult] =
     useState<RecommendationResult | null>(null);
 
-  const [validationError, setValidationError] =
-    useState('');
+  const [validationError, setValidationError] = useState('');
+
+  /*
+   * Controls whether the calculator form is open.
+   *
+   * The tool card is shown first.
+   * The actual calculator opens only after the user selects it.
+   */
+  const [activeTool, setActiveTool] = useState<string | null>(null);
 
   const updatePerson1 = (
     field: string,
@@ -219,6 +233,27 @@ export default function Home() {
     });
   };
 
+  const openLoveCalculator = () => {
+    setActiveTool('love-calculator');
+
+    setTimeout(() => {
+      document
+        .getElementById('calculator')
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+    }, 50);
+  };
+
+  const closeCalculator = () => {
+    if (loading) return;
+
+    setActiveTool(null);
+    setResult(null);
+    setValidationError('');
+  };
+
   return (
     <>
       <Seo
@@ -229,7 +264,7 @@ export default function Home() {
 
       {/* =====================================================
           FUTURISTIC LIGHT HERO
-          ===================================================== */}
+      ===================================================== */}
       <section className="relative overflow-hidden px-4 pb-10 pt-6 sm:px-6 sm:pb-14 sm:pt-8 lg:px-8 lg:pb-16">
         {/* Soft futuristic background glow */}
         <div
@@ -237,17 +272,19 @@ export default function Home() {
           className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
         >
           <div className="absolute left-[-180px] top-20 h-80 w-80 rounded-full bg-pink-200/40 blur-3xl" />
+
           <div className="absolute right-[-160px] top-0 h-96 w-96 rounded-full bg-purple-200/30 blur-3xl" />
+
           <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-rose-100/40 blur-3xl" />
         </div>
 
         <div className="mx-auto max-w-7xl">
           <div className="overflow-hidden rounded-[2rem] border border-white/80 bg-white/70 shadow-[0_20px_70px_rgba(236,72,153,0.12)] backdrop-blur-xl sm:rounded-[2.5rem]">
             <div className="grid items-stretch lg:grid-cols-2">
-              
+
               {/* LEFT — HERO CONTENT */}
               <div className="flex flex-col justify-center px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16 xl:px-16">
-                
+
                 <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-rose-100 bg-white/80 px-3.5 py-2 text-xs font-semibold text-rose-500 shadow-sm">
                   <Sparkles className="h-3.5 w-3.5" />
                   Better relationships start here
@@ -257,6 +294,7 @@ export default function Home() {
                   Build stronger
                   <br />
                   relationships with
+
                   <span className="mt-1 block bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">
                     love & understanding
                   </span>
@@ -270,20 +308,16 @@ export default function Home() {
 
                 {/* CTA buttons */}
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+
                   <button
                     type="button"
-                    onClick={() => {
-                      document
-                        .getElementById('calculator')
-                        ?.scrollIntoView({
-                          behavior: 'smooth',
-                          block: 'start',
-                        });
-                    }}
+                    onClick={openLoveCalculator}
                     className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-rose-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-rose-200"
                   >
                     <Heart className="h-4 w-4 fill-white" />
+
                     Explore Your Connection
+
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </button>
 
@@ -333,13 +367,11 @@ export default function Home() {
                   decoding="async"
                 />
 
-                {/* Soft image overlay for seamless light-mode integration */}
                 <div
                   aria-hidden="true"
                   className="absolute inset-0 bg-gradient-to-r from-white/15 via-transparent to-transparent lg:from-white/25"
                 />
 
-                {/* Decorative glow */}
                 <div
                   aria-hidden="true"
                   className="absolute bottom-6 right-6 h-24 w-24 rounded-full bg-pink-300/20 blur-2xl"
@@ -351,80 +383,195 @@ export default function Home() {
       </section>
 
       {/* =====================================================
-          EXISTING LOVE CALCULATOR
-          DO NOT CHANGE ITS LOGIC
-          ===================================================== */}
+          LOVEONS TOOLS
+          Future-proof structure
+      ===================================================== */}
       <section
-        id="calculator"
-        className="scroll-mt-24 px-4 pb-10 sm:px-6 lg:px-8"
+        id="tools"
+        className="relative px-4 pb-12 pt-4 sm:px-6 lg:px-8"
       >
-        <div className="mx-auto max-w-md">
-          <InputCard
-            person1={person1}
-            person2={person2}
-            experience={experience}
-            onChangePerson1={updatePerson1}
-            onChangePerson2={updatePerson2}
-            onChangeExperience={(value) => {
-              setExperience(value);
-              setValidationError('');
-            }}
-            onGenerate={handleGenerate}
-            loading={loading}
-            validationError={validationError}
-          />
+        <div className="mx-auto max-w-4xl">
+
+          {/* Section heading */}
+          <div className="mb-6 text-center">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-rose-100 bg-white/80 px-3 py-1.5 text-xs font-semibold text-rose-500 shadow-sm">
+              <Sparkles className="h-3.5 w-3.5" />
+              Loveons Tools
+            </div>
+
+            <h2 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              Simple tools for your relationship
+            </h2>
+
+            <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">
+              Explore tools designed to help you understand
+              and strengthen your connection.
+            </p>
+          </div>
+
+          {/* Tool cards */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+            {/* CURRENT TOOL — LOVE CALCULATOR */}
+            <button
+              type="button"
+              onClick={openLoveCalculator}
+              className="group relative overflow-hidden rounded-[1.75rem] border border-rose-100 bg-white/85 p-5 text-left shadow-[0_12px_40px_rgba(236,72,153,0.08)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-rose-200 hover:shadow-[0_20px_50px_rgba(236,72,153,0.14)] sm:p-6"
+            >
+              {/* Card glow */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-pink-200/40 blur-3xl transition-transform duration-500 group-hover:scale-125"
+              />
+
+              <div className="relative">
+
+                <div className="mb-5 flex items-start justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-200">
+                    <Heart className="h-6 w-6 fill-white" />
+                  </div>
+
+                  <span className="rounded-full border border-rose-100 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-500">
+                    Available
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="font-display text-lg font-bold text-slate-900 sm:text-xl">
+                    Love Calculator
+                  </h3>
+
+                  <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                    Explore your connection and discover
+                    personalized relationship insights.
+                  </p>
+                </div>
+
+                <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-rose-500 transition-colors group-hover:text-rose-600">
+                  Try Love Calculator
+
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </div>
+              </div>
+            </button>
+
+          </div>
         </div>
       </section>
 
       {/* =====================================================
-          EXISTING RESULTS
-          ONLY APPEARS AFTER CALCULATION
-          ===================================================== */}
-      {(loading || result) && (
+          ACTIVE LOVE CALCULATOR
+          Opens only after selecting the tool
+      ===================================================== */}
+      {activeTool === 'love-calculator' && !result && (
         <section
-          id="results"
+          id="calculator"
           className="scroll-mt-24 px-4 pb-10 sm:px-6 lg:px-8"
         >
-          <div className="mx-auto mt-2 max-w-md">
-            {loading && (
-              <div className="fade-in rounded-3xl border border-rose-100 bg-white p-10 text-center shadow-xl shadow-rose-100">
-                <div className="relative mb-4 inline-flex">
-                  <span
-                    className="absolute inline-flex h-16 w-16 rounded-full bg-rose-400 opacity-40"
-                    style={{
-                      animation:
-                        'pulse-ring 1.5s ease-out infinite',
-                    }}
-                  />
+          <div className="mx-auto max-w-md">
 
-                  <span className="relative inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-purple-500">
-                    <Heart className="h-7 w-7 fill-white text-white" />
-                  </span>
+            {/* Calculator header */}
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50">
+                    <Calculator className="h-4.5 w-4.5 text-rose-500" />
+                  </div>
+
+                  <h2 className="font-display text-xl font-bold text-slate-900">
+                    Love Calculator
+                  </h2>
                 </div>
 
-                <p className="mb-1 text-lg font-bold text-gray-700">
-                  Analyzing your connection...
-                </p>
-
-                <p className="text-sm text-gray-400">
-                  Crafting personalized recommendations
+                <p className="mt-1 pl-11 text-xs text-slate-400">
+                  Enter your details to explore your connection.
                 </p>
               </div>
-            )}
 
-            {result && (
-              <ResultsDisplay
-                result={result}
-                onReset={handleReset}
-              />
-            )}
+              <button
+                type="button"
+                onClick={closeCalculator}
+                disabled={loading}
+                aria-label="Close Love Calculator"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition-all hover:border-rose-200 hover:bg-rose-50 hover:text-rose-500 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <InputCard
+              person1={person1}
+              person2={person2}
+              experience={experience}
+              onChangePerson1={updatePerson1}
+              onChangePerson2={updatePerson2}
+              onChangeExperience={(value) => {
+                setExperience(value);
+                setValidationError('');
+              }}
+              onGenerate={handleGenerate}
+              loading={loading}
+              validationError={validationError}
+            />
           </div>
         </section>
       )}
 
       {/* =====================================================
-          EXISTING BLOG
-          ===================================================== */}
+          RESULTS
+          ONLY APPEARS AFTER CALCULATION
+      ===================================================== */}
+      {activeTool === 'love-calculator' &&
+        (loading || result) && (
+          <section
+            id="results"
+            className="scroll-mt-24 px-4 pb-10 sm:px-6 lg:px-8"
+          >
+            <div className="mx-auto mt-2 max-w-md">
+
+              {loading && (
+                <div className="fade-in rounded-3xl border border-rose-100 bg-white p-10 text-center shadow-xl shadow-rose-100">
+
+                  <div className="relative mb-4 inline-flex">
+                    <span
+                      className="absolute inline-flex h-16 w-16 rounded-full bg-rose-400 opacity-40"
+                      style={{
+                        animation:
+                          'pulse-ring 1.5s ease-out infinite',
+                      }}
+                    />
+
+                    <span className="relative inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-purple-500">
+                      <Heart className="h-7 w-7 fill-white text-white" />
+                    </span>
+                  </div>
+
+                  <p className="mb-1 text-lg font-bold text-gray-700">
+                    Analyzing your connection...
+                  </p>
+
+                  <p className="text-sm text-gray-400">
+                    Crafting personalized recommendations
+                  </p>
+                </div>
+              )}
+
+              {result && (
+                <ResultsDisplay
+                  result={result}
+                  onReset={() => {
+                    handleReset();
+                    setActiveTool(null);
+                  }}
+                />
+              )}
+            </div>
+          </section>
+        )}
+
+      {/* =====================================================
+          BLOG
+      ===================================================== */}
       {!result && !loading && <BlogSection />}
     </>
   );
