@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ArrowRight,
   Calculator,
@@ -34,12 +34,6 @@ const initialPerson: Person = {
   height: '',
 };
 
-/*
- * Hero image
- *
- * Future image changes:
- * Replace only this path/file.
- */
 const HERO_IMAGE = '/images/loveons-hero.webp';
 
 export default function Home() {
@@ -57,15 +51,48 @@ export default function Home() {
   const [result, setResult] =
     useState<RecommendationResult | null>(null);
 
-  const [validationError, setValidationError] = useState('');
+  const [validationError, setValidationError] =
+    useState('');
+
+  const [activeTool, setActiveTool] =
+    useState<string | null>(null);
 
   /*
-   * Controls whether the calculator form is open.
+   * NAVBAR → HOME CALCULATOR CONNECTION
    *
-   * The tool card is shown first.
-   * The actual calculator opens only after the user selects it.
+   * Navbar dispatches:
+   * "loveons:open-calculator"
+   *
+   * Home listens and opens the calculator.
    */
-  const [activeTool, setActiveTool] = useState<string | null>(null);
+  useEffect(() => {
+    const handleOpenCalculator = () => {
+      setActiveTool('love-calculator');
+      setResult(null);
+      setValidationError('');
+
+      window.setTimeout(() => {
+        document
+          .getElementById('calculator')
+          ?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+      }, 50);
+    };
+
+    window.addEventListener(
+      'loveons:open-calculator',
+      handleOpenCalculator
+    );
+
+    return () => {
+      window.removeEventListener(
+        'loveons:open-calculator',
+        handleOpenCalculator
+      );
+    };
+  }, []);
 
   const updatePerson1 = (
     field: string,
@@ -180,7 +207,7 @@ export default function Home() {
     setLoading(true);
     setResult(null);
 
-    setTimeout(() => {
+    window.setTimeout(() => {
       const data = {
         p1Gender: person1.gender,
         p1Avatar: person1.avatar,
@@ -197,12 +224,13 @@ export default function Home() {
         experience,
       };
 
-      const rec = generateRecommendations(data);
+      const recommendation =
+        generateRecommendations(data);
 
-      setResult(rec);
+      setResult(recommendation);
       setLoading(false);
 
-      setTimeout(() => {
+      window.setTimeout(() => {
         document
           .getElementById('results')
           ?.scrollIntoView({
@@ -235,8 +263,10 @@ export default function Home() {
 
   const openLoveCalculator = () => {
     setActiveTool('love-calculator');
+    setResult(null);
+    setValidationError('');
 
-    setTimeout(() => {
+    window.setTimeout(() => {
       document
         .getElementById('calculator')
         ?.scrollIntoView({
@@ -263,10 +293,9 @@ export default function Home() {
       />
 
       {/* =====================================================
-          FUTURISTIC LIGHT HERO
+          HERO
       ===================================================== */}
       <section className="relative overflow-hidden px-4 pb-10 pt-6 sm:px-6 sm:pb-14 sm:pt-8 lg:px-8 lg:pb-16">
-        {/* Soft futuristic background glow */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
@@ -282,9 +311,7 @@ export default function Home() {
           <div className="overflow-hidden rounded-[2rem] border border-white/80 bg-white/70 shadow-[0_20px_70px_rgba(236,72,153,0.12)] backdrop-blur-xl sm:rounded-[2.5rem]">
             <div className="grid items-stretch lg:grid-cols-2">
 
-              {/* LEFT — HERO CONTENT */}
               <div className="flex flex-col justify-center px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16 xl:px-16">
-
                 <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-rose-100 bg-white/80 px-3.5 py-2 text-xs font-semibold text-rose-500 shadow-sm">
                   <Sparkles className="h-3.5 w-3.5" />
                   Better relationships start here
@@ -306,9 +333,7 @@ export default function Home() {
                   to help you and your partner grow closer.
                 </p>
 
-                {/* CTA buttons */}
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-
                   <button
                     type="button"
                     onClick={openLoveCalculator}
@@ -337,7 +362,6 @@ export default function Home() {
                   </button>
                 </div>
 
-                {/* Trust points */}
                 <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-slate-400 sm:text-sm">
                   <span className="inline-flex items-center gap-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
@@ -356,7 +380,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* RIGHT — HERO IMAGE */}
               <div className="relative min-h-[330px] overflow-hidden sm:min-h-[440px] lg:min-h-[600px]">
                 <img
                   src={HERO_IMAGE}
@@ -371,11 +394,6 @@ export default function Home() {
                   aria-hidden="true"
                   className="absolute inset-0 bg-gradient-to-r from-white/15 via-transparent to-transparent lg:from-white/25"
                 />
-
-                <div
-                  aria-hidden="true"
-                  className="absolute bottom-6 right-6 h-24 w-24 rounded-full bg-pink-300/20 blur-2xl"
-                />
               </div>
             </div>
           </div>
@@ -383,16 +401,14 @@ export default function Home() {
       </section>
 
       {/* =====================================================
-          LOVEONS TOOLS
-          Future-proof structure
+          TOOLS
       ===================================================== */}
       <section
         id="tools"
-        className="relative px-4 pb-12 pt-4 sm:px-6 lg:px-8"
+        className="relative scroll-mt-24 px-4 pb-12 pt-4 sm:px-6 lg:px-8"
       >
         <div className="mx-auto max-w-4xl">
 
-          {/* Section heading */}
           <div className="mb-6 text-center">
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-rose-100 bg-white/80 px-3 py-1.5 text-xs font-semibold text-rose-500 shadow-sm">
               <Sparkles className="h-3.5 w-3.5" />
@@ -409,23 +425,19 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Tool cards */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
-            {/* CURRENT TOOL — LOVE CALCULATOR */}
             <button
               type="button"
               onClick={openLoveCalculator}
               className="group relative overflow-hidden rounded-[1.75rem] border border-rose-100 bg-white/85 p-5 text-left shadow-[0_12px_40px_rgba(236,72,153,0.08)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-rose-200 hover:shadow-[0_20px_50px_rgba(236,72,153,0.14)] sm:p-6"
             >
-              {/* Card glow */}
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-pink-200/40 blur-3xl transition-transform duration-500 group-hover:scale-125"
               />
 
               <div className="relative">
-
                 <div className="mb-5 flex items-start justify-between">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-200">
                     <Heart className="h-6 w-6 fill-white" />
@@ -436,16 +448,14 @@ export default function Home() {
                   </span>
                 </div>
 
-                <div>
-                  <h3 className="font-display text-lg font-bold text-slate-900 sm:text-xl">
-                    Love Calculator
-                  </h3>
+                <h3 className="font-display text-lg font-bold text-slate-900 sm:text-xl">
+                  Love Calculator
+                </h3>
 
-                  <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
-                    Explore your connection and discover
-                    personalized relationship insights.
-                  </p>
-                </div>
+                <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                  Explore your connection and discover
+                  personalized relationship insights.
+                </p>
 
                 <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-rose-500 transition-colors group-hover:text-rose-600">
                   Try Love Calculator
@@ -460,22 +470,20 @@ export default function Home() {
       </section>
 
       {/* =====================================================
-          ACTIVE LOVE CALCULATOR
-          Opens only after selecting the tool
+          CALCULATOR
       ===================================================== */}
-      {activeTool === 'love-calculator' && !result && (
+      {activeTool === 'love-calculator' && (
         <section
           id="calculator"
           className="scroll-mt-24 px-4 pb-10 sm:px-6 lg:px-8"
         >
           <div className="mx-auto max-w-md">
 
-            {/* Calculator header */}
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50">
-                    <Calculator className="h-4.5 w-4.5 text-rose-500" />
+                    <Calculator className="h-4 w-4 text-rose-500" />
                   </div>
 
                   <h2 className="font-display text-xl font-bold text-slate-900">
@@ -519,7 +527,6 @@ export default function Home() {
 
       {/* =====================================================
           RESULTS
-          ONLY APPEARS AFTER CALCULATION
       ===================================================== */}
       {activeTool === 'love-calculator' &&
         (loading || result) && (
@@ -531,15 +538,8 @@ export default function Home() {
 
               {loading && (
                 <div className="fade-in rounded-3xl border border-rose-100 bg-white p-10 text-center shadow-xl shadow-rose-100">
-
                   <div className="relative mb-4 inline-flex">
-                    <span
-                      className="absolute inline-flex h-16 w-16 rounded-full bg-rose-400 opacity-40"
-                      style={{
-                        animation:
-                          'pulse-ring 1.5s ease-out infinite',
-                      }}
-                    />
+                    <span className="absolute inline-flex h-16 w-16 animate-ping rounded-full bg-rose-300 opacity-30" />
 
                     <span className="relative inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-purple-500">
                       <Heart className="h-7 w-7 fill-white text-white" />
@@ -576,3 +576,4 @@ export default function Home() {
     </>
   );
 }
+
