@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import AvatarSelector from './AvatarSelector';
 
 interface Person {
@@ -30,81 +29,138 @@ interface InputCardProps {
 
 const genders = ['Male', 'Female'];
 
-/*
- * IMPORTANT:
- * The internal values are kept the same as the previous version
- * so existing calculator logic does not break.
- *
- * Only the visible labels have been changed.
- */
-const loveStages = [
-  {
-    value: 'First time',
-    label: 'Just Crushing',
-  },
-  {
-    value: 'Few times',
-    label: 'Getting Closer',
-  },
-  {
-    value: 'Experienced',
-    label: 'Deeply in Love',
-  },
+const experiences = [
+  'Just Crushing',
+  'Getting Closer',
+  'Deeply In Love',
 ];
 
 /*
- * Height rules:
- * Feet: 1–9
- * Inches: 0–11
+ * Loveons custom height format
  *
- * Examples accepted:
- * 5
- * 5'
- * 5'8
- * 5'8"
- * 9'11"
+ * Minimum: 1.9 ft
+ * Maximum: 9.9 ft
+ * One decimal place only
  *
- * Examples rejected:
- * 0
+ * Examples:
+ * 3.5
+ * 4.7
+ * 5.6
+ * 6.3
+ * 6.7
+ * 9.9
+ *
+ * Invalid:
+ * 1.8
  * 10
- * 12
- * 5'12
- * abc
+ * 10.0
+ * 5.65
+ * 6.78
  */
-function isValidHeight(value: string): boolean {
-  const trimmed = value.trim();
-
-  if (trimmed === '') {
+const isValidHeight = (value: string): boolean => {
+  if (value === '') {
     return true;
   }
 
-  const normalized = trimmed
-    .replace(/′/g, "'")
-    .replace(/″/g, '"')
-    .replace(/\s+/g, '');
-
-  const match = normalized.match(/^(\d{1,2})(?:'(\d{0,2})"?)*$/);
-
-  if (!match) {
-    return false;
-  }
-
-  const feet = Number(match[1]);
-
-  if (feet < 1 || feet > 9) {
+  /*
+   * Allow:
+   * 1
+   * 1.
+   * 1.9
+   * 9.9
+   */
+  if (!/^\d(\.\d?)?$/.test(value)) {
     return false;
   }
 
   /*
-   * If inches are not entered yet, the value is still valid.
+   * If the user has only typed the first digit,
+   * allow it temporarily so they can continue typing.
    */
-  if (match[2] === undefined || match[2] === '') {
-    return true;
+  if (/^\d$/.test(value)) {
+    const firstNumber = Number(value);
+
+    /*
+     * 1–9 are allowed as temporary input.
+     * Final validation happens when the decimal
+     * value is completed.
+     */
+    return firstNumber >= 1 && firstNumber <= 9;
   }
 
-  const inches = Number(match[2]);
+  /*
+   * Allow "1." through "9." while typing.
+   */
+  if (/^\d\.$/.test(value)) {
+    const firstNumber = Number(value.charAt(0));
 
-  return inches >= 0 && inches <= 11;
+    return firstNumber >= 1 && firstNumber <= 9;
+  }
+
+  const height = Number(value);
+
+  return height >= 1.9 && height <= 9.9;
+};
+
+function HeightInput({
+  value,
+  onChange,
+  placeholder,
+  focusColor,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  focusColor: 'rose' | 'purple';
+}) {
+  const handleChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const newValue = event.target.value;
+
+    if (isValidHeight(newValue)) {
+      onChange(newValue);
+    }
+  };
+
+  const focusRing =
+    focusColor === 'rose'
+      ? 'focus:ring-rose-300'
+      : 'focus:ring-purple-300';
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        inputMode="decimal"
+        placeholder={placeholder}
+        value={value}
+        onChange={handleChange}
+        className={`
+          w-full
+          px-4
+          py-3
+          pr-11
+          rounded-xl
+          border
+          border-gray-200
+          bg-white
+          text-gray-800
+          placeholder-gray-300
+          focus:outline-none
+          focus:ring-2
+          ${focusRing}
+          focus:border-transparent
+          text-sm
+          transition-all
+        `}
+      />
+
+      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium pointer-events-none">
+        ft
+      </span>
+    </div>
+  );
 }
 
 const RomanticBackground = () => (
@@ -272,35 +328,6 @@ export default function InputCard({
   loading,
   validationError,
 }: InputCardProps) {
-  const [person1HeightError, setPerson1HeightError] = useState('');
-  const [person2HeightError, setPerson2HeightError] = useState('');
-
-  const handlePerson1HeightChange = (value: string) => {
-    if (!isValidHeight(value)) {
-      setPerson1HeightError(
-        'Please enter a height between 1 and 9 feet, with 0–11 inches.'
-      );
-      return;
-    }
-
-    setPerson1HeightError('');
-
-    onChangePerson1('height', value);
-  };
-
-  const handlePerson2HeightChange = (value: string) => {
-    if (!isValidHeight(value)) {
-      setPerson2HeightError(
-        'Please enter a height between 1 and 9 feet, with 0–11 inches.'
-      );
-      return;
-    }
-
-    setPerson2HeightError('');
-
-    onChangePerson2('height', value);
-  };
-
   return (
     <div className="relative bg-white rounded-3xl shadow-xl shadow-rose-100 border border-rose-100 overflow-hidden">
       <RomanticBackground />
@@ -324,6 +351,7 @@ export default function InputCard({
 
         {/* Your info */}
         <div className="space-y-3">
+
           <label className="block text-xs font-semibold text-rose-500 uppercase tracking-wider">
             Your Name
           </label>
@@ -344,12 +372,16 @@ export default function InputCard({
           <GenderButtons
             value={person1.gender}
             onChange={(gender) =>
-              onChangePerson1('gender', gender)
+              onChangePerson1(
+                'gender',
+                gender
+              )
             }
           />
 
           {person1.gender && (
             <div className="mt-1">
+
               <p className="text-xs text-gray-400 mb-2 font-medium">
                 Select your build:
               </p>
@@ -358,14 +390,21 @@ export default function InputCard({
                 gender={person1.gender}
                 selected={person1.avatar}
                 onSelect={(id) =>
-                  onChangePerson1('avatar', id)
+                  onChangePerson1(
+                    'avatar',
+                    id
+                  )
                 }
               />
+
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
+
+            {/* Your Age */}
             <div>
+
               <label className="block text-xs text-gray-400 mb-1 font-medium">
                 Your Age
               </label>
@@ -384,42 +423,36 @@ export default function InputCard({
                 }
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent text-sm transition-all"
               />
+
             </div>
 
+            {/* Your Height */}
             <div>
+
               <label className="block text-xs text-gray-400 mb-1 font-medium">
                 Your Height
               </label>
 
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder={'e.g. 5\'8"'}
+              <HeightInput
                 value={person1.height}
-                onChange={(event) =>
-                  handlePerson1HeightChange(
-                    event.target.value
+                placeholder="e.g. 5.6"
+                onChange={(value) =>
+                  onChangePerson1(
+                    'height',
+                    value
                   )
                 }
-                aria-invalid={!!person1HeightError}
-                className={`w-full px-4 py-3 rounded-xl border bg-white text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:border-transparent text-sm transition-all ${
-                  person1HeightError
-                    ? 'border-rose-400 focus:ring-rose-300'
-                    : 'border-gray-200 focus:ring-rose-300'
-                }`}
+                focusColor="rose"
               />
 
-              {person1HeightError && (
-                <p className="mt-1 text-[11px] text-rose-500">
-                  {person1HeightError}
-                </p>
-              )}
             </div>
+
           </div>
         </div>
 
         {/* Divider */}
         <div className="flex items-center gap-3">
+
           <div className="flex-1 h-px bg-rose-100" />
 
           <span className="text-rose-400 font-display text-sm">
@@ -427,10 +460,12 @@ export default function InputCard({
           </span>
 
           <div className="flex-1 h-px bg-rose-100" />
+
         </div>
 
         {/* Partner info */}
         <div className="space-y-3">
+
           <label className="block text-xs font-semibold text-purple-500 uppercase tracking-wider">
             Partner's Name
           </label>
@@ -451,12 +486,16 @@ export default function InputCard({
           <GenderButtons
             value={person2.gender}
             onChange={(gender) =>
-              onChangePerson2('gender', gender)
+              onChangePerson2(
+                'gender',
+                gender
+              )
             }
           />
 
           {person2.gender && (
             <div className="mt-1">
+
               <p className="text-xs text-gray-400 mb-2 font-medium">
                 Select partner's build:
               </p>
@@ -465,14 +504,21 @@ export default function InputCard({
                 gender={person2.gender}
                 selected={person2.avatar}
                 onSelect={(id) =>
-                  onChangePerson2('avatar', id)
+                  onChangePerson2(
+                    'avatar',
+                    id
+                  )
                 }
               />
+
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
+
+            {/* Partner Age */}
             <div>
+
               <label className="block text-xs text-gray-400 mb-1 font-medium">
                 Partner's Age
               </label>
@@ -491,42 +537,36 @@ export default function InputCard({
                 }
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent text-sm transition-all"
               />
+
             </div>
 
+            {/* Partner Height */}
             <div>
+
               <label className="block text-xs text-gray-400 mb-1 font-medium">
                 Partner's Height
               </label>
 
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder={'e.g. 5\'6"'}
+              <HeightInput
                 value={person2.height}
-                onChange={(event) =>
-                  handlePerson2HeightChange(
-                    event.target.value
+                placeholder="e.g. 6.7"
+                onChange={(value) =>
+                  onChangePerson2(
+                    'height',
+                    value
                   )
                 }
-                aria-invalid={!!person2HeightError}
-                className={`w-full px-4 py-3 rounded-xl border bg-white text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:border-transparent text-sm transition-all ${
-                  person2HeightError
-                    ? 'border-purple-400 focus:ring-purple-300'
-                    : 'border-gray-200 focus:ring-purple-300'
-                }`}
+                focusColor="purple"
               />
 
-              {person2HeightError && (
-                <p className="mt-1 text-[11px] text-purple-500">
-                  {person2HeightError}
-                </p>
-              )}
             </div>
+
           </div>
         </div>
 
         {/* Your Love Stage */}
         <div className="space-y-2">
+
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
             Your Love Stage
           </label>
@@ -534,23 +574,28 @@ export default function InputCard({
           <select
             value={experience}
             onChange={(event) =>
-              onChangeExperience(event.target.value)
+              onChangeExperience(
+                event.target.value
+              )
             }
             className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent text-sm transition-all appearance-none cursor-pointer"
           >
+
             <option value="">
               Select your love stage...
             </option>
 
-            {loveStages.map((stage) => (
+            {experiences.map((item) => (
               <option
-                key={stage.value}
-                value={stage.value}
+                key={item}
+                value={item}
               >
-                {stage.label}
+                {item}
               </option>
             ))}
+
           </select>
+
         </div>
 
         {/* Validation message */}
@@ -579,11 +624,7 @@ export default function InputCard({
         <button
           type="button"
           onClick={onGenerate}
-          disabled={
-            loading ||
-            !!person1HeightError ||
-            !!person2HeightError
-          }
+          disabled={loading}
           className="
             w-full
             py-4
@@ -613,6 +654,7 @@ export default function InputCard({
             gap-3
           "
         >
+
           {loading ? (
             <>
               <span className="text-sm">
@@ -620,9 +662,13 @@ export default function InputCard({
               </span>
 
               <span className="flex gap-1">
+
                 <span className="loading-dot w-2 h-2 rounded-full bg-white/80 inline-block" />
+
                 <span className="loading-dot w-2 h-2 rounded-full bg-white/80 inline-block" />
+
                 <span className="loading-dot w-2 h-2 rounded-full bg-white/80 inline-block" />
+
               </span>
             </>
           ) : (
@@ -639,18 +685,23 @@ export default function InputCard({
                 strokeWidth={2}
                 aria-hidden="true"
               >
+
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                 />
+
               </svg>
             </>
           )}
+
         </button>
+
       </div>
     </div>
   );
 }
+
 
 
