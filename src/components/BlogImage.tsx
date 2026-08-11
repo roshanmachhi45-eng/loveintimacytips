@@ -1,8 +1,7 @@
 
 import { useEffect, useState } from 'react';
 
-const DEFAULT_BLOG_IMAGE =
-  '/images/blogs/default.webp';
+const DEFAULT_BLOG_IMAGE = '/images/blogs/default.webp';
 
 interface BlogImageProps {
   src: string | null | undefined;
@@ -12,8 +11,14 @@ interface BlogImageProps {
 }
 
 /**
- * Converts all supported image references
- * into a usable browser URL.
+ * Converts a blog image reference into a usable browser URL.
+ *
+ * Supported:
+ * - /images/blogs/example.webp
+ * - images/blogs/example.webp
+ * - example.webp
+ * - https://.../example.webp
+ * - Supabase public image URLs
  */
 function resolveBlogImage(
   src: string | null | undefined
@@ -28,22 +33,12 @@ function resolveBlogImage(
     return DEFAULT_BLOG_IMAGE;
   }
 
-  /*
-   * Already a local absolute path.
-   * Example:
-   * /images/blogs/couple.webp
-   */
+  // Already an absolute local path
   if (value.startsWith('/')) {
     return value;
   }
 
-  /*
-   * Full external URL.
-   *
-   * We first try the original URL.
-   * If it fails, BlogImage's fallback logic
-   * will try the local filename.
-   */
+  // Full external URL
   if (
     value.startsWith('http://') ||
     value.startsWith('https://')
@@ -51,13 +46,7 @@ function resolveBlogImage(
     return value;
   }
 
-  /*
-   * Relative paths.
-   *
-   * images/blogs/couple.webp
-   * ↓
-   * /images/blogs/couple.webp
-   */
+  // Relative local path
   if (
     value.startsWith('images/') ||
     value.startsWith('./images/')
@@ -65,37 +54,23 @@ function resolveBlogImage(
     return `/${value.replace(/^\.?\//, '')}`;
   }
 
-  /*
-   * If database contains only:
-   *
-   * couple.webp
-   *
-   * use:
-   *
-   * /images/blogs/couple.webp
-   */
+  // Filename only
   return `/images/blogs/${value}`;
 }
 
 /**
- * Extract the filename from an external URL.
- *
- * Example:
- * https://xyz.supabase.co/storage/v1/object/public/blog_images/couple.webp
- *
- * becomes:
- * couple.webp
+ * Gets the filename from an external image URL
+ * so we can try the same image from public/images/blogs/.
  */
 function getLocalFallback(
   src: string | null | undefined
-): string {
+): string | null {
   if (!src) {
-    return DEFAULT_BLOG_IMAGE;
+    return null;
   }
 
   try {
     const url = new URL(src);
-
     const pathname = url.pathname;
 
     const filename = pathname
@@ -105,17 +80,12 @@ function getLocalFallback(
 
     if (
       filename &&
-      /\.(jpg|jpeg|png|webp|avif|gif)$/i.test(
-        filename
-      )
+      /\.(jpg|jpeg|png|webp|avif|gif)$/i.test(filename)
     ) {
       return `/images/blogs/${filename}`;
     }
   } catch {
-    /*
-     * Not a valid URL.
-     * We simply use the normal local resolver.
-     */
+    // Not a full URL, continue below.
   }
 
   const filename = src
@@ -125,14 +95,42 @@ function getLocalFallback(
 
   if (
     filename &&
-    /\.(jpg|jpeg|png|webp|avif|gif)$/i.test(
-      filename
-    )
+    /\.(jpg|jpeg|png|webp|avif|gif)$/i.test(filename)
   ) {
     return `/images/blogs/${filename}`;
   }
 
-  return DEFAULT_BLOG_IMAGE;
+  return null;
+}
+
+/**
+ * Builds the image candidates in the order we want to try them.
+ *
+ * 1. Original image
+ * 2. Local image with the same filename
+ * 3. Default blog image
+ */
+function buildImageCandidates(
+  src: string | null | undefined
+): string[] {
+  const original = resolveBlogImage(src);
+
+  const candidates: string[] = [original];
+
+  const localFallback = getLocalFallback(src);
+
+  if (
+    localFallback &&
+    localFallback !== original
+  ) {
+    candidates.push(localFallback);
+  }
+
+  if (!candidates.includes(DEFAULT_BLOG_IMAGE)) {
+    candidates.push(DEFAULT_BLOG_IMAGE);
+  }
+
+  return candidates;
 }
 
 export default function BlogImage({
@@ -141,62 +139,51 @@ export default function BlogImage({
   className = '',
   loading = 'lazy',
 }: BlogImageProps) {
-  const [loaded, setLoaded] =
-    useState(false);
+  const [candidates, setCandidates] = useState<string[]>(() =>
+    buildImageCandidates(src)
+  );
 
-  const [currentSrc, setCurrentSrc] =
-    useState(() =>
-      resolveBlogImage(src)
-    );
+  const [candidateIndex, setCandidateIndex] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  const [triedLocalFallback, setTriedLocalFallback] =
-    useState(false);
-
-  /*
-   * Reset whenever the blog post/image changes.
+  /**
+   * Reset image state whenever a different blog image is supplied.
    */
   useEffect(() => {
+    setCandidates(buildImageCandidates(src));
+    setCandidateIndex(0);
     setLoaded(false);
-    setTriedLocalFallback(false);
-    setCurrentSrc(resolveBlogImage(src));
+    setFailed(false);
   }, [src]);
 
+  const currentSrc =
+    candidates[candidateIndex] || DEFAULT_BLOG_IMAGE;
+
+  const handleLoad = () => {
+    setLoaded(true);
+    setFailed(false);
+  };
+
   const handleError = () => {
-    /*
-     * If the original image was an external
-     * Supabase URL, try the same filename
-     * from public/images/blogs/.
+    /**
+     * Try the next available image:
+     *
+     * Original URL
+     * ↓
+     * Local filename
+     * ↓
+     * Default image
      */
-    if (
-      !triedLocalFallback &&
-      currentSrc !== DEFAULT_BLOG_IMAGE
-    ) {
-      const localFallback =
-        getLocalFallback(src);
-
-      if (
-        localFallback !== currentSrc &&
-        localFallback !== DEFAULT_BLOG_IMAGE
-      ) {
-        setTriedLocalFallback(true);
-        setLoaded(false);
-        setCurrentSrc(localFallback);
-        return;
-      }
-    }
-
-    /*
-     * Nothing worked.
-     * Use the default blog image.
-     */
-    if (currentSrc !== DEFAULT_BLOG_IMAGE) {
-      setTriedLocalFallback(true);
-      setCurrentSrc(DEFAULT_BLOG_IMAGE);
+    if (candidateIndex < candidates.length - 1) {
       setLoaded(false);
+      setCandidateIndex((index) => index + 1);
       return;
     }
 
+    // Even the fallback failed.
     setLoaded(true);
+    setFailed(true);
   };
 
   return (
@@ -208,6 +195,7 @@ export default function BlogImage({
         ${className}
       `}
     >
+      {/* Loading background */}
       {!loaded && (
         <div
           aria-hidden="true"
@@ -223,26 +211,43 @@ export default function BlogImage({
       )}
 
       <img
+        key={currentSrc}
         src={currentSrc}
         alt={alt}
         loading={loading}
         decoding="async"
-        onLoad={() => setLoaded(true)}
+        onLoad={handleLoad}
         onError={handleError}
-        className={`
+        className="
+          relative
+          z-10
           h-full
           w-full
           object-cover
-          transition-opacity
-          duration-300
-          ${
-            loaded
-              ? 'opacity-100'
-              : 'opacity-0'
-          }
-        `}
+          opacity-100
+        "
       />
+
+      {/* Extremely rare case:
+          even default image cannot be loaded */}
+      {failed && (
+        <div
+          className="
+            absolute
+            inset-0
+            z-20
+            flex
+            items-center
+            justify-center
+            bg-rose-50
+            text-xs
+            text-rose-300
+          "
+          aria-hidden="true"
+        >
+          Loveons
+        </div>
+      )}
     </div>
   );
 }
-
