@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import AvatarSelector from './AvatarSelector';
 
 interface Person {
@@ -29,11 +30,82 @@ interface InputCardProps {
 
 const genders = ['Male', 'Female'];
 
-const experiences = [
-  'First time',
-  'Few times',
-  'Experienced',
+/*
+ * IMPORTANT:
+ * The internal values are kept the same as the previous version
+ * so existing calculator logic does not break.
+ *
+ * Only the visible labels have been changed.
+ */
+const loveStages = [
+  {
+    value: 'First time',
+    label: 'Just Crushing',
+  },
+  {
+    value: 'Few times',
+    label: 'Getting Closer',
+  },
+  {
+    value: 'Experienced',
+    label: 'Deeply in Love',
+  },
 ];
+
+/*
+ * Height rules:
+ * Feet: 1–9
+ * Inches: 0–11
+ *
+ * Examples accepted:
+ * 5
+ * 5'
+ * 5'8
+ * 5'8"
+ * 9'11"
+ *
+ * Examples rejected:
+ * 0
+ * 10
+ * 12
+ * 5'12
+ * abc
+ */
+function isValidHeight(value: string): boolean {
+  const trimmed = value.trim();
+
+  if (trimmed === '') {
+    return true;
+  }
+
+  const normalized = trimmed
+    .replace(/′/g, "'")
+    .replace(/″/g, '"')
+    .replace(/\s+/g, '');
+
+  const match = normalized.match(/^(\d{1,2})(?:'(\d{0,2})"?)*$/);
+
+  if (!match) {
+    return false;
+  }
+
+  const feet = Number(match[1]);
+
+  if (feet < 1 || feet > 9) {
+    return false;
+  }
+
+  /*
+   * If inches are not entered yet, the value is still valid.
+   */
+  if (match[2] === undefined || match[2] === '') {
+    return true;
+  }
+
+  const inches = Number(match[2]);
+
+  return inches >= 0 && inches <= 11;
+}
 
 const RomanticBackground = () => (
   <svg
@@ -200,11 +272,41 @@ export default function InputCard({
   loading,
   validationError,
 }: InputCardProps) {
+  const [person1HeightError, setPerson1HeightError] = useState('');
+  const [person2HeightError, setPerson2HeightError] = useState('');
+
+  const handlePerson1HeightChange = (value: string) => {
+    if (!isValidHeight(value)) {
+      setPerson1HeightError(
+        'Please enter a height between 1 and 9 feet, with 0–11 inches.'
+      );
+      return;
+    }
+
+    setPerson1HeightError('');
+
+    onChangePerson1('height', value);
+  };
+
+  const handlePerson2HeightChange = (value: string) => {
+    if (!isValidHeight(value)) {
+      setPerson2HeightError(
+        'Please enter a height between 1 and 9 feet, with 0–11 inches.'
+      );
+      return;
+    }
+
+    setPerson2HeightError('');
+
+    onChangePerson2('height', value);
+  };
+
   return (
     <div className="relative bg-white rounded-3xl shadow-xl shadow-rose-100 border border-rose-100 overflow-hidden">
       <RomanticBackground />
 
       <div className="relative z-10 p-6 space-y-6">
+
         {/* Header */}
         <div className="text-center pb-2">
           <h1 className="font-display text-2xl font-bold text-gray-800 leading-tight">
@@ -216,8 +318,7 @@ export default function InputCard({
           </h1>
 
           <p className="text-gray-400 text-sm mt-1">
-            Get personalized relationship tips &
-            activities
+            Get personalized relationship tips & activities
           </p>
         </div>
 
@@ -292,16 +393,27 @@ export default function InputCard({
 
               <input
                 type="text"
+                inputMode="decimal"
                 placeholder={'e.g. 5\'8"'}
                 value={person1.height}
                 onChange={(event) =>
-                  onChangePerson1(
-                    'height',
+                  handlePerson1HeightChange(
                     event.target.value
                   )
                 }
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent text-sm transition-all"
+                aria-invalid={!!person1HeightError}
+                className={`w-full px-4 py-3 rounded-xl border bg-white text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:border-transparent text-sm transition-all ${
+                  person1HeightError
+                    ? 'border-rose-400 focus:ring-rose-300'
+                    : 'border-gray-200 focus:ring-rose-300'
+                }`}
               />
+
+              {person1HeightError && (
+                <p className="mt-1 text-[11px] text-rose-500">
+                  {person1HeightError}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -388,24 +500,35 @@ export default function InputCard({
 
               <input
                 type="text"
+                inputMode="decimal"
                 placeholder={'e.g. 5\'6"'}
                 value={person2.height}
                 onChange={(event) =>
-                  onChangePerson2(
-                    'height',
+                  handlePerson2HeightChange(
                     event.target.value
                   )
                 }
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent text-sm transition-all"
+                aria-invalid={!!person2HeightError}
+                className={`w-full px-4 py-3 rounded-xl border bg-white text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:border-transparent text-sm transition-all ${
+                  person2HeightError
+                    ? 'border-purple-400 focus:ring-purple-300'
+                    : 'border-gray-200 focus:ring-purple-300'
+                }`}
               />
+
+              {person2HeightError && (
+                <p className="mt-1 text-[11px] text-purple-500">
+                  {person2HeightError}
+                </p>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Experience */}
+        {/* Your Love Stage */}
         <div className="space-y-2">
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Experience Level
+            Your Love Stage
           </label>
 
           <select
@@ -416,12 +539,15 @@ export default function InputCard({
             className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent text-sm transition-all appearance-none cursor-pointer"
           >
             <option value="">
-              Select experience level...
+              Select your love stage...
             </option>
 
-            {experiences.map((item) => (
-              <option key={item} value={item}>
-                {item}
+            {loveStages.map((stage) => (
+              <option
+                key={stage.value}
+                value={stage.value}
+              >
+                {stage.label}
               </option>
             ))}
           </select>
@@ -453,7 +579,11 @@ export default function InputCard({
         <button
           type="button"
           onClick={onGenerate}
-          disabled={loading}
+          disabled={
+            loading ||
+            !!person1HeightError ||
+            !!person2HeightError
+          }
           className="
             w-full
             py-4
@@ -522,4 +652,5 @@ export default function InputCard({
     </div>
   );
 }
+
 
