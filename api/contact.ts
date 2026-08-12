@@ -1,9 +1,10 @@
 
-import { Resend } from 'resend';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-export default async function handler(req: any, res: any) {
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -13,46 +14,70 @@ export default async function handler(req: any, res: any) {
 
     if (!name || !email || !message) {
       return res.status(400).json({
-        error: 'Name, email, and message are required.',
+        error: 'Name, email and message are required.',
       });
     }
 
-    const { data, error } = await resend.emails.send({
-      from: 'Loveons Contact Form <onboarding@resend.dev>',
-      to: ['contact.loveons@gmail.com'],
-      subject: `New Loveons Contact Message from ${name}`,
-      replyTo: email,
-      html: `
-        <h2>New message from Loveons Contact Form</h2>
+    const apiKey = process.env.RESEND_API_KEY;
 
-        <p><strong>Name:</strong> ${name}</p>
+    if (!apiKey) {
+      return res.status(500).json({
+        error: 'Email service is not configured.',
+      });
+    }
 
-        <p><strong>Email:</strong> ${email}</p>
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        from: 'Loveons Contact <onboarding@resend.dev>',
+        to: ['contact.loveons@gmail.com'],
+        subject: `New Contact Message from ${name}`,
+        reply_to: email,
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <h2>New Contact Form Message</h2>
 
-        <p><strong>Message:</strong></p>
+            <p><strong>Name:</strong> ${name}</p>
 
-        <p>${message.replace(/\n/g, '<br />')}</p>
-      `,
+            <p><strong>Email:</strong> ${email}</p>
+
+            <p><strong>Message:</strong></p>
+
+            <p style="white-space: pre-wrap;">
+              ${message}
+            </p>
+
+            <hr />
+
+            <p>
+              Sent from the Loveons contact form.
+            </p>
+          </div>
+        `,
+      }),
     });
 
-    if (error) {
-      console.error('Resend error:', error);
+    const data = await response.json();
 
-      return res.status(500).json({
-        error: 'Unable to send email.',
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: data?.message || 'Failed to send email.',
       });
     }
 
     return res.status(200).json({
       success: true,
-      id: data?.id,
+      message: 'Email sent successfully.',
     });
   } catch (error) {
     console.error('Contact form error:', error);
 
     return res.status(500).json({
-      error: 'Something went wrong.',
+      error: 'Something went wrong while sending the message.',
     });
   }
 }
-
