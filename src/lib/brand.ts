@@ -1,7 +1,8 @@
+
 export const BRAND = {
   name: 'Loveons',
   domain: 'https://loveons.com',
-  email: 'rocksymac0@gmail.com',
+  email: 'contact.loveons@gmail.com',
   tagline: 'Your Personal Relationship Guide',
   description:
     'Discover your love compatibility, get personalized relationship tips, and explore expert wellness guidance for couples.',
