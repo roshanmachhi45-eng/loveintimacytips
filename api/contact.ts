@@ -34,7 +34,7 @@ export default async function handler(
       },
       body: JSON.stringify({
         from: 'Loveons Contact <onboarding@resend.dev>',
-        to: ['contact.loveons@gmail.com'],
+        to: ['roshan.machhi.45@gmail.com'],
         subject: `New Contact Message from ${name}`,
         reply_to: email,
         html: `
