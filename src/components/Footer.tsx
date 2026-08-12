@@ -10,6 +10,7 @@ const footerLinks = [
   { label: 'Contact Us', to: '/contact' },
   { label: 'Privacy Policy', to: '/privacy-policy' },
   { label: 'Disclaimer', to: '/disclaimer' },
+  { label: 'Terms & Conditions', to: '/terms' },
 ];
 
 export default function Footer() {
