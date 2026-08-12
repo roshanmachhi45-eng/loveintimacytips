@@ -6,16 +6,13 @@ import {
   CheckCircle2,
   User,
   MessageSquare,
-  Loader2,
-  AlertCircle,
 } from 'lucide-react';
 
 import Seo from '../components/Seo';
 import PageLayout from '../components/PageLayout';
-
 import { BRAND } from '../lib/brand';
 
-const CONTACT_EMAIL = 'contact.loveons@gmail.com';
+const CONTACT_EMAIL = BRAND.email;
 
 interface FormState {
   name: string;
@@ -37,8 +34,6 @@ export default function Contact() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (sending) return;
-
     setSending(true);
     setError('');
 
@@ -48,19 +43,13 @@ export default function Contact() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          email: form.email.trim(),
-          message: form.message.trim(),
-        }),
+        body: JSON.stringify(form),
       });
 
-      const data = await response.json().catch(() => ({}));
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data?.error || 'Unable to send your message. Please try again.'
-        );
+        throw new Error(data?.error || 'Failed to send message');
       }
 
       setSent(true);
@@ -97,6 +86,7 @@ export default function Contact() {
       >
         <div className="space-y-6">
 
+          {/* Contact Email */}
           <a
             href={`mailto:${CONTACT_EMAIL}`}
             className="flex items-center gap-3 p-4 rounded-xl bg-rose-50 border border-rose-100 hover:bg-rose-100 transition-colors"
@@ -117,8 +107,8 @@ export default function Contact() {
           </a>
 
           {sent ? (
+            /* Success Message */
             <div className="flex flex-col items-center text-center py-8 fade-in">
-
               <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-4">
                 <CheckCircle2 className="w-7 h-7 text-emerald-500" />
               </div>
@@ -144,8 +134,10 @@ export default function Contact() {
               </button>
             </div>
           ) : (
+            /* Contact Form */
             <form onSubmit={handleSubmit} className="space-y-4">
 
+              {/* Name */}
               <div>
                 <label
                   htmlFor="name"
@@ -159,10 +151,8 @@ export default function Contact() {
 
                   <input
                     id="name"
-                    name="name"
                     type="text"
                     required
-                    maxLength={100}
                     value={form.name}
                     onChange={(e) =>
                       setForm({
@@ -176,6 +166,7 @@ export default function Contact() {
                 </div>
               </div>
 
+              {/* Email */}
               <div>
                 <label
                   htmlFor="email"
@@ -189,10 +180,8 @@ export default function Contact() {
 
                   <input
                     id="email"
-                    name="email"
                     type="email"
                     required
-                    maxLength={254}
                     value={form.email}
                     onChange={(e) =>
                       setForm({
@@ -206,6 +195,7 @@ export default function Contact() {
                 </div>
               </div>
 
+              {/* Message */}
               <div>
                 <label
                   htmlFor="message"
@@ -219,10 +209,8 @@ export default function Contact() {
 
                   <textarea
                     id="message"
-                    name="message"
                     required
                     rows={4}
-                    maxLength={5000}
                     value={form.message}
                     onChange={(e) =>
                       setForm({
@@ -236,30 +224,22 @@ export default function Contact() {
                 </div>
               </div>
 
+              {/* Error */}
               {error && (
-                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm">
-                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-
-                  <p>{error}</p>
+                <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+                  {error}
                 </div>
               )}
 
+              {/* Send Button */}
               <button
                 type="submit"
                 disabled={sending}
-                className="w-full py-3.5 rounded-2xl shimmer-btn text-white font-semibold text-sm shadow-lg shadow-rose-200 hover:shadow-rose-300 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100"
+                className="w-full py-3.5 rounded-2xl bg-rose-500 hover:bg-rose-600 disabled:bg-rose-300 disabled:cursor-not-allowed text-white font-semibold text-sm shadow-lg shadow-rose-200 hover:shadow-rose-300 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >
-                {sending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    Send Message
-                  </>
-                )}
+                <Send className="w-4 h-4" />
+
+                {sending ? 'Sending...' : 'Send Message'}
               </button>
 
             </form>
@@ -269,3 +249,4 @@ export default function Contact() {
     </>
   );
 }
+
