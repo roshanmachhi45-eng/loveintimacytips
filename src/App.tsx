@@ -10,6 +10,7 @@ const About = lazy(() => import('./pages/About'));
 const Contact = lazy(() => import('./pages/Contact'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const Disclaimer = lazy(() => import('./pages/Disclaimer'));
+const Terms = lazy(() => import('./pages/Terms'));
 const BlogDetail = lazy(() => import('./pages/BlogDetail'));
 const BlogAdmin = lazy(() => import('./pages/BlogAdmin'));
 
@@ -36,19 +37,29 @@ export default function App() {
       <main className="pt-20 px-4">
         <Suspense fallback={<PageLoader />}>
           <Routes>
+
             {/* HOME */}
             <Route path="/" element={<Home />} />
 
             {/* EXISTING PAGES */}
             <Route path="/about" element={<About />} />
+
             <Route path="/contact" element={<Contact />} />
+
             <Route
               path="/privacy-policy"
               element={<PrivacyPolicy />}
             />
+
             <Route
               path="/disclaimer"
               element={<Disclaimer />}
+            />
+
+            {/* TERMS & CONDITIONS */}
+            <Route
+              path="/terms"
+              element={<Terms />}
             />
 
             {/* BLOG ARTICLE */}
@@ -68,6 +79,7 @@ export default function App() {
               path="*"
               element={<Navigate to="/" replace />}
             />
+
           </Routes>
         </Suspense>
       </main>
@@ -76,3 +88,5 @@ export default function App() {
     </div>
   );
 }
+
+            
