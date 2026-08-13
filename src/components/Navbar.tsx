@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+
 import Logo from './Logo';
 
 const CATEGORIES = [
@@ -38,7 +39,15 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
+
+  // IMPORTANT:
+  // Desktop and mobile categories use separate states.
+  const [desktopCategoriesOpen, setDesktopCategoriesOpen] =
+    useState(false);
+
+  const [mobileCategoriesOpen, setMobileCategoriesOpen] =
+    useState(false);
+
   const [toolsOpen, setToolsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -52,7 +61,8 @@ export default function Navbar() {
   --------------------------------------------- */
   useEffect(() => {
     setMenuOpen(false);
-    setCategoriesOpen(false);
+    setDesktopCategoriesOpen(false);
+    setMobileCategoriesOpen(false);
     setToolsOpen(false);
     setSearchOpen(false);
   }, [location.pathname, location.search]);
@@ -61,9 +71,7 @@ export default function Navbar() {
      BODY SCROLL LOCK FOR MOBILE MENU
   --------------------------------------------- */
   useEffect(() => {
-    document.body.style.overflow = menuOpen
-      ? 'hidden'
-      : '';
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
 
     return () => {
       document.body.style.overflow = '';
@@ -84,7 +92,7 @@ export default function Navbar() {
   }, [searchOpen]);
 
   /* ---------------------------------------------
-     CLOSE DROPDOWNS ON OUTSIDE CLICK
+     CLOSE DESKTOP DROPDOWNS ON OUTSIDE CLICK
   --------------------------------------------- */
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -94,7 +102,7 @@ export default function Navbar() {
         categoriesRef.current &&
         !categoriesRef.current.contains(target)
       ) {
-        setCategoriesOpen(false);
+        setDesktopCategoriesOpen(false);
       }
 
       if (
@@ -105,10 +113,7 @@ export default function Navbar() {
       }
     };
 
-    document.addEventListener(
-      'mousedown',
-      handleOutsideClick
-    );
+    document.addEventListener('mousedown', handleOutsideClick);
 
     return () => {
       document.removeEventListener(
@@ -123,7 +128,8 @@ export default function Navbar() {
   --------------------------------------------- */
   const closeEverything = () => {
     setMenuOpen(false);
-    setCategoriesOpen(false);
+    setDesktopCategoriesOpen(false);
+    setMobileCategoriesOpen(false);
     setToolsOpen(false);
     setSearchOpen(false);
   };
@@ -134,7 +140,9 @@ export default function Navbar() {
   const toggleMenu = () => {
     setMenuOpen((current) => !current);
 
-    setCategoriesOpen(false);
+    // Opening hamburger must never open desktop dropdowns.
+    setDesktopCategoriesOpen(false);
+    setMobileCategoriesOpen(false);
     setToolsOpen(false);
     setSearchOpen(false);
   };
@@ -172,7 +180,6 @@ export default function Navbar() {
 
   /* ---------------------------------------------
      LOVE CALCULATOR
-     
      Home.tsx listens for:
      loveons:open-calculator
   --------------------------------------------- */
@@ -184,9 +191,7 @@ export default function Navbar() {
 
       window.setTimeout(() => {
         window.dispatchEvent(
-          new CustomEvent(
-            'loveons:open-calculator'
-          )
+          new CustomEvent('loveons:open-calculator')
         );
       }, 400);
 
@@ -194,9 +199,7 @@ export default function Navbar() {
     }
 
     window.dispatchEvent(
-      new CustomEvent(
-        'loveons:open-calculator'
-      )
+      new CustomEvent('loveons:open-calculator')
     );
   };
 
@@ -372,9 +375,7 @@ export default function Navbar() {
                   text-sm font-semibold
                   transition-all duration-200
                   ${
-                    location.pathname.startsWith(
-                      '/blog'
-                    )
+                    location.pathname.startsWith('/blog')
                       ? 'bg-rose-50 text-rose-600'
                       : 'text-gray-600 hover:bg-rose-50 hover:text-rose-600'
                   }
@@ -402,7 +403,7 @@ export default function Navbar() {
               </button>
 
               {/* =========================================
-                  CATEGORIES
+                  DESKTOP CATEGORIES
               ========================================== */}
               <div
                 ref={categoriesRef}
@@ -410,12 +411,14 @@ export default function Navbar() {
               >
                 <button
                   type="button"
-                  aria-expanded={categoriesOpen}
+                  aria-expanded={desktopCategoriesOpen}
                   onClick={() => {
-                    setCategoriesOpen(
+                    setDesktopCategoriesOpen(
                       (current) => !current
                     );
 
+                    // Keep other desktop/mobile menus closed.
+                    setMobileCategoriesOpen(false);
                     setToolsOpen(false);
                     setSearchOpen(false);
                   }}
@@ -425,7 +428,7 @@ export default function Navbar() {
                     text-sm font-semibold
                     transition-all duration-200
                     ${
-                      categoriesOpen
+                      desktopCategoriesOpen
                         ? 'bg-rose-50 text-rose-600'
                         : 'text-gray-600 hover:bg-rose-50 hover:text-rose-600'
                     }
@@ -438,7 +441,7 @@ export default function Navbar() {
                       h-4 w-4
                       transition-transform duration-200
                       ${
-                        categoriesOpen
+                        desktopCategoriesOpen
                           ? 'rotate-180'
                           : ''
                       }
@@ -446,7 +449,7 @@ export default function Navbar() {
                   />
                 </button>
 
-                {categoriesOpen && (
+                {desktopCategoriesOpen && (
                   <div
                     className="
                       absolute right-0 top-full mt-3
@@ -495,40 +498,35 @@ export default function Navbar() {
                     <div className="my-1 h-px bg-rose-50" />
 
                     <div className="max-h-[340px] overflow-y-auto">
-                      {CATEGORIES.map(
-                        (category) => (
-                          <button
-                            key={category}
-                            type="button"
-                            onClick={() =>
-                              openCategory(
-                                category
-                              )
-                            }
+                      {CATEGORIES.map((category) => (
+                        <button
+                          key={category}
+                          type="button"
+                          onClick={() =>
+                            openCategory(category)
+                          }
+                          className="
+                            flex w-full
+                            items-center
+                            rounded-xl px-3 py-2.5
+                            text-left text-sm
+                            text-gray-600
+                            transition-colors
+                            hover:bg-rose-50
+                            hover:text-rose-600
+                          "
+                        >
+                          <span
                             className="
-                              flex w-full
-                              items-center
-                              rounded-xl
-                              px-3 py-2.5
-                              text-left text-sm
-                              text-gray-600
-                              transition-colors
-                              hover:bg-rose-50
-                              hover:text-rose-600
+                              mr-2 h-1.5 w-1.5
+                              rounded-full
+                              bg-rose-300
                             "
-                          >
-                            <span
-                              className="
-                                mr-2 h-1.5 w-1.5
-                                rounded-full
-                                bg-rose-300
-                              "
-                            />
+                          />
 
-                            {category}
-                          </button>
-                        )
-                      )}
+                          {category}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -549,7 +547,8 @@ export default function Navbar() {
                       (current) => !current
                     );
 
-                    setCategoriesOpen(false);
+                    setDesktopCategoriesOpen(false);
+                    setMobileCategoriesOpen(false);
                     setSearchOpen(false);
                   }}
                   className={`
@@ -659,8 +658,7 @@ export default function Navbar() {
                   text-sm font-semibold
                   transition-all duration-200
                   ${
-                    location.pathname ===
-                    '/about'
+                    location.pathname === '/about'
                       ? 'bg-rose-50 text-rose-600'
                       : 'text-gray-600 hover:bg-rose-50 hover:text-rose-600'
                   }
@@ -683,7 +681,8 @@ export default function Navbar() {
                   );
 
                   setMenuOpen(false);
-                  setCategoriesOpen(false);
+                  setDesktopCategoriesOpen(false);
+                  setMobileCategoriesOpen(false);
                   setToolsOpen(false);
                 }}
                 aria-label={
@@ -786,9 +785,10 @@ export default function Navbar() {
             bg-black/20
             backdrop-blur-[2px]
           "
-          onClick={() =>
-            setMenuOpen(false)
-          }
+          onClick={() => {
+            setMenuOpen(false);
+            setMobileCategoriesOpen(false);
+          }}
           aria-hidden="true"
         />
       )}
@@ -819,7 +819,6 @@ export default function Navbar() {
         `}
       >
         <div className="flex h-full flex-col">
-
           {/* DRAWER HEADER */}
           <div
             className="
@@ -852,9 +851,10 @@ export default function Navbar() {
 
             <button
               type="button"
-              onClick={() =>
-                setMenuOpen(false)
-              }
+              onClick={() => {
+                setMenuOpen(false);
+                setMobileCategoriesOpen(false);
+              }}
               aria-label="Close menu"
               className="
                 flex h-10 w-10
@@ -873,7 +873,6 @@ export default function Navbar() {
           {/* DRAWER CONTENT */}
           <div className="flex-1 overflow-y-auto p-4">
             <div className="space-y-1">
-
               {/* HOME */}
               <Link
                 to="/"
@@ -930,15 +929,21 @@ export default function Navbar() {
                 Love Calculator
               </button>
 
-              {/* CATEGORIES */}
+              {/* =========================================
+                  MOBILE CATEGORIES
+              ========================================== */}
               <div>
                 <button
                   type="button"
+                  aria-expanded={mobileCategoriesOpen}
                   onClick={() => {
-                    setCategoriesOpen(
+                    setMobileCategoriesOpen(
                       (current) => !current
                     );
 
+                    // IMPORTANT:
+                    // Never open desktop Categories from here.
+                    setDesktopCategoriesOpen(false);
                     setToolsOpen(false);
                   }}
                   className="
@@ -953,16 +958,14 @@ export default function Navbar() {
                     hover:text-rose-600
                   "
                 >
-                  <span>
-                    Categories
-                  </span>
+                  <span>Categories</span>
 
                   <ChevronDown
                     className={`
                       h-4 w-4
                       transition-transform
                       ${
-                        categoriesOpen
+                        mobileCategoriesOpen
                           ? 'rotate-180'
                           : ''
                       }
@@ -970,7 +973,7 @@ export default function Navbar() {
                   />
                 </button>
 
-                {categoriesOpen && (
+                {mobileCategoriesOpen && (
                   <div
                     className="
                       ml-3 mt-1
@@ -983,9 +986,7 @@ export default function Navbar() {
                   >
                     <button
                       type="button"
-                      onClick={
-                        openAllArticles
-                      }
+                      onClick={openAllArticles}
                       className="
                         block w-full
                         rounded-lg
@@ -1000,45 +1001,45 @@ export default function Navbar() {
                       All Articles
                     </button>
 
-                    {CATEGORIES.map(
-                      (category) => (
-                        <button
-                          key={category}
-                          type="button"
-                          onClick={() =>
-                            openCategory(
-                              category
-                            )
-                          }
-                          className="
-                            block w-full
-                            rounded-lg
-                            px-3 py-2
-                            text-left
-                            text-sm
-                            text-gray-500
-                            hover:bg-rose-50
-                            hover:text-rose-600
-                          "
-                        >
-                          {category}
-                        </button>
-                      )
-                    )}
+                    {CATEGORIES.map((category) => (
+                      <button
+                        key={category}
+                        type="button"
+                        onClick={() =>
+                          openCategory(category)
+                        }
+                        className="
+                          block w-full
+                          rounded-lg
+                          px-3 py-2
+                          text-left
+                          text-sm
+                          text-gray-500
+                          hover:bg-rose-50
+                          hover:text-rose-600
+                        "
+                      >
+                        {category}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
 
-              {/* TOOLS */}
+              {/* =========================================
+                  MOBILE TOOLS
+              ========================================== */}
               <div>
                 <button
                   type="button"
+                  aria-expanded={toolsOpen}
                   onClick={() => {
                     setToolsOpen(
                       (current) => !current
                     );
 
-                    setCategoriesOpen(false);
+                    setMobileCategoriesOpen(false);
+                    setDesktopCategoriesOpen(false);
                   }}
                   className="
                     flex w-full
@@ -1077,16 +1078,13 @@ export default function Navbar() {
                     "
                   >
                     {TOOLS.map((tool) => {
-                      const Icon =
-                        tool.icon;
+                      const Icon = tool.icon;
 
                       return (
                         <button
                           key={tool.label}
                           type="button"
-                          onClick={
-                            openCalculator
-                          }
+                          onClick={openCalculator}
                           className="
                             flex w-full
                             items-center gap-3
@@ -1100,7 +1098,6 @@ export default function Navbar() {
                           "
                         >
                           <Icon className="h-4 w-4" />
-
                           {tool.label}
                         </button>
                       );
@@ -1119,8 +1116,7 @@ export default function Navbar() {
                   px-4 py-3
                   text-sm font-semibold
                   ${
-                    location.pathname ===
-                    '/about'
+                    location.pathname === '/about'
                       ? 'bg-rose-50 text-rose-600'
                       : 'text-gray-600 hover:bg-rose-50 hover:text-rose-600'
                   }
@@ -1136,7 +1132,6 @@ export default function Navbar() {
     </>
   );
 }
-
 
 
 
