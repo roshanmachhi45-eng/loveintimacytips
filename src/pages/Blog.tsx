@@ -1,6 +1,7 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BookOpen, Loader2 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
 import Seo from '../components/Seo';
 import PageLayout from '../components/PageLayout';
@@ -12,6 +13,11 @@ import { DEFAULT_ARTICLES } from '../lib/defaultArticles';
 export default function Blog() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [searchParams] = useSearchParams();
+
+  const selectedCategory =
+    searchParams.get('category')?.trim() || '';
 
   useEffect(() => {
     let cancelled = false;
@@ -42,17 +48,49 @@ export default function Blog() {
     };
   }, []);
 
+  const filteredPosts = useMemo(() => {
+    if (!selectedCategory) {
+      return posts;
+    }
+
+    return posts.filter((post) => {
+      const postCategory =
+        post.category?.trim().toLowerCase();
+
+      const wantedCategory =
+        selectedCategory.toLowerCase();
+
+      return postCategory === wantedCategory;
+    });
+  }, [posts, selectedCategory]);
+
+  const pageTitle = selectedCategory
+    ? `${selectedCategory} — Loveons Relationship Blog`
+    : 'Relationship Blog — Loveons';
+
+  const pageDescription = selectedCategory
+    ? `Explore Loveons articles about ${selectedCategory.toLowerCase()}, with practical relationship advice and helpful insights.`
+    : 'Explore helpful relationship advice, love tips, communication ideas, and practical insights for building healthier and happier relationships.';
+
   return (
     <>
       <Seo
-        title="Relationship Blog — Loveons"
-        description="Explore helpful relationship advice, love tips, communication ideas, and practical insights for building healthier and happier relationships."
+        title={pageTitle}
+        description={pageDescription}
         path="/blog"
       />
 
       <PageLayout
-        title="Relationship Blog"
-        subtitle="Helpful insights and practical ideas for healthier relationships."
+        title={
+          selectedCategory
+            ? selectedCategory
+            : 'Relationship Blog'
+        }
+        subtitle={
+          selectedCategory
+            ? `Articles about ${selectedCategory.toLowerCase()}`
+            : 'Helpful insights and practical ideas for healthier relationships.'
+        }
       >
         <section className="px-1 pb-4">
           <div className="mb-6 flex items-center gap-2.5">
@@ -62,11 +100,15 @@ export default function Blog() {
 
             <div>
               <h2 className="font-display text-xl font-bold tracking-tight text-gray-800 sm:text-2xl">
-                Latest Relationship Articles
+                {selectedCategory
+                  ? `${selectedCategory} Articles`
+                  : 'Latest Relationship Articles'}
               </h2>
 
               <p className="mt-0.5 text-xs text-gray-400 sm:text-sm">
-                Helpful insights for healthier relationships
+                {selectedCategory
+                  ? 'Explore articles from this relationship topic'
+                  : 'Helpful insights for healthier relationships'}
               </p>
             </div>
           </div>
@@ -75,9 +117,9 @@ export default function Blog() {
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-7 w-7 animate-spin text-rose-400" />
             </div>
-          ) : posts.length > 0 ? (
+          ) : filteredPosts.length > 0 ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {posts.map((post) => (
+              {filteredPosts.map((post) => (
                 <BlogCard
                   key={post.id}
                   post={post}
@@ -87,11 +129,11 @@ export default function Blog() {
           ) : (
             <div className="rounded-2xl border border-rose-100 bg-white p-8 text-center shadow-sm">
               <p className="font-display text-base font-semibold text-gray-700">
-                No articles available yet
+                No articles found
               </p>
 
               <p className="mt-1 text-sm text-gray-400">
-                New relationship articles will appear here soon.
+                There are no published articles in this category yet.
               </p>
             </div>
           )}
