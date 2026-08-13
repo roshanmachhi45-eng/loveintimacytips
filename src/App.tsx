@@ -11,7 +11,14 @@ const Contact = lazy(() => import('./pages/Contact'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const Disclaimer = lazy(() => import('./pages/Disclaimer'));
 const Terms = lazy(() => import('./pages/Terms'));
+
+// BLOG LISTING
+const Blog = lazy(() => import('./pages/Blog'));
+
+// BLOG ARTICLE
 const BlogDetail = lazy(() => import('./pages/BlogDetail'));
+
+// BLOG ADMIN
 const BlogAdmin = lazy(() => import('./pages/BlogAdmin'));
 
 function PageLoader() {
@@ -39,12 +46,21 @@ export default function App() {
           <Routes>
 
             {/* HOME */}
-            <Route path="/" element={<Home />} />
+            <Route
+              path="/"
+              element={<Home />}
+            />
 
             {/* EXISTING PAGES */}
-            <Route path="/about" element={<About />} />
+            <Route
+              path="/about"
+              element={<About />}
+            />
 
-            <Route path="/contact" element={<Contact />} />
+            <Route
+              path="/contact"
+              element={<Contact />}
+            />
 
             <Route
               path="/privacy-policy"
@@ -60,6 +76,16 @@ export default function App() {
             <Route
               path="/terms"
               element={<Terms />}
+            />
+
+            {/* =========================================
+                BLOG LISTING
+                /blog
+                /blog?category=Communication
+                ========================================= */}
+            <Route
+              path="/blog"
+              element={<Blog />}
             />
 
             {/* BLOG ARTICLE */}
