@@ -1,0 +1,17 @@
+{
+  "name": "Loveons",
+  "short_name": "Loveons",
+  "description": "Your Personal Relationship Guide — love compatibility, tips, and wellness for couples.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FDFDFD",
+  "theme_color": "#FF4D8D",
+  "icons": [
+    {
+      "src": "/loveons-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
