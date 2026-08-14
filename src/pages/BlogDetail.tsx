@@ -1,13 +1,13 @@
 
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import {
-  Clock,
-  Calendar,
-  User,
   ArrowLeft,
-  Loader2,
   BookOpen,
+  Calendar,
+  Clock,
+  Loader2,
+  User,
 } from 'lucide-react';
 
 import Seo from '../components/Seo';
@@ -17,15 +17,44 @@ import {
   fetchPostBySlug,
   fetchRelatedPosts,
   type BlogPost,
-} from '../lib/blogApi';
+} from '../lib/BlogApi';
 
 import { DEFAULT_ARTICLES } from '../lib/defaultArticles';
 import { BRAND } from '../lib/brand';
 
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
+/* =========================================================
+   TYPES
+   ========================================================= */
 
-  return d.toLocaleDateString('en-US', {
+interface ArticleParagraphProps {
+  text: string;
+}
+
+/* =========================================================
+   CONSTANTS
+   ========================================================= */
+
+const DEFAULT_BLOG_IMAGE =
+  '/images/blogs/default.webp';
+
+/* =========================================================
+   DATE
+   ========================================================= */
+
+function formatDate(
+  dateStr: string | null | undefined
+): string {
+  if (!dateStr) {
+    return '';
+  }
+
+  const date = new Date(dateStr);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
@@ -33,17 +62,15 @@ function formatDate(dateStr: string): string {
 }
 
 /* =========================================================
-   BLOG IMAGE HELPERS
+   IMAGE HELPERS
    ========================================================= */
 
-const DEFAULT_BLOG_IMAGE =
-  '/images/blogs/default.webp';
-
 /**
- * Converts any supported image reference into a usable
- * browser URL.
+ * Converts supported image references into
+ * browser-friendly URLs.
  *
  * Supported:
+ *
  * /images/blogs/example.webp
  * images/blogs/example.webp
  * ./images/blogs/example.webp
@@ -63,12 +90,16 @@ function resolveBlogImage(
     return DEFAULT_BLOG_IMAGE;
   }
 
-  // Already a root-relative local image.
+  /*
+   * Root-relative local path.
+   */
   if (value.startsWith('/')) {
     return value;
   }
 
-  // Full external URL.
+  /*
+   * External image URL.
+   */
   if (
     value.startsWith('http://') ||
     value.startsWith('https://')
@@ -76,7 +107,9 @@ function resolveBlogImage(
     return value;
   }
 
-  // Relative local image path.
+  /*
+   * Relative local path.
+   */
   if (
     value.startsWith('images/') ||
     value.startsWith('./images/')
@@ -84,16 +117,15 @@ function resolveBlogImage(
     return `/${value.replace(/^\.?\//, '')}`;
   }
 
-  // Filename only.
+  /*
+   * Filename only.
+   */
   return `/images/blogs/${value}`;
 }
 
 /**
- * Gets a local fallback from an external image URL
- * or filename.
- *
- * Example:
- * Supabase URL → /images/blogs/communication.webp
+ * Creates a local fallback from an external
+ * image URL or filename.
  */
 function getLocalImageFallback(
   src: string | null | undefined
@@ -140,135 +172,170 @@ function getLocalImageFallback(
 }
 
 /* =========================================================
-   FALLBACK ARTICLE CONTENT
+   SAFE LINK HELPERS
    ========================================================= */
 
-const FALLBACK_CONTENT: Record<string, string[]> = {
-  'strengthen-relationship-every-day': [
-    'Strong relationships are not built overnight — they are the result of small, intentional actions repeated day after day. Here are ten simple habits that can help you and your partner feel closer and more connected.',
+function isExternalUrl(url: string): boolean {
+  return (
+    url.startsWith('http://') ||
+    url.startsWith('https://') ||
+    url.startsWith('//')
+  );
+}
 
-    '1. Say thank you for the little things. Acknowledging everyday efforts — making coffee, doing the dishes — makes your partner feel valued.',
+function isInternalBlogUrl(url: string): boolean {
+  return (
+    url.startsWith('/blog/') ||
+    url.startsWith('/blog?')
+  );
+}
 
-    '2. Check in emotionally. A simple "How are you really doing today?" shows you care beyond the surface.',
+/**
+ * Converts simple markdown-style links:
+ *
+ * [Relationship Tips](/blog/relationship-tips)
+ *
+ * into React Router links.
+ *
+ * This avoids dangerouslySetInnerHTML and keeps
+ * article content safer.
+ */
+function renderArticleText(
+  text: string
+): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
 
-    '3. Put your phone away during meals. Undistracted time together, even for twenty minutes, strengthens your bond.',
+  const linkPattern =
+    /\[([^\]]+)\]\(([^)\s]+)\)/g;
 
-    '4. Laugh together. Share a joke, watch a funny video, or recall a silly memory — laughter releases oxytocin and builds intimacy.',
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
 
-    '5. Leave a surprise note. A sticky note on the mirror or a random text midday can brighten your partner\'s entire afternoon.',
+  while ((match = linkPattern.exec(text)) !== null) {
+    const [fullMatch, label, url] = match;
 
-    '6. Take a short walk together. Fresh air and side-by-side movement naturally encourage deeper conversation.',
+    if (match.index > lastIndex) {
+      nodes.push(
+        text.slice(lastIndex, match.index)
+      );
+    }
 
-    '7. Compliment genuinely. Tell your partner what you admire about them — their kindness, their patience, their humour.',
+    const safeLabel = label.trim();
+    const safeUrl = url.trim();
 
-    '8. Learn something new together. Trying a new recipe or a new hobby as a team builds shared memories.',
+    if (
+      safeUrl &&
+      (safeUrl.startsWith('/') ||
+        isExternalUrl(safeUrl))
+    ) {
+      if (
+        safeUrl.startsWith('/') &&
+        isInternalBlogUrl(safeUrl)
+      ) {
+        nodes.push(
+          <Link
+            key={`${safeUrl}-${match.index}`}
+            to={safeUrl}
+            className="font-medium text-rose-500 underline decoration-rose-200 underline-offset-2 transition hover:text-rose-600"
+          >
+            {safeLabel}
+          </Link>
+        );
+      } else if (
+        safeUrl.startsWith('/')
+      ) {
+        nodes.push(
+          <Link
+            key={`${safeUrl}-${match.index}`}
+            to={safeUrl}
+            className="font-medium text-rose-500 underline decoration-rose-200 underline-offset-2 transition hover:text-rose-600"
+          >
+            {safeLabel}
+          </Link>
+        );
+      } else {
+        nodes.push(
+          <a
+            key={`${safeUrl}-${match.index}`}
+            href={safeUrl}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="font-medium text-rose-500 underline decoration-rose-200 underline-offset-2 transition hover:text-rose-600"
+          >
+            {safeLabel}
+          </a>
+        );
+      }
+    } else {
+      nodes.push(fullMatch);
+    }
 
-    '9. Apologise sincerely when you are wrong. A heartfelt "I\'m sorry" repairs trust faster than anything else.',
+    lastIndex =
+      match.index + fullMatch.length;
+  }
 
-    '10. End the day on a warm note. A hug, a kind word, or a shared recap of the day helps you both rest feeling connected.',
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
 
-    'None of these habits take much time, but together they create a culture of appreciation, presence, and love that keeps a relationship strong for years.',
-  ],
+  return nodes;
+}
 
-  'communicate-better-with-partner': [
-    'Communication is the lifeblood of any relationship. When couples communicate well, they feel understood, respected, and emotionally safe. When they do not, even small misunderstandings can grow into painful conflicts.',
+/* =========================================================
+   ARTICLE PARAGRAPH
+   ========================================================= */
 
-    'Practice active listening. This means giving your full attention, making eye contact, and reflecting back what you hear before responding. Instead of planning your reply while your partner speaks, focus completely on understanding their perspective.',
+function ArticleParagraph({
+  text,
+}: ArticleParagraphProps) {
+  const trimmed = text.trim();
 
-    'Use "I" statements. Instead of "You never help around the house," try "I feel overwhelmed when I handle all the chores alone." This small shift reduces defensiveness and opens the door to real dialogue.',
+  if (!trimmed) {
+    return null;
+  }
 
-    'Pick the right time. Important conversations need the right setting. Avoid bringing up sensitive topics when either of you is tired, hungry, or stressed. Ask, "Is now a good time to talk?" before diving in.',
+  /*
+   * Simple heading detection.
+   *
+   * CMS content can use:
+   *
+   * # Heading
+   * ## Heading
+   */
+  if (trimmed.startsWith('## ')) {
+    return (
+      <h3 className="mt-8 mb-3 font-display text-lg font-bold leading-tight text-gray-800">
+        {renderArticleText(
+          trimmed.replace(/^##\s+/, '')
+        )}
+      </h3>
+    );
+  }
 
-    'Validate emotions even when you disagree. You can say, "I understand why that upset you," without agreeing with their conclusion. Validation is not agreement — it is acknowledgment.',
+  if (trimmed.startsWith('# ')) {
+    return (
+      <h2 className="mt-8 mb-3 font-display text-xl font-bold leading-tight text-gray-800">
+        {renderArticleText(
+          trimmed.replace(/^#\s+/, '')
+        )}
+      </h2>
+    );
+  }
 
-    'Ask open-ended questions. Instead of yes-or-no questions, try "What was that like for you?" or "How do you feel about this?" These invite deeper sharing.',
-
-    'Take a break when emotions run high. If a conversation gets heated, it is okay to say, "I need twenty minutes to cool down, and then I want to come back to this." A short pause prevents saying things you will regret.',
-
-    'Good communication is a skill, and like any skill it improves with practice. The effort you put into understanding each other is one of the greatest investments you can make in your relationship.',
-  ],
-
-  'fun-date-night-ideas-at-home': [
-    'A memorable date night does not require a fancy restaurant or an expensive outing. Some of the most romantic evenings happen right at home, with a little creativity and a willingness to have fun together.',
-
-    'Cook a new recipe together. Pick a cuisine you have never tried, find a recipe online, and tackle it as a team. The mess, the laughter, and the shared accomplishment make it special.',
-
-    'Have a living-room picnic. Lay a blanket on the floor, prepare simple snacks, and enjoy the novelty of eating somewhere different. String lights or candles add instant ambiance.',
-
-    'Build a blanket fort. It sounds silly, but recreating the forts of your childhood is surprisingly cozy and fun. Add pillows, snacks, and a movie for the ultimate comfort evening.',
-
-    'Try a wine or dessert tasting. Pick three or four options, taste them side by side, and compare notes. It feels elegant and playful at the same time.',
-
-    'Stargaze from your balcony or backyard. Lay out a blanket, download a free stargazing app, and explore the night sky together. It is quiet, romantic, and completely free.',
-
-    'Have a game night. Pull out a board game, a deck of cards, or try a two-player video game. Friendly competition brings out laughter and playfulness.',
-
-    'Create a couples playlist. Take turns adding songs that remind you of each other or of special moments. Then play it while you cook, clean, or just relax together.',
-
-    'The magic of an at-home date is not in what you do — it is in the intention. Setting aside dedicated time to focus only on each other is what makes the evening feel special.',
-  ],
-
-  'resolve-arguments-without-hurting': [
-    'Every couple argues. Disagreements are natural when two people share a life. What separates healthy relationships from unhealthy ones is not whether couples fight — it is how they fight.',
-
-    'Soften your start. Research shows that conversations almost always end the way they begin. Instead of launching into criticism, try starting with, "I want to talk about something that has been on my mind," in a calm, warm tone.',
-
-    'Focus on one issue at a time. It is tempting to bring up every frustration at once, but that overwhelms both of you. Stick to the current topic and resist the urge to list past grievances.',
-
-    'Avoid contempt. Eye-rolling, sarcasm, and name-calling are the most destructive behaviours in a conflict. Contempt signals disrespect, and over time it erodes the foundation of a relationship.',
-
-    'Use a "time-out" wisely. If your heart rate spikes or you feel flooded, say, "I need a break. Let me calm down and we will come back to this in thirty minutes." Then actually return — a time-out only works if you follow through.',
-
-    'Look for the feeling beneath the complaint. When your partner says, "You are always on your phone," they might really be saying, "I miss feeling connected to you." Respond to the feeling, not just the words.',
-
-    'End with repair. A repair can be an apology, a hug, a joke, or simply saying, "I did not like how that went, and I want us to be okay." Repairs help both of you recover and move forward.',
-
-    'Arguments handled with empathy and respect do not damage a relationship — they can actually strengthen it. Each time you work through a disagreement together, you build confidence that you can handle whatever comes your way.',
-  ],
-
-  'importance-of-quality-time': [
-    'There is a big difference between being in the same room and being truly present with each other. Quality time — focused, undistracted, intentional time together — is one of the most important ingredients in a healthy relationship.',
-
-    'Quality time does not have to be elaborate. A fifteen-minute conversation over coffee, a walk around the block, or cooking dinner together without the TV on all count. What matters is that you are mentally and emotionally present.',
-
-    'Research consistently shows that couples who spend dedicated, distraction-free time together report higher relationship satisfaction. They feel closer, more understood, and more appreciated.',
-
-    'One of the biggest barriers to quality time is the phone. Even having a phone visible on the table reduces the depth of conversation. Putting devices away sends a clear message: "Right now, you are my priority."', 
-
-    'Quality time does not require doing the same activity. Sitting together while one person reads and the other sketches can be deeply connecting, because you are sharing space and presence.',
-
-    'Try creating a daily ritual. It could be ten minutes of talking before bed, morning coffee together, or a short walk after dinner. Rituals create a predictable, reliable space for connection that both of you can count on.',
-
-    'The quantity of time matters less than the quality. Ten minutes of full, warm attention is worth more than three hours of sitting in the same room while scrolling through separate feeds.',
-
-    'When you give your partner the gift of your full presence, you are telling them that they matter. That message, repeated consistently over time, is what keeps a relationship feeling alive and loved.',
-  ],
-
-  'building-trust-lasting-relationship': [
-    'Trust is the invisible thread that holds a relationship together. Without it, every interaction carries an undercurrent of doubt. With it, both partners feel secure enough to be vulnerable, honest, and deeply connected.',
-
-    'Trust is not built in a single grand gesture. It grows through hundreds of small, consistent actions — keeping your word, showing up when you say you will, and being honest even when it is uncomfortable.',
-
-    'Be reliable. Follow through on commitments, both big and small. If you say you will call at seven, call at seven. Reliability tells your partner, "You can count on me."', 
-
-    'Be transparent. Share your thoughts, your day, and your feelings openly. You do not need to share every detail, but a pattern of openness signals that you have nothing to hide.',
-
-    'Admit mistakes quickly. Trying to cover up an error damages trust far more than the mistake itself. Owning it — "I messed up, and here is how I am going to fix it" — actually builds trust.',
-
-    'Respect boundaries. Trust thrives when both people feel their boundaries are honoured. Ask what your partner needs, and respect it even when you do not fully understand it.',
-
-    'Be consistent over time. Trust is not a one-time achievement — it is maintained through ongoing behaviour. Consistency creates a sense of safety that allows the relationship to deepen.',
-
-    'When trust is strong, everything else in the relationship becomes easier. Conflicts are less threatening, vulnerability feels safe, and both partners can relax into the knowledge that they are loved and secure.',
-  ],
-};
+  return (
+    <p className="mb-5 text-sm leading-7 text-gray-600 sm:text-[15px] sm:leading-8">
+      {renderArticleText(trimmed)}
+    </p>
+  );
+}
 
 /* =========================================================
    BLOG DETAIL
    ========================================================= */
 
 export default function BlogDetail() {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug } =
+    useParams<{ slug: string }>();
 
   const [post, setPost] =
     useState<BlogPost | null>(null);
@@ -296,93 +363,154 @@ export default function BlogDetail() {
      ======================================================= */
 
   useEffect(() => {
-    if (!slug) {
-      setLoading(false);
-      setError('Article not found.');
-      return;
-    }
+    let cancelled = false;
 
-    setLoading(true);
-    setError('');
+    async function loadArticle() {
+      if (!slug) {
+        setLoading(false);
+        setError('Article not found.');
+        return;
+      }
 
-    fetchPostBySlug(slug)
-      .then((data) => {
-        if (!data) {
-          const fallback =
-            DEFAULT_ARTICLES.find(
-              (a) => a.slug === slug
-            );
+      setLoading(true);
+      setError('');
+      setPost(null);
+      setRelated([]);
 
-          if (fallback) {
-            setPost(fallback);
+      try {
+        /*
+         * First source:
+         * Published Supabase article.
+         */
+        const data =
+          await fetchPostBySlug(slug);
 
-            setRelated(
-              DEFAULT_ARTICLES
-                .filter(
-                  (a) => a.slug !== slug
-                )
-                .slice(0, 3)
-            );
-          } else {
-            setError('Article not found.');
+        if (cancelled) {
+          return;
+        }
+
+        /*
+         * Database article found.
+         */
+        if (data) {
+          setPost(data);
+
+          try {
+            const relatedData =
+              await fetchRelatedPosts(
+                data.category,
+                data.slug,
+                3
+              );
+
+            if (cancelled) {
+              return;
+            }
+
+            if (relatedData.length > 0) {
+              setRelated(relatedData);
+            } else {
+              /*
+               * Keep the existing fallback behaviour
+               * from v17.
+               */
+              setRelated(
+                DEFAULT_ARTICLES
+                  .filter(
+                    (article) =>
+                      article.slug !== data.slug
+                  )
+                  .slice(0, 3)
+              );
+            }
+          } catch {
+            if (!cancelled) {
+              setRelated(
+                DEFAULT_ARTICLES
+                  .filter(
+                    (article) =>
+                      article.slug !== data.slug
+                  )
+                  .slice(0, 3)
+              );
+            }
           }
 
           return;
         }
 
-        setPost(data);
-
-        fetchRelatedPosts(
-          data.category,
-          data.slug,
-          3
-        )
-          .then((relatedData) => {
-            if (relatedData.length === 0) {
-              setRelated(
-                DEFAULT_ARTICLES
-                  .filter(
-                    (a) => a.slug !== slug
-                  )
-                  .slice(0, 3)
-              );
-            } else {
-              setRelated(relatedData);
-            }
-          })
-          .catch(() => {
-            setRelated(
-              DEFAULT_ARTICLES
-                .filter(
-                  (a) => a.slug !== slug
-                )
-                .slice(0, 3)
-            );
-          });
-      })
-      .catch(() => {
+        /*
+         * Database did not return the article.
+         *
+         * Preserve v17's DEFAULT_ARTICLES fallback.
+         */
         const fallback =
           DEFAULT_ARTICLES.find(
-            (a) => a.slug === slug
+            (article) =>
+              article.slug === slug
           );
 
         if (fallback) {
-          setPost(fallback);
+          setPost(
+            fallback as BlogPost
+          );
 
           setRelated(
             DEFAULT_ARTICLES
               .filter(
-                (a) => a.slug !== slug
+                (article) =>
+                  article.slug !== slug
               )
-              .slice(0, 3)
+              .slice(0, 3) as BlogPost[]
+          );
+
+          return;
+        }
+
+        setError('Article not found.');
+      } catch {
+        if (cancelled) {
+          return;
+        }
+
+        /*
+         * Preserve v17 fallback behaviour
+         * even if Supabase request fails.
+         */
+        const fallback =
+          DEFAULT_ARTICLES.find(
+            (article) =>
+              article.slug === slug
+          );
+
+        if (fallback) {
+          setPost(
+            fallback as BlogPost
+          );
+
+          setRelated(
+            DEFAULT_ARTICLES
+              .filter(
+                (article) =>
+                  article.slug !== slug
+              )
+              .slice(0, 3) as BlogPost[]
           );
         } else {
           setError('Article not found.');
         }
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadArticle();
+
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
 
   /* =======================================================
@@ -391,14 +519,20 @@ export default function BlogDetail() {
 
   useEffect(() => {
     if (!post) {
-      setImageSrc(DEFAULT_BLOG_IMAGE);
+      setImageSrc(
+        DEFAULT_BLOG_IMAGE
+      );
+
       setImageLoaded(false);
       setImageFallbackTried(false);
+
       return;
     }
 
     const resolved =
-      resolveBlogImage(post.image_url);
+      resolveBlogImage(
+        post.image_url
+      );
 
     setImageSrc(resolved);
     setImageLoaded(false);
@@ -410,6 +544,11 @@ export default function BlogDetail() {
      ======================================================= */
 
   const handleImageError = () => {
+    /*
+     * First attempt:
+     * Convert Supabase/external image to
+     * local /images/blogs filename.
+     */
     if (
       !imageFallbackTried &&
       imageSrc !== DEFAULT_BLOG_IMAGE
@@ -421,7 +560,8 @@ export default function BlogDetail() {
 
       if (
         localFallback !== imageSrc &&
-        localFallback !== DEFAULT_BLOG_IMAGE
+        localFallback !==
+          DEFAULT_BLOG_IMAGE
       ) {
         setImageFallbackTried(true);
         setImageLoaded(false);
@@ -430,14 +570,156 @@ export default function BlogDetail() {
       }
     }
 
+    /*
+     * Final fallback.
+     */
     if (
       imageSrc !== DEFAULT_BLOG_IMAGE
     ) {
       setImageFallbackTried(true);
       setImageLoaded(false);
-      setImageSrc(DEFAULT_BLOG_IMAGE);
+      setImageSrc(
+        DEFAULT_BLOG_IMAGE
+      );
     }
   };
+
+  /* =======================================================
+     ARTICLE CONTENT
+     ======================================================= */
+
+  const paragraphs = useMemo(() => {
+    if (!post) {
+      return [];
+    }
+
+    /*
+     * CMS article content.
+     */
+    if (
+      post.content &&
+      post.content.trim().length > 0
+    ) {
+      return post.content
+        .split(/\n\s*\n/)
+        .map((paragraph) =>
+          paragraph.trim()
+        )
+        .filter(Boolean);
+    }
+
+    /*
+     * Existing fallback article content.
+     *
+     * DEFAULT_ARTICLES is intentionally preserved
+     * so old/static articles do not break.
+     */
+    const fallbackArticle =
+      DEFAULT_ARTICLES.find(
+        (article) =>
+          article.slug === post.slug
+      );
+
+    if (
+      fallbackArticle &&
+      fallbackArticle.content
+    ) {
+      return fallbackArticle.content
+        .split(/\n\s*\n/)
+        .map((paragraph) =>
+          paragraph.trim()
+        )
+        .filter(Boolean);
+    }
+
+    return [
+      post.excerpt,
+      'This article is part of the Loveons collection of relationship guidance.',
+    ].filter(Boolean);
+  }, [post]);
+
+  /* =======================================================
+     SEO
+     ======================================================= */
+
+  const seoImage = useMemo(() => {
+    return resolveBlogImage(
+      post?.image_url
+    );
+  }, [post]);
+
+  const canonicalUrl = useMemo(() => {
+    if (!post) {
+      return `${BRAND.domain}/blog/${slug || ''}`;
+    }
+
+    return `${BRAND.domain}/blog/${post.slug}`;
+  }, [post, slug]);
+
+  const structuredData = useMemo(() => {
+    if (!post) {
+      return null;
+    }
+
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+
+      headline:
+        post.meta_title ||
+        post.title,
+
+      description:
+        post.meta_description ||
+        post.excerpt,
+
+      image: [
+        seoImage,
+      ],
+
+      author: {
+        '@type': 'Person',
+        name:
+          post.author ||
+          'Loveons Editorial',
+      },
+
+      publisher: {
+        '@type': 'Organization',
+        name: BRAND.name,
+        url: BRAND.domain,
+      },
+
+      datePublished:
+        post.published_at ||
+        post.created_at,
+
+      dateModified:
+        post.updated_at ||
+        post.published_at ||
+        post.created_at,
+
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': canonicalUrl,
+      },
+
+      url: canonicalUrl,
+
+      articleSection:
+        post.category,
+
+      keywords:
+        post.tags &&
+        post.tags.length > 0
+          ? post.tags.join(', ')
+          : undefined,
+    };
+  }, [
+    post,
+    seoImage,
+    canonicalUrl,
+  ]);
 
   /* =======================================================
      LOADING
@@ -445,8 +727,8 @@ export default function BlogDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center pt-20">
-        <Loader2 className="w-6 h-6 text-rose-400 animate-spin" />
+      <div className="flex min-h-screen items-center justify-center pt-20">
+        <Loader2 className="h-6 w-6 animate-spin text-rose-400" />
       </div>
     );
   }
@@ -457,14 +739,15 @@ export default function BlogDetail() {
 
   if (error || !post) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center pt-20 px-4">
-        <p className="text-gray-500 text-sm mb-4">
-          {error || 'Article not found.'}
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 pt-20">
+        <p className="mb-4 text-sm text-gray-500">
+          {error ||
+            'Article not found.'}
         </p>
 
         <Link
           to="/"
-          className="text-rose-500 text-sm font-semibold"
+          className="text-sm font-semibold text-rose-500"
         >
           Back to Home
         </Link>
@@ -473,69 +756,15 @@ export default function BlogDetail() {
   }
 
   /* =======================================================
-     ARTICLE CONTENT
-     ======================================================= */
-
-  const fallbackParagraphs =
-    FALLBACK_CONTENT[post.slug] || [
-      post.excerpt,
-      'This article is part of the Loveons collection of relationship guidance.',
-    ];
-
-  const paragraphs =
-    post.content &&
-    post.content.trim().length > 0
-      ? post.content
-          .split('\n\n')
-          .filter((p) => p.trim())
-      : fallbackParagraphs;
-
-  /* =======================================================
-     SEO IMAGE
-     ======================================================= */
-
-  const seoImage =
-    resolveBlogImage(post.image_url);
-
-  const canonicalUrl =
-    `${BRAND.domain}/blog/${post.slug}`;
-
-  const structuredData = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-
-    headline:
-      post.meta_title || post.title,
-
-    description:
-      post.meta_description ||
-      post.excerpt,
-
-    image: seoImage,
-
-    author: {
-      '@type': 'Person',
-      name: post.author,
-    },
-
-    publisher: {
-      '@type': 'Organization',
-      name: BRAND.name,
-    },
-
-    datePublished:
-      post.published_at,
-
-    mainEntityOfPage:
-      canonicalUrl,
-  };
-
-  /* =======================================================
      PAGE
      ======================================================= */
 
   return (
     <>
+      {/* ===================================================
+          SEO
+      =================================================== */}
+
       <Seo
         title={
           post.meta_title ||
@@ -549,54 +778,65 @@ export default function BlogDetail() {
         ogImage={seoImage}
       />
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html:
-            JSON.stringify(
-              structuredData
-            ),
-        }}
-      />
+      {/* ===================================================
+          ARTICLE STRUCTURED DATA
+      =================================================== */}
 
-      <div className="min-h-screen pt-14 pb-12">
-        <div className="max-w-2xl mx-auto px-4">
+      {structuredData && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html:
+              JSON.stringify(
+                structuredData
+              ),
+          }}
+        />
+      )}
 
-          {/* BACK TO HOME */}
+      {/* ===================================================
+          PAGE
+      =================================================== */}
+
+      <div className="min-h-screen pb-12 pt-14">
+        <div className="mx-auto max-w-2xl px-4">
+          {/* =================================================
+              BACK TO HOME
+          ================================================= */}
 
           <Link
             to="/"
             className="
+              mb-4
               inline-flex
               items-center
               gap-1
               text-sm
-              text-rose-500
               font-semibold
-              mb-4
-              hover:gap-2
+              text-rose-500
               transition-all
+              hover:gap-2
             "
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="h-4 w-4" />
+
             Back to Home
           </Link>
 
           <article>
-
-            {/* =================================================
-                ARTICLE IMAGE
-               ================================================= */}
+            {/* ===============================================
+                FEATURED IMAGE
+            =============================================== */}
 
             <div
               className="
                 relative
-                h-56
-                sm:h-64
-                rounded-3xl
-                overflow-hidden
                 mb-6
+                h-56
+                overflow-hidden
+                rounded-3xl
                 bg-rose-50
+                sm:h-64
               "
             >
               {!imageLoaded && (
@@ -624,7 +864,9 @@ export default function BlogDetail() {
                 onLoad={() => {
                   setImageLoaded(true);
                 }}
-                onError={handleImageError}
+                onError={
+                  handleImageError
+                }
                 className={`
                   relative
                   z-10
@@ -646,15 +888,15 @@ export default function BlogDetail() {
               <span
                 className="
                   absolute
-                  z-20
-                  top-3
                   left-3
-                  text-xs
-                  font-semibold
-                  px-2.5
-                  py-1
+                  top-3
+                  z-20
                   rounded-full
                   bg-white/90
+                  px-2.5
+                  py-1
+                  text-xs
+                  font-semibold
                   text-rose-600
                   backdrop-blur-sm
                 "
@@ -663,131 +905,172 @@ export default function BlogDetail() {
               </span>
             </div>
 
-            {/* TITLE */}
+            {/* ===============================================
+                TITLE
+            =============================================== */}
 
             <h1
               className="
+                mb-3
                 font-display
                 text-2xl
                 font-bold
-                text-gray-800
                 leading-tight
-                mb-3
+                text-gray-800
               "
             >
               {post.title}
             </h1>
 
-            {/* META */}
+            {/* ===============================================
+                EXCERPT
+            =============================================== */}
+
+            {post.excerpt && (
+              <p
+                className="
+                  mb-5
+                  text-sm
+                  leading-6
+                  text-gray-500
+                "
+              >
+                {post.excerpt}
+              </p>
+            )}
+
+            {/* ===============================================
+                META
+            =============================================== */}
 
             <div
               className="
+                mb-6
                 flex
+                flex-wrap
                 items-center
                 gap-4
                 text-xs
                 text-gray-400
-                mb-6
-                flex-wrap
               "
             >
               <span className="flex items-center gap-1">
-                <User className="w-3.5 h-3.5" />
-                {post.author}
+                <User className="h-3.5 w-3.5" />
+
+                {post.author ||
+                  'Loveons Editorial'}
               </span>
 
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" />
+              {post.published_at && (
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
 
-                {post.published_at
-                  ? formatDate(
-                      post.published_at
-                    )
-                  : ''}
-              </span>
+                  {formatDate(
+                    post.published_at
+                  )}
+                </span>
+              )}
 
-              <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" />
-                {post.reading_time}
-              </span>
+              {post.reading_time && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+
+                  {post.reading_time}
+                </span>
+              )}
             </div>
 
-            {/* ARTICLE CONTENT */}
+            {/* ===============================================
+                ARTICLE CONTENT
 
-            <div className="space-y-4">
+                IMPORTANT:
+                This is intentionally isolated.
+
+                Future TTS will read only this element.
+                Navbar, footer, related articles,
+                buttons and tags stay outside it.
+            =============================================== */}
+
+            <div
+              id="blog-article-content"
+              data-tts-content="true"
+              className="
+                article-content
+                text-gray-600
+              "
+            >
               {paragraphs.map(
-                (para, i) => (
-                  <p
-                    key={i}
-                    className="
-                      text-sm
-                      text-gray-600
-                      leading-relaxed
-                    "
-                  >
-                    {para.trim()}
-                  </p>
+                (paragraph, index) => (
+                  <ArticleParagraph
+                    key={`${post.id}-${index}`}
+                    text={paragraph}
+                  />
                 )
               )}
             </div>
 
-            {/* TAGS */}
+            {/* ===============================================
+                TAGS
+            =============================================== */}
 
-            {post.tags.length > 0 && (
-              <div
-                className="
-                  flex
-                  flex-wrap
-                  gap-2
-                  mt-6
-                "
-              >
-                {post.tags.map(
-                  (tag) => (
-                    <span
-                      key={tag}
-                      className="
-                        text-xs
-                        px-3
-                        py-1
-                        rounded-full
-                        bg-rose-50
-                        text-rose-500
-                        font-medium
-                      "
-                    >
-                      #{tag}
-                    </span>
-                  )
-                )}
-              </div>
-            )}
+            {post.tags &&
+              post.tags.length > 0 && (
+                <div
+                  className="
+                    mt-6
+                    flex
+                    flex-wrap
+                    gap-2
+                  "
+                >
+                  {post.tags.map(
+                    (tag) => (
+                      <span
+                        key={tag}
+                        className="
+                          rounded-full
+                          bg-rose-50
+                          px-3
+                          py-1
+                          text-xs
+                          font-medium
+                          text-rose-500
+                        "
+                      >
+                        #{tag}
+                      </span>
+                    )
+                  )}
+                </div>
+              )}
           </article>
 
           {/* =================================================
               RELATED ARTICLES
-             ================================================= */}
+          ================================================= */}
 
           {related.length > 0 && (
             <section
               className="
                 mt-12
-                pt-8
                 border-t
                 border-rose-100
+                pt-8
               "
+              aria-labelledby="related-articles-title"
             >
               <div
                 className="
+                  mb-4
                   flex
                   items-center
                   gap-2
-                  mb-4
                 "
               >
-                <BookOpen className="w-5 h-5 text-rose-500" />
+                <BookOpen className="h-5 w-5 text-rose-500" />
 
                 <h2
+                  id="related-articles-title"
                   className="
                     font-display
                     text-lg
@@ -803,15 +1086,19 @@ export default function BlogDetail() {
                 className="
                   grid
                   grid-cols-1
-                  sm:grid-cols-2
                   gap-4
+                  sm:grid-cols-2
                 "
               >
                 {related.map(
-                  (r) => (
+                  (relatedPost) => (
                     <BlogCard
-                      key={r.id}
-                      post={r}
+                      key={
+                        relatedPost.id
+                      }
+                      post={
+                        relatedPost
+                      }
                     />
                   )
                 )}
@@ -823,3 +1110,4 @@ export default function BlogDetail() {
     </>
   );
 }
+
