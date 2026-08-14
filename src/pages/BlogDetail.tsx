@@ -17,7 +17,7 @@ import {
   fetchPostBySlug,
   fetchRelatedPosts,
   type BlogPost,
-} from '../lib/BlogApi';
+} from '../lib/blogApi';
 
 import { DEFAULT_ARTICLES } from '../lib/defaultArticles';
 import { BRAND } from '../lib/brand';
