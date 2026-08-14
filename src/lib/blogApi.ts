@@ -44,42 +44,29 @@ function resolveBlogImage(post: BlogPost): string {
   const rawImage = post.image_url?.trim();
 
   /*
-   * 1. If the database already contains a local image path,
-   * keep it.
+   * 1. Existing local public image path
    */
-  if (
-    rawImage &&
-    rawImage.startsWith('/images/blogs/')
-  ) {
+  if (rawImage && rawImage.startsWith('/images/blogs/')) {
     return rawImage;
   }
 
   /*
-   * 2. If database contains only a local filename,
-   * convert it to the correct public path.
+   * 2. Existing local filename
    *
-   * Example:
    * communication.webp
    * ->
    * /images/blogs/communication.webp
    */
   if (
     rawImage &&
-    /^[a-z0-9-]+\.(webp|jpg|jpeg|png|avif)$/i.test(
-      rawImage
-    )
+    /^[a-z0-9-]+\.(webp|jpg|jpeg|png|avif)$/i.test(rawImage)
   ) {
-    const filename = rawImage
-      .split('/')
-      .pop()
-      ?.toLowerCase();
+    const filename = rawImage.split('/').pop()?.toLowerCase();
 
     if (filename) {
-      const localFile =
-        Object.values(LOCAL_BLOG_IMAGES).find(
-          (path) =>
-            path.toLowerCase().endsWith(filename)
-        );
+      const localFile = Object.values(LOCAL_BLOG_IMAGES).find((path) =>
+        path.toLowerCase().endsWith(filename)
+      );
 
       if (localFile) {
         return localFile;
@@ -88,8 +75,7 @@ function resolveBlogImage(post: BlogPost): string {
   }
 
   /*
-   * 3. Try to identify the correct local image
-   * from slug + title + category.
+   * 3. Identify image from slug/title/category
    */
   const searchText = [
     post.slug,
@@ -137,28 +123,25 @@ function resolveBlogImage(post: BlogPost): string {
     return LOCAL_BLOG_IMAGES['relationship-tips'];
   }
 
-  if (
-    searchText.includes('relationship')
-  ) {
+  if (searchText.includes('relationship')) {
     return LOCAL_BLOG_IMAGES.relationship;
   }
 
   /*
-   * 4. Final safe fallback.
+   * 4. Safe fallback
    */
   return FALLBACK_IMAGE;
 }
 
 /* =========================================================
-   APPLY IMAGE RESOLUTION
+   NORMALIZE POST
    ========================================================= */
 
-function normalizePost(
-  post: BlogPost
-): BlogPost {
+function normalizePost(post: BlogPost): BlogPost {
   return {
     ...post,
     image_url: resolveBlogImage(post),
+    tags: Array.isArray(post.tags) ? post.tags : [],
   };
 }
 
@@ -166,9 +149,7 @@ function normalizePost(
    FETCH PUBLISHED POSTS
    ========================================================= */
 
-export async function fetchPublishedPosts(): Promise<
-  BlogPost[]
-> {
+export async function fetchPublishedPosts(): Promise<BlogPost[]> {
   try {
     const { data, error } = await supabase
       .from('blog_posts')
@@ -179,31 +160,31 @@ export async function fetchPublishedPosts(): Promise<
       });
 
     if (error) {
+      console.error('fetchPublishedPosts:', error);
       return [];
     }
 
-    return (
-      ((data as BlogPost[]) || []).map(
-        normalizePost
-      )
-    );
-  } catch {
+    return ((data as BlogPost[]) || []).map(normalizePost);
+  } catch (error) {
+    console.error('fetchPublishedPosts:', error);
     return [];
   }
 }
 
 /* =========================================================
-   FETCH SINGLE POST
+   FETCH SINGLE PUBLISHED POST
    ========================================================= */
 
 export async function fetchPostBySlug(
   slug: string
 ): Promise<BlogPost | null> {
   try {
+    const cleanSlug = slugify(slug);
+
     const { data, error } = await supabase
       .from('blog_posts')
       .select('*')
-      .eq('slug', slug)
+      .eq('slug', cleanSlug)
       .eq('published', true)
       .maybeSingle();
 
@@ -212,7 +193,8 @@ export async function fetchPostBySlug(
     }
 
     return normalizePost(data as BlogPost);
-  } catch {
+  } catch (error) {
+    console.error('fetchPostBySlug:', error);
     return null;
   }
 }
@@ -233,18 +215,19 @@ export async function fetchRelatedPosts(
       .eq('published', true)
       .eq('category', category)
       .neq('slug', excludeSlug)
+      .order('published_at', {
+        ascending: false,
+      })
       .limit(limit);
 
     if (error) {
+      console.error('fetchRelatedPosts:', error);
       return [];
     }
 
-    return (
-      ((data as BlogPost[]) || []).map(
-        normalizePost
-      )
-    );
-  } catch {
+    return ((data as BlogPost[]) || []).map(normalizePost);
+  } catch (error) {
+    console.error('fetchRelatedPosts:', error);
     return [];
   }
 }
@@ -253,23 +236,24 @@ export async function fetchRelatedPosts(
    FETCH ALL POSTS
    ========================================================= */
 
-export async function fetchAllPosts(): Promise<
-  BlogPost[]
-> {
-  const { data, error } = await supabase
-    .from('blog_posts')
-    .select('*')
-    .order('created_at', {
-      ascending: false,
-    });
+export async function fetchAllPosts(): Promise<BlogPost[]> {
+  try {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .order('created_at', {
+        ascending: false,
+      });
 
-  if (error) {
+    if (error) {
+      throw error;
+    }
+
+    return ((data as BlogPost[]) || []).map(normalizePost);
+  } catch (error) {
+    console.error('fetchAllPosts:', error);
     throw error;
   }
-
-  return (
-    (data as BlogPost[]).map(normalizePost)
-  );
 }
 
 /* =========================================================
@@ -282,13 +266,27 @@ export async function createPost(
     'id' | 'created_at' | 'updated_at'
   >
 ): Promise<BlogPost> {
+  const safeSlug = slugify(post.slug || post.title);
+
+  const payload = {
+    ...post,
+    slug: safeSlug,
+    tags: Array.isArray(post.tags) ? post.tags : [],
+    published_at: post.published
+      ? post.published_at || new Date().toISOString()
+      : post.published_at || null,
+    reading_time:
+      post.reading_time || estimateReadingTime(post.content),
+  };
+
   const { data, error } = await supabase
     .from('blog_posts')
-    .insert(post)
+    .insert(payload)
     .select()
     .single();
 
   if (error) {
+    console.error('createPost:', error);
     throw error;
   }
 
@@ -303,17 +301,55 @@ export async function updatePost(
   id: string,
   updates: Partial<BlogPost>
 ): Promise<BlogPost> {
+  const payload: Partial<BlogPost> = {
+    ...updates,
+    updated_at: new Date().toISOString(),
+  };
+
+  /*
+   * Keep slug SEO-friendly when it is changed.
+   */
+  if (payload.slug) {
+    payload.slug = slugify(payload.slug);
+  }
+
+  /*
+   * Make sure tags always remain an array.
+   */
+  if (payload.tags && !Array.isArray(payload.tags)) {
+    payload.tags = [];
+  }
+
+  /*
+   * Automatically calculate reading time
+   * when article content changes.
+   */
+  if (payload.content) {
+    payload.reading_time = estimateReadingTime(
+      payload.content
+    );
+  }
+
+  /*
+   * Publishing logic
+   *
+   * Published -> make sure published_at exists.
+   * Unpublished -> keep existing published_at so
+   * we don't destroy historical publish information.
+   */
+  if (payload.published === true && !payload.published_at) {
+    payload.published_at = new Date().toISOString();
+  }
+
   const { data, error } = await supabase
     .from('blog_posts')
-    .update({
-      ...updates,
-      updated_at: new Date().toISOString(),
-    })
+    .update(payload)
     .eq('id', id)
     .select()
     .single();
 
   if (error) {
+    console.error('updatePost:', error);
     throw error;
   }
 
@@ -324,17 +360,41 @@ export async function updatePost(
    DELETE POST
    ========================================================= */
 
-export async function deletePost(
-  id: string
-): Promise<void> {
+export async function deletePost(id: string): Promise<void> {
   const { error } = await supabase
     .from('blog_posts')
     .delete()
     .eq('id', id);
 
   if (error) {
+    console.error('deletePost:', error);
     throw error;
   }
+}
+
+/* =========================================================
+   PUBLISH POST
+   ========================================================= */
+
+export async function publishPost(
+  id: string
+): Promise<BlogPost> {
+  return updatePost(id, {
+    published: true,
+    published_at: new Date().toISOString(),
+  });
+}
+
+/* =========================================================
+   UNPUBLISH POST
+   ========================================================= */
+
+export async function unpublishPost(
+  id: string
+): Promise<BlogPost> {
+  return updatePost(id, {
+    published: false,
+  });
 }
 
 /* =========================================================
@@ -344,12 +404,22 @@ export async function deletePost(
 export async function uploadBlogImage(
   file: File
 ): Promise<string> {
-  const ext =
-    file.name.split('.').pop() || 'jpg';
+  const extension =
+    file.name.split('.').pop()?.toLowerCase() || 'jpg';
+
+  const safeExtension = [
+    'webp',
+    'avif',
+    'jpg',
+    'jpeg',
+    'png',
+  ].includes(extension)
+    ? extension
+    : 'jpg';
 
   const filename = `${Date.now()}-${Math.random()
     .toString(36)
-    .substring(2, 9)}.${ext}`;
+    .substring(2, 9)}.${safeExtension}`;
 
   const { error } = await supabase.storage
     .from('blog_images')
@@ -359,6 +429,7 @@ export async function uploadBlogImage(
     });
 
   if (error) {
+    console.error('uploadBlogImage:', error);
     throw error;
   }
 
@@ -373,9 +444,7 @@ export async function uploadBlogImage(
    SLUGIFY
    ========================================================= */
 
-export function slugify(
-  text: string
-): string {
+export function slugify(text: string): string {
   return text
     .toLowerCase()
     .trim()
@@ -391,10 +460,15 @@ export function slugify(
 export function estimateReadingTime(
   content: string
 ): string {
-  const words = content
-    .trim()
+  const cleanContent = content.trim();
+
+  if (!cleanContent) {
+    return '1 min read';
+  }
+
+  const words = cleanContent
     .split(/\s+/)
-    .length;
+    .filter(Boolean).length;
 
   const minutes = Math.max(
     1,
@@ -404,3 +478,41 @@ export function estimateReadingTime(
   return `${minutes} min read`;
 }
 
+/* =========================================================
+   CHECK SLUG AVAILABILITY
+   ========================================================= */
+
+export async function isSlugAvailable(
+  slug: string,
+  excludeId?: string
+): Promise<boolean> {
+  const cleanSlug = slugify(slug);
+
+  if (!cleanSlug) {
+    return false;
+  }
+
+  let query = supabase
+    .from('blog_posts')
+    .select('id')
+    .eq('slug', cleanSlug)
+    .limit(1);
+
+  if (excludeId) {
+    query = query.neq('id', excludeId);
+  }
+
+  const { data, error } = await query.maybeSingle();
+
+  if (error) {
+    console.error('isSlugAvailable:', error);
+
+    /*
+     * Don't incorrectly block the editor if the
+     * availability check itself fails.
+     */
+    return true;
+  }
+
+  return !data;
+}
