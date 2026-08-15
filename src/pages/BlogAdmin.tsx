@@ -1983,15 +1983,7 @@ export default function BlogAdmin() {
             </section>
           </div>
         </div>
-      )}
-
-        {/* 
-         * Editor recovery notice.
-         * This stays outside the form so it does not interfere
-         * with the article fields or submit behaviour.
-         */}
-        
-        {showForm && (
+       {showForm && (
           <div className="pointer-events-none fixed bottom-4 left-1/2 z-[60] -translate-x-1/2">
             <div className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-600 shadow-lg">
               {saving
