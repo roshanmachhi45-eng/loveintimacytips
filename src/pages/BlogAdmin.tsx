@@ -1,13 +1,12 @@
 
 import {
-  useState,
-  useEffect,
   useCallback,
+  useEffect,
   useRef,
+  useState,
   type ChangeEvent,
   type FormEvent,
 } from 'react';
-
 import {
   Plus,
   Trash2,
@@ -33,43 +32,21 @@ import {
 import Seo from '../components/Seo';
 import PageLayout from '../components/PageLayout';
 import BlogImage from '../components/BlogImage';
-
 import {
   fetchAllPosts,
   createPost,
   updatePost,
   deletePost,
   uploadBlogImage,
-  slugify,
   estimateReadingTime,
   type BlogPost,
 } from '../lib/blogApi';
-
 import { BLOG_CATEGORIES } from '../lib/blog';
 
-/* =========================================================
-   CONSTANTS
-   ========================================================= */
+const PLACEHOLDER_IMAGE = '/images/blogs/default.webp';
+const LOCAL_DRAFT_KEY = 'loveons-blog-admin-local-draft-v2';
 
-const PLACEHOLDER_IMAGE =
-  '/images/blogs/default.webp';
-
-/*
- * Browser-only temporary recovery storage.
- *
- * This is NOT the Supabase database.
- * It is only used to protect the article while the
- * administrator is typing.
- */
-const LOCAL_DRAFT_KEY =
-  'loveons_blog_admin_unsaved_v19';
-
-const LOCAL_DRAFT_MAX_AGE =
-  1000 * 60 * 60 * 24 * 7;
-
-/* =========================================================
-   FORM TYPE
-   ========================================================= */
+type Filter = 'all' | 'published' | 'draft';
 
 interface FormData {
   title: string;
@@ -85,10 +62,6 @@ interface FormData {
   meta_description: string;
 }
 
-/* =========================================================
-   EMPTY FORM
-   ========================================================= */
-
 const emptyForm: FormData = {
   title: '',
   slug: '',
@@ -103,9 +76,15 @@ const emptyForm: FormData = {
   meta_description: '',
 };
 
-/* =========================================================
-   HELPERS
-   ========================================================= */
+function cleanSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
 function makeTags(value: string): string[] {
   return value
@@ -114,50 +93,13 @@ function makeTags(value: string): string[] {
     .filter(Boolean);
 }
 
-/*
- * CMS slug helper.
- *
- * Only:
- * a-z
- * 0-9
- * hyphen
- *
- * are allowed.
- */
-function safeCmsSlug(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/['’]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .replace(/-{2,}/g, '-');
-}
-
-/* =========================================================
-   LINK VALIDATION
-   ========================================================= */
-
 function isValidLink(value: string): boolean {
   const url = value.trim();
 
-  if (!url) {
-    return false;
-  }
+  if (!url) return false;
 
-  /*
-   * Internal links.
-   *
-   * Example:
-   * /blog/building-trust
-   */
-  if (url.startsWith('/')) {
-    return true;
-  }
+  if (url.startsWith('/')) return true;
 
-  /*
-   * External links.
-   */
   try {
     const parsed = new URL(url);
 
@@ -170,1830 +112,1544 @@ function isValidLink(value: string): boolean {
   }
 }
 
-/* =========================================================
-   PAYLOAD
-   ========================================================= */
+function hasContent(form: Partial<FormData>): boolean {
+  return Boolean(
+    form.title?.trim() ||
+      form.slug?.trim() ||
+      form.excerpt?.trim() ||
+      form.content?.trim() ||
+      form.image_url?.trim() ||
+      form.tags?.trim() ||
+      form.meta_title?.trim() ||
+      form.meta_description?.trim(),
+  );
+}
 
-function createPayload(
+function buildPayload(
   form: FormData,
   published: boolean,
-  existingPublishedAt?: string | null
+  oldPublishedAt?: string | null,
 ) {
-  const finalSlug =
-    safeCmsSlug(form.slug || form.title);
-
-  const readingTime =
-    estimateReadingTime(form.content);
+  const slug = cleanSlug(form.slug || form.title);
 
   return {
     title: form.title.trim(),
-
-    slug: finalSlug,
-
+    slug,
     category: form.category,
-
     excerpt: form.excerpt.trim(),
-
     content: form.content.trim(),
-
-    image_url:
-      form.image_url.trim() || null,
-
+    image_url: form.image_url.trim() || null,
     image_alt:
       form.image_alt.trim() ||
-      form.title.trim(),
-
+      form.title.trim() ||
+      null,
     author:
       form.author.trim() ||
       'Loveons Editorial',
-
     published,
-
     published_at: published
-      ? existingPublishedAt ||
-        new Date().toISOString()
-      : existingPublishedAt || null,
-
-    reading_time: readingTime,
-
+      ? oldPublishedAt || new Date().toISOString()
+      : oldPublishedAt || null,
+    reading_time: estimateReadingTime(form.content),
     tags: makeTags(form.tags),
-
     meta_title:
       form.meta_title.trim() ||
       form.title.trim(),
-
     meta_description:
       form.meta_description.trim() ||
       form.excerpt.trim(),
   };
 }
 
-/* =========================================================
-   COMPONENT
-   ========================================================= */
-
 export default function BlogAdmin() {
-  const [posts, setPosts] =
-    useState<BlogPost[]>([]);
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(
+    null,
+  );
 
-  const [loading, setLoading] =
-    useState(true);
+  const [form, setForm] = useState<FormData>({
+    ...emptyForm,
+  });
 
-  const [showForm, setShowForm] =
-    useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(
+    null,
+  );
 
-  const [editingId, setEditingId] =
-    useState<string | null>(null);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<Filter>('all');
 
-  const [form, setForm] =
-    useState<FormData>(emptyForm);
-
-  const [uploading, setUploading] =
-    useState(false);
-
-  const [saving, setSaving] =
-    useState(false);
-
-  const [deletingId, setDeletingId] =
-    useState<string | null>(null);
-
-  const [error, setError] =
-    useState('');
-
-  const [search, setSearch] =
-    useState('');
-
-  const [filter, setFilter] =
-    useState<
-      'all' | 'published' | 'draft'
-    >('all');
-
-  /*
-   * Unsaved changes.
-   */
-  const [hasUnsavedChanges, setHasUnsavedChanges] =
-    useState(false);
-
-  /*
-   * Recovery.
-   */
-  const [showRecovery, setShowRecovery] =
-    useState(false);
-
-  const [recoveryData, setRecoveryData] =
-    useState<{
-      editingId: string | null;
-      form: FormData;
-      savedAt: number;
-    } | null>(null);
-
-  /*
-   * Article textarea.
-   */
   const contentRef =
-    useRef<HTMLTextAreaElement | null>(
-      null
-    );
+    useRef<HTMLTextAreaElement | null>(null);
 
-  /*
-   * Link editor.
-   */
-  const [linkOpen, setLinkOpen] =
-    useState(false);
+  const draftTimerRef = useRef<number | null>(null);
 
-  const [linkText, setLinkText] =
-    useState('');
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkText, setLinkText] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
 
-  const [linkUrl, setLinkUrl] =
-    useState('');
+  const setFields = useCallback(
+    (patch: Partial<FormData>) => {
+      setForm((current) => ({
+        ...current,
+        ...patch,
+      }));
+    },
+    [],
+  );
 
-  /*
-   * Prevent the initial recovery check from
-   * being confused with an empty form.
-   */
-  const recoveryChecked =
-    useRef(false);
+  const loadPosts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
 
-  /* =======================================================
-     LOAD POSTS
-     ======================================================= */
+      const data = await fetchAllPosts();
 
-  const loadPosts = useCallback(
-    async () => {
+      setPosts(data);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to load posts.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadPosts();
+  }, [loadPosts]);
+
+  const saveLocalDraft = useCallback(
+    (
+      nextForm: FormData,
+      nextEditingId: string | null,
+    ) => {
       try {
-        setLoading(true);
+        localStorage.setItem(
+          LOCAL_DRAFT_KEY,
+          JSON.stringify({
+            form: nextForm,
+            editingId: nextEditingId,
+            savedAt: new Date().toISOString(),
+          }),
+        );
+      } catch {
+        // Local recovery is best effort.
+      }
+    },
+    [],
+  );
+
+  const clearLocalDraft = useCallback(() => {
+    try {
+      localStorage.removeItem(LOCAL_DRAFT_KEY);
+    } catch {
+      // Ignore storage errors.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!showForm || !hasContent(form)) return;
+
+    if (draftTimerRef.current) {
+      window.clearTimeout(draftTimerRef.current);
+    }
+
+    draftTimerRef.current = window.setTimeout(() => {
+      saveLocalDraft(form, editingId);
+    }, 700);
+
+    return () => {
+      if (draftTimerRef.current) {
+        window.clearTimeout(draftTimerRef.current);
+      }
+    };
+  }, [
+    form,
+    editingId,
+    showForm,
+    saveLocalDraft,
+  ]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(
+        LOCAL_DRAFT_KEY,
+      );
+
+      if (!raw) return;
+
+      const saved = JSON.parse(raw) as {
+        form?: FormData;
+        editingId?: string | null;
+        savedAt?: string;
+      };
+
+      if (
+        saved.form &&
+        hasContent(saved.form)
+      ) {
+        setForm({
+          ...emptyForm,
+          ...saved.form,
+        });
+
+        setEditingId(
+          saved.editingId || null,
+        );
+
+        setShowForm(true);
+
+        setNotice(
+          'Recovered your unsaved local draft.',
+        );
+      }
+    } catch {
+      // Ignore invalid local draft data.
+    }
+  }, []);
+
+  const resetForm = useCallback(() => {
+    setForm({
+      ...emptyForm,
+    });
+
+    setEditingId(null);
+    setError('');
+    setNotice('');
+    setLinkOpen(false);
+    setLinkText('');
+    setLinkUrl('');
+  }, []);
+
+  const startNewArticle = useCallback(() => {
+    resetForm();
+    setShowForm(true);
+  }, [resetForm]);
+
+  const startEdit = useCallback(
+    (post: BlogPost) => {
+      setForm({
+        title: post.title || '',
+        slug: post.slug || '',
+        category:
+          post.category ||
+          'Communication',
+        excerpt: post.excerpt || '',
+        content: post.content || '',
+        image_url:
+          post.image_url || '',
+        image_alt:
+          post.image_alt || '',
+        author:
+          post.author ||
+          'Loveons Editorial',
+        tags: Array.isArray(post.tags)
+          ? post.tags.join(', ')
+          : '',
+        meta_title:
+          post.meta_title ||
+          post.title ||
+          '',
+        meta_description:
+          post.meta_description ||
+          post.excerpt ||
+          '',
+      });
+
+      setEditingId(post.id);
+      setShowForm(true);
+      setError('');
+      setNotice('');
+      setLinkOpen(false);
+    },
+    [],
+  );
+
+  const closeEditor = useCallback(() => {
+    if (hasContent(form)) {
+      saveLocalDraft(
+        form,
+        editingId,
+      );
+    }
+
+    setShowForm(false);
+    setLinkOpen(false);
+  }, [
+    form,
+    editingId,
+    saveLocalDraft,
+  ]);
+
+  const handleFieldChange = useCallback(
+    (
+      event: ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >,
+    ) => {
+      const {
+        name,
+        value,
+      } = event.target;
+
+      setFields({
+        [name]: value,
+      } as Partial<FormData>);
+    },
+    [setFields],
+  );
+
+  const handleTitleChange = useCallback(
+    (
+      event: ChangeEvent<HTMLInputElement>,
+    ) => {
+      const title = event.target.value;
+
+      setForm((current) => ({
+        ...current,
+        title,
+        slug:
+          current.slug.trim() ===
+            '' ||
+          current.slug ===
+            cleanSlug(current.title)
+            ? cleanSlug(title)
+            : current.slug,
+      }));
+    },
+    [],
+  );
+
+  const handleSlugChange = useCallback(
+    (
+      event: ChangeEvent<HTMLInputElement>,
+    ) => {
+      /*
+       * Keep hyphens while typing.
+       * Final cleanup happens when the field loses focus.
+       */
+      setFields({
+        slug: event.target.value,
+      });
+    },
+    [setFields],
+  );
+
+  const handleSlugBlur = useCallback(() => {
+    setForm((current) => ({
+      ...current,
+      slug: cleanSlug(
+        current.slug ||
+          current.title,
+      ),
+    }));
+  }, []);
+
+  const handleImageUpload = useCallback(
+    async (
+      event: ChangeEvent<HTMLInputElement>,
+    ) => {
+      const file =
+        event.target.files?.[0];
+
+      if (!file) return;
+
+      try {
+        setUploading(true);
         setError('');
+        setNotice('');
 
-        const data =
-          await fetchAllPosts();
+        const url =
+          await uploadBlogImage(file);
 
-        setPosts(data);
+        setFields({
+          image_url: url,
+        });
+
+        setNotice(
+          'Image uploaded successfully.',
+        );
       } catch (err) {
         setError(
           err instanceof Error
             ? err.message
-            : 'Failed to load posts'
+            : 'Image upload failed.',
         );
       } finally {
-        setLoading(false);
+        setUploading(false);
+
+        event.target.value = '';
       }
     },
-    []
+    [setFields],
   );
 
-  useEffect(() => {
-    loadPosts();
-  }, [loadPosts]);
+  const insertAtCursor = useCallback(
+    (
+      before: string,
+      after = '',
+    ) => {
+      const textarea =
+        contentRef.current;
 
-  /* =======================================================
-     RECOVER LOCAL ARTICLE
-     ======================================================= */
+      if (!textarea) return;
 
-  useEffect(() => {
-    if (recoveryChecked.current) {
-      return;
-    }
+      const start =
+        textarea.selectionStart;
 
-    recoveryChecked.current = true;
+      const end =
+        textarea.selectionEnd;
 
-    try {
-      const raw =
-        window.localStorage.getItem(
-          LOCAL_DRAFT_KEY
+      const selected =
+        form.content.slice(
+          start,
+          end,
         );
 
-      if (!raw) {
-        return;
-      }
+      const replacement =
+        `${before}${selected}${after}`;
 
-      const parsed = JSON.parse(raw);
+      const nextContent =
+        form.content.slice(
+          0,
+          start,
+        ) +
+        replacement +
+        form.content.slice(end);
 
-      if (
-        !parsed ||
-        typeof parsed !== 'object' ||
-        !parsed.form ||
-        typeof parsed.savedAt !==
-          'number'
-      ) {
-        window.localStorage.removeItem(
-          LOCAL_DRAFT_KEY
-        );
-
-        return;
-      }
-
-      const age =
-        Date.now() -
-        parsed.savedAt;
-
-      if (
-        age >
-        LOCAL_DRAFT_MAX_AGE
-      ) {
-        window.localStorage.removeItem(
-          LOCAL_DRAFT_KEY
-        );
-
-        return;
-      }
-
-      const recoveredForm: FormData = {
-        ...emptyForm,
-        ...parsed.form,
-      };
-
-      const hasActualContent =
-        recoveredForm.title.trim() ||
-        recoveredForm.excerpt.trim() ||
-        recoveredForm.content.trim() ||
-        recoveredForm.slug.trim();
-
-      if (!hasActualContent) {
-        window.localStorage.removeItem(
-          LOCAL_DRAFT_KEY
-        );
-
-        return;
-      }
-
-      setRecoveryData({
-        editingId:
-          parsed.editingId ??
-          null,
-
-        form: recoveredForm,
-
-        savedAt:
-          parsed.savedAt,
+      setFields({
+        content: nextContent,
       });
 
-      setShowRecovery(true);
-    } catch {
-      try {
-        window.localStorage.removeItem(
-          LOCAL_DRAFT_KEY
+      window.requestAnimationFrame(() => {
+        textarea.focus();
+
+        const cursorPosition =
+          start +
+          replacement.length;
+
+        textarea.setSelectionRange(
+          cursorPosition,
+          cursorPosition,
         );
-      } catch {
-        // Ignore storage failure.
-      }
-    }
-  }, []);
+      });
+    },
+    [form.content, setFields],
+  );
 
-  /* =======================================================
-     AUTO SAVE TO LOCAL STORAGE
-     ======================================================= */
-
-  useEffect(() => {
-    if (!showForm) {
-      return;
-    }
-
-    const hasContent =
-      form.title.trim() ||
-      form.excerpt.trim() ||
-      form.content.trim() ||
-      form.slug.trim() ||
-      form.tags.trim() ||
-      form.meta_title.trim() ||
-      form.meta_description.trim();
-
-    if (!hasContent) {
-      return;
-    }
-
-    try {
-      window.localStorage.setItem(
-        LOCAL_DRAFT_KEY,
-        JSON.stringify({
-          editingId,
-          form,
-          savedAt: Date.now(),
-        })
-      );
-
-      setHasUnsavedChanges(true);
-    } catch {
-      /*
-       * If browser storage is unavailable,
-       * the CMS still continues working normally.
-       */
-    }
-  }, [
-    showForm,
-    editingId,
-    form,
-  ]);
-
-  /* =======================================================
-     PAGE LEAVE WARNING
-     ======================================================= */
-
-  useEffect(() => {
-    if (
-      !showForm ||
-      !hasUnsavedChanges
-    ) {
-      return;
-    }
-
-    const handleBeforeUnload = (
-      event: BeforeUnloadEvent
-    ) => {
-      event.preventDefault();
-      event.returnValue = '';
-    };
-
-    window.addEventListener(
-      'beforeunload',
-      handleBeforeUnload
+  const applyBold = useCallback(() => {
+    insertAtCursor(
+      '**',
+      '**',
     );
+  }, [insertAtCursor]);
 
-    return () => {
-      window.removeEventListener(
-        'beforeunload',
-        handleBeforeUnload
-      );
-    };
-  }, [
-    showForm,
-    hasUnsavedChanges,
-  ]);
-
-  /* =======================================================
-     RESET FORM
-     ======================================================= */
-
-  const clearLocalRecovery = () => {
-    try {
-      window.localStorage.removeItem(
-        LOCAL_DRAFT_KEY
-      );
-    } catch {
-      // Ignore storage failure.
-    }
-  };
-
-  const resetForm = (
-    force = false
-  ) => {
-    if (
-      !force &&
-      showForm &&
-      hasUnsavedChanges
-    ) {
-      const confirmed =
-        window.confirm(
-          'You have unsaved changes. Are you sure you want to close this article?'
-        );
-
-      if (!confirmed) {
-        return;
-      }
-    }
-
-    setEditingId(null);
-
-    setForm({
-      ...emptyForm,
-    });
-
-    setShowForm(false);
-
-    setHasUnsavedChanges(false);
-
-    setLinkOpen(false);
-
-    setLinkText('');
-
-    setLinkUrl('');
-
-    setError('');
-
-    clearLocalRecovery();
-  };
-
-  /* =======================================================
-     NEW ARTICLE
-     ======================================================= */
-
-  const openNewArticle = () => {
-    if (
-      showForm &&
-      hasUnsavedChanges
-    ) {
-      const confirmed =
-        window.confirm(
-          'You have unsaved changes. Start a new article and discard the current changes?'
-        );
-
-      if (!confirmed) {
-        return;
-      }
-    }
-
-    setEditingId(null);
-
-    setForm({
-      ...emptyForm,
-    });
-
-    setLinkOpen(false);
-
-    setLinkText('');
-
-    setLinkUrl('');
-
-    setError('');
-
-    setHasUnsavedChanges(false);
-
-    clearLocalRecovery();
-
-    setShowForm(true);
-  };
-
-  /* =======================================================
-     RECOVER ARTICLE
-     ======================================================= */
-
-  const recoverArticle = () => {
-    if (!recoveryData) {
-      return;
-    }
-
-    setEditingId(
-      recoveryData.editingId
+  const applyItalic = useCallback(() => {
+    insertAtCursor(
+      '*',
+      '*',
     );
+  }, [insertAtCursor]);
 
-    setForm({
-      ...recoveryData.form,
-    });
+  const applyHeading = useCallback(() => {
+    insertAtCursor(
+      '## ',
+    );
+  }, [insertAtCursor]);
 
-    setHasUnsavedChanges(true);
+  const applyBulletList =
+    useCallback(() => {
+      insertAtCursor(
+        '- ',
+      );
+    }, [insertAtCursor]);
 
-    setShowForm(true);
+  const applyNumberedList =
+    useCallback(() => {
+      insertAtCursor(
+        '1. ',
+      );
+    }, [insertAtCursor]);
 
-    setShowRecovery(false);
+  const openLinkEditor =
+    useCallback(() => {
+      const textarea =
+        contentRef.current;
 
-    setRecoveryData(null);
+      if (!textarea) return;
 
-    setError('');
-  };
+      const start =
+        textarea.selectionStart;
 
-  const discardRecoveredArticle =
-    () => {
-      clearLocalRecovery();
+      const end =
+        textarea.selectionEnd;
 
-      setRecoveryData(null);
+      const selected =
+        form.content.slice(
+          start,
+          end,
+        );
 
-      setShowRecovery(false);
-    };
-
-  /* =======================================================
-     IMAGE UPLOAD
-     ======================================================= */
-
-  const handleImageUpload = async (
-    event: ChangeEvent<HTMLInputElement>
-  ) => {
-    const file =
-      event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    try {
-      setUploading(true);
-
+      setLinkText(selected);
+      setLinkUrl('');
+      setLinkOpen(true);
       setError('');
+    }, [form.content]);
+
+  const insertLink =
+    useCallback(() => {
+      const text =
+        linkText.trim();
 
       const url =
-        await uploadBlogImage(file);
+        linkUrl.trim();
 
-      setForm((current) => ({
-        ...current,
-        image_url: url,
-      }));
-
-      setHasUnsavedChanges(true);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Image upload failed'
-      );
-    } finally {
-      setUploading(false);
-
-      event.target.value = '';
-    }
-  };
-
-  /* =======================================================
-     VALIDATE
-     ======================================================= */
-
-  const validateForm = () => {
-    if (!form.title.trim()) {
-      setError(
-        'Please enter a blog title.'
-      );
-
-      return false;
-    }
-
-    if (!form.excerpt.trim()) {
-      setError(
-        'Please enter a short description.'
-      );
-
-      return false;
-    }
-
-    if (!form.content.trim()) {
-      setError(
-        'Please enter the article content.'
-      );
-
-      return false;
-    }
-
-    const finalSlug =
-      safeCmsSlug(
-        form.slug ||
-          form.title
-      );
-
-    if (!finalSlug) {
-      setError(
-        'Please enter a valid title or slug.'
-      );
-
-      return false;
-    }
-
-    return true;
-  };
-
-  /* =======================================================
-     SAVE ARTICLE
-     ======================================================= */
-
-  const saveArticle = async (
-    published: boolean
-  ) => {
-    if (!validateForm()) {
-      return;
-    }
-
-    try {
-      setSaving(true);
-
-      setError('');
-
-      const existingPost =
-        editingId
-          ? posts.find(
-              (post) =>
-                post.id ===
-                editingId
-            )
-          : null;
-
-      const payload =
-        createPayload(
-          form,
-          published,
-          existingPost?.published_at
+      if (!text) {
+        setError(
+          'Select or enter the link text first.',
         );
-
-      if (editingId) {
-        await updatePost(
-          editingId,
-          payload
-        );
-      } else {
-        await createPost(
-          payload as Omit<
-            BlogPost,
-            'id' |
-              'created_at' |
-              'updated_at'
-          >
-        );
+        return;
       }
 
-      /*
-       * IMPORTANT:
-       * Reload only after the database
-       * request succeeds.
-       */
-      await loadPosts();
+      if (!isValidLink(url)) {
+        setError(
+          'Enter a valid http, https, or internal / link.',
+        );
+        return;
+      }
 
-      /*
-       * Database save succeeded.
-       * Now local recovery copy can be removed.
-       */
-      clearLocalRecovery();
+      const textarea =
+        contentRef.current;
 
-      setHasUnsavedChanges(false);
+      if (!textarea) {
+        setError(
+          'Unable to place the link.',
+        );
+        return;
+      }
 
-      setEditingId(null);
+      const start =
+        textarea.selectionStart;
 
-      setForm({
-        ...emptyForm,
+      const end =
+        textarea.selectionEnd;
+
+      const selected =
+        form.content.slice(
+          start,
+          end,
+        );
+
+      const finalText =
+        selected || text;
+
+      const markdown =
+        `[${finalText}](${url})`;
+
+      const nextContent =
+        form.content.slice(
+          0,
+          start,
+        ) +
+        markdown +
+        form.content.slice(end);
+
+      setFields({
+        content: nextContent,
       });
 
       setLinkOpen(false);
-
       setLinkText('');
-
       setLinkUrl('');
-
-      setShowForm(false);
-
-      setError('');
-    } catch (err) {
-      /*
-       * Keep the editor open.
-       * Keep local backup.
-       *
-       * This is important:
-       * if Supabase save fails, the article
-       * must NOT disappear.
-       */
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to save article. Your article is still open and has been kept locally.'
+      setNotice(
+        'Link added to the article.',
       );
 
-      setHasUnsavedChanges(true);
-    } finally {
-      setSaving(false);
-    }
-  };
+      window.requestAnimationFrame(() => {
+        textarea.focus();
 
-  /* =======================================================
-     FORM SUBMIT
-     ======================================================= */
+        const position =
+          start +
+          markdown.length;
 
-  const handleSubmit = async (
-    event: FormEvent
-  ) => {
-    event.preventDefault();
+        textarea.setSelectionRange(
+          position,
+          position,
+        );
+      });
+    }, [
+      form.content,
+      linkText,
+      linkUrl,
+      setFields,
+    ]);
 
-    await saveArticle(false);
-  };
+  const removeLink =
+    useCallback(() => {
+      const textarea =
+        contentRef.current;
 
-  /* =======================================================
-     EDIT
-     ======================================================= */
+      if (!textarea) return;
 
-  const handleEdit = (
-    post: BlogPost
-  ) => {
-    if (
-      showForm &&
-      hasUnsavedChanges
-    ) {
-      const confirmed =
-        window.confirm(
-          'You have unsaved changes. Open another article and discard the current changes?'
+      const start =
+        textarea.selectionStart;
+
+      const end =
+        textarea.selectionEnd;
+
+      const selected =
+        form.content.slice(
+          start,
+          end,
         );
 
-      if (!confirmed) {
+      const markdownMatch =
+        selected.match(
+          /^\[([^\]]+)\]\(([^)]+)\)$/,
+        );
+
+      if (!markdownMatch) {
+        setError(
+          'Select a complete Markdown link to remove it.',
+        );
         return;
       }
-    }
 
-    setEditingId(post.id);
+      const nextContent =
+        form.content.slice(
+          0,
+          start,
+        ) +
+        markdownMatch[1] +
+        form.content.slice(end);
 
-    setForm({
-      title: post.title,
+      setFields({
+        content: nextContent,
+      });
 
-      slug:
-        post.slug || '',
+      setNotice(
+        'Link removed.',
+      );
+    }, [
+      form.content,
+      setFields,
+    ]);
 
-      category:
-        post.category,
+  const handleSubmit = useCallback(
+    async (
+      event: FormEvent<HTMLFormElement>,
+      publish: boolean,
+    ) => {
+      event.preventDefault();
 
-      excerpt:
-        post.excerpt,
+      if (!form.title.trim()) {
+        setError('Please enter an article title.');
+        return;
+      }
 
-      content:
-        post.content,
+      if (!form.content.trim()) {
+        setError('Please enter article content.');
+        return;
+      }
 
-      image_url:
-        post.image_url || '',
-
-      image_alt:
-        post.image_alt || '',
-
-      author:
-        post.author ||
-        'Loveons Editorial',
-
-      tags:
-        post.tags.join(', '),
-
-      meta_title:
-        post.meta_title || '',
-
-      meta_description:
-        post.meta_description ||
-        '',
-    });
-
-    setLinkOpen(false);
-
-    setLinkText('');
-
-    setLinkUrl('');
-
-    setError('');
-
-    setHasUnsavedChanges(
-      false
-    );
-
-    /*
-     * Existing article editing should not
-     * inherit a previous new-article recovery.
-     */
-    clearLocalRecovery();
-
-    setShowForm(true);
-  };
-
-  /* =======================================================
-     DELETE
-     ======================================================= */
-
-  const handleDelete = async (
-    id: string
-  ) => {
-    const confirmed =
-      window.confirm(
-        'Delete this article permanently? This action cannot be undone.'
+      const slug = cleanSlug(
+        form.slug || form.title,
       );
 
-    if (!confirmed) {
-      return;
-    }
+      if (!slug) {
+        setError(
+          'Please enter a valid article slug.',
+        );
+        return;
+      }
 
-    try {
-      setDeletingId(id);
+      try {
+        setSaving(true);
+        setError('');
+        setNotice('');
 
-      setError('');
+        const existingPost =
+          editingId
+            ? posts.find(
+                (post) =>
+                  post.id === editingId,
+              )
+            : undefined;
 
-      await deletePost(id);
+        const payload = buildPayload(
+          {
+            ...form,
+            slug,
+          },
+          publish,
+          existingPost?.published_at ||
+            null,
+        );
 
-      await loadPosts();
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Delete failed'
-      );
-    } finally {
-      setDeletingId(null);
-    }
-  };
+        if (editingId) {
+          await updatePost(
+            editingId,
+            payload,
+          );
 
-  /* =======================================================
-     PUBLISH / UNPUBLISH
-     ======================================================= */
+          setNotice(
+            publish
+              ? 'Article published successfully.'
+              : 'Article saved as draft.',
+          );
+        } else {
+          await createPost(
+            payload,
+          );
 
-  const togglePublish = async (
-    post: BlogPost
-  ) => {
-    try {
-      setError('');
-
-      const nextPublished =
-        !post.published;
-
-      await updatePost(
-        post.id,
-        {
-          published:
-            nextPublished,
-
-          published_at:
-            nextPublished
-              ? post.published_at ||
-                new Date().toISOString()
-              : post.published_at,
+          setNotice(
+            publish
+              ? 'Article published successfully.'
+              : 'Draft saved successfully.',
+          );
         }
-      );
 
-      await loadPosts();
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Publish status update failed'
-      );
-    }
-  };
+        clearLocalDraft();
 
-  /* =======================================================
-     OPEN ARTICLE
-     ======================================================= */
+        await loadPosts();
 
-  const openArticle = (
-    post: BlogPost
-  ) => {
-    window.open(
-      `/blog/${post.slug}`,
-      '_blank',
-      'noopener,noreferrer'
-    );
-  };
+        setShowForm(false);
+        setEditingId(null);
 
-  /* =======================================================
-     INSERT CONTENT AT SELECTION
-     ======================================================= */
+        setForm({
+          ...emptyForm,
+        });
 
-  const insertIntoContent = (
-    value: string,
-    start?: number,
-    end?: number
-  ) => {
-    const textarea =
-      contentRef.current;
-
-    const selectionStart =
-      start ??
-      textarea?.selectionStart ??
-      form.content.length;
-
-    const selectionEnd =
-      end ??
-      textarea?.selectionEnd ??
-      selectionStart;
-
-    const newContent =
-      form.content.slice(
-        0,
-        selectionStart
-      ) +
-      value +
-      form.content.slice(
-        selectionEnd
-      );
-
-    setForm((current) => ({
-      ...current,
-      content: newContent,
-    }));
-
-    setHasUnsavedChanges(true);
-
-    requestAnimationFrame(() => {
-      if (!textarea) {
-        return;
+        setLinkOpen(false);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Unable to save the article.',
+        );
+      } finally {
+        setSaving(false);
       }
+    },
+    [
+      form,
+      editingId,
+      posts,
+      clearLocalDraft,
+      loadPosts,
+    ],
+  );
 
-      textarea.focus();
+  const handleDelete = useCallback(
+    async (id: string) => {
+      const confirmed =
+        window.confirm(
+          'Are you sure you want to delete this article?',
+        );
 
-      const nextPosition =
-        selectionStart +
-        value.length;
+      if (!confirmed) return;
 
-      textarea.setSelectionRange(
-        nextPosition,
-        nextPosition
-      );
-    });
-  };
+      try {
+        setDeletingId(id);
+        setError('');
 
-  /* =======================================================
-     ADD LINK
-     ======================================================= */
+        await deletePost(id);
 
-  const openLinkEditor = () => {
-    const textarea =
-      contentRef.current;
+        setPosts((current) =>
+          current.filter(
+            (post) => post.id !== id,
+          ),
+        );
 
-    const start =
-      textarea?.selectionStart ??
-      form.content.length;
+        if (editingId === id) {
+          setShowForm(false);
+          setEditingId(null);
+          resetForm();
+        }
 
-    const end =
-      textarea?.selectionEnd ??
-      start;
+        setNotice(
+          'Article deleted successfully.',
+        );
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Unable to delete the article.',
+        );
+      } finally {
+        setDeletingId(null);
+      }
+    },
+    [
+      editingId,
+      resetForm,
+    ],
+  );
 
-    const selectedText =
-      form.content.slice(
-        start,
-        end
-      );
+  const handleTogglePublished =
+    useCallback(
+      async (post: BlogPost) => {
+        try {
+          setError('');
 
-    setLinkText(
-      selectedText
+          const nextPublished =
+            !post.published;
+
+          await updatePost(
+            post.id,
+            buildPayload(
+              {
+                title:
+                  post.title || '',
+                slug:
+                  post.slug || '',
+                category:
+                  post.category ||
+                  'Communication',
+                excerpt:
+                  post.excerpt || '',
+                content:
+                  post.content || '',
+                image_url:
+                  post.image_url || '',
+                image_alt:
+                  post.image_alt || '',
+                author:
+                  post.author ||
+                  'Loveons Editorial',
+                tags:
+                  Array.isArray(
+                    post.tags,
+                  )
+                    ? post.tags.join(', ')
+                    : '',
+                meta_title:
+                  post.meta_title ||
+                  '',
+                meta_description:
+                  post.meta_description ||
+                  '',
+              },
+              nextPublished,
+              post.published_at ||
+                null,
+            ),
+          );
+
+          setPosts((current) =>
+            current.map(
+              (item) =>
+                item.id === post.id
+                  ? {
+                      ...item,
+                      published:
+                        nextPublished,
+                      published_at:
+                        nextPublished
+                          ? item.published_at ||
+                            new Date().toISOString()
+                          : item.published_at,
+                    }
+                  : item,
+            ),
+          );
+
+          setNotice(
+            nextPublished
+              ? 'Article published.'
+              : 'Article moved to draft.',
+          );
+        } catch (err) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Unable to update article status.',
+          );
+        }
+      },
+      [],
     );
-
-    setLinkUrl('');
-
-    setLinkOpen(true);
-
-    setError('');
-  };
-
-  const addLink = () => {
-    const text =
-      linkText.trim();
-
-    const url =
-      linkUrl.trim();
-
-    if (!text) {
-      setError(
-        'Select the text you want to link, or enter link text.'
-      );
-
-      return;
-    }
-
-    if (!isValidLink(url)) {
-      setError(
-        'Enter a valid URL. Example: /blog/example or https://example.com'
-      );
-
-      return;
-    }
-
-    const textarea =
-      contentRef.current;
-
-    const start =
-      textarea?.selectionStart ??
-      form.content.length;
-
-    const end =
-      textarea?.selectionEnd ??
-      start;
-
-    /*
-     * IMPORTANT:
-     * Only selected text becomes the link.
-     *
-     * Result:
-     * [honest conversation](https://google.com)
-     */
-    const markdownLink =
-      `[${text}](${url})`;
-
-    insertIntoContent(
-      markdownLink,
-      start,
-      end
-    );
-
-    setLinkOpen(false);
-
-    setLinkText('');
-
-    setLinkUrl('');
-
-    setError('');
-  };
-
-  /* =======================================================
-     REMOVE LINK
-     ======================================================= */
-
-  const removeLink = () => {
-    const textarea =
-      contentRef.current;
-
-    if (!textarea) {
-      setError(
-        'Select a link first.'
-      );
-
-      return;
-    }
-
-    const start =
-      textarea.selectionStart;
-
-    const end =
-      textarea.selectionEnd;
-
-    if (start === end) {
-      setError(
-        'Select the linked text first.'
-      );
-
-      return;
-    }
-
-    const selected =
-      form.content.slice(
-        start,
-        end
-      );
-
-    /*
-     * Converts:
-     *
-     * [honest conversation](https://google.com)
-     *
-     * to:
-     *
-     * honest conversation
-     */
-    const plainText =
-      selected.replace(
-        /^\[([\s\S]+)\]\(([^)]+)\)$/,
-        '$1'
-      );
-
-    if (
-      plainText ===
-      selected
-    ) {
-      setError(
-        'The selected text is not a Markdown link.'
-      );
-
-      return;
-    }
-
-    insertIntoContent(
-      plainText,
-      start,
-      end
-    );
-
-    setError('');
-  };
-
-  /* =======================================================
-     FORMATTING
-     ======================================================= */
-
-  const wrapSelection = (
-    before: string,
-    after: string = before
-  ) => {
-    const textarea =
-      contentRef.current;
-
-    if (!textarea) {
-      return;
-    }
-
-    const start =
-      textarea.selectionStart;
-
-    const end =
-      textarea.selectionEnd;
-
-    const selected =
-      form.content.slice(
-        start,
-        end
-      );
-
-    if (!selected) {
-      setError(
-        'Select some text first.'
-      );
-
-      return;
-    }
-
-    insertIntoContent(
-      `${before}${selected}${after}`,
-      start,
-      end
-    );
-
-    setError('');
-  };
-
-  const addHeading = () => {
-    wrapSelection(
-      '## ',
-      ''
-    );
-  };
-
-  const addBullet = () => {
-    wrapSelection(
-      '- ',
-      ''
-    );
-  };
-
-  const addNumbered = () => {
-    wrapSelection(
-      '1. ',
-      ''
-    );
-  };
-
-  /* =======================================================
-     SEARCH
-     ======================================================= */
 
   const filteredPosts =
     posts.filter((post) => {
-      const query =
-        search
-          .trim()
-          .toLowerCase();
+      const searchValue =
+        search.trim().toLowerCase();
 
       const matchesSearch =
-        !query ||
+        !searchValue ||
         post.title
-          .toLowerCase()
-          .includes(query) ||
-        post.category
-          .toLowerCase()
-          .includes(query) ||
+          ?.toLowerCase()
+          .includes(searchValue) ||
         post.slug
-          .toLowerCase()
-          .includes(query) ||
-        post.tags.some(
-          (tag) =>
-            tag
-              .toLowerCase()
-              .includes(query)
-        );
+          ?.toLowerCase()
+          .includes(searchValue) ||
+        post.category
+          ?.toLowerCase()
+          .includes(searchValue);
 
-      const matchesFilter =
-        filter === 'all' ||
-        (filter ===
-          'published' &&
-          post.published) ||
-        (filter === 'draft' &&
-          !post.published);
+      if (!matchesSearch) {
+        return false;
+      }
 
-      return (
-        matchesSearch &&
-        matchesFilter
-      );
+      if (filter === 'published') {
+        return Boolean(post.published);
+      }
+
+      if (filter === 'draft') {
+        return !post.published;
+      }
+
+      return true;
     });
 
   const publishedCount =
     posts.filter(
-      (post) =>
-        post.published
+      (post) => post.published,
     ).length;
 
   const draftCount =
     posts.filter(
-      (post) =>
-        !post.published
+      (post) => !post.published,
     ).length;
 
-  /* =======================================================
-     RENDER
-     ======================================================= */
+  const openArticle =
+    (post: BlogPost) => {
+      if (!post.slug) return;
+
+      window.open(
+        `/blog/${post.slug}`,
+        '_blank',
+        'noopener,noreferrer',
+      );
+    };
 
   return (
-    <>
+    <PageLayout>
       <Seo
-        title="Blog Admin — Loveons"
-        description="Manage Loveons blog articles, drafts, publishing and SEO metadata."
-        path="/admin/blog"
+        title="Blog CMS"
+        description="Manage blog articles."
       />
 
-      <PageLayout
-        title="Blog Admin"
-        subtitle="Create, edit, draft and publish Loveons articles."
-      >
-        {/* =================================================
-            RECOVERY NOTICE
-        ================================================= */}
-
-        {showRecovery &&
-          recoveryData && (
-            <div className="mb-5 rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-bold text-amber-800">
-                    Unsaved article recovered
-                  </p>
-
-                  <p className="mt-1 text-xs leading-5 text-amber-700">
-                    We found an article
-                    you were working on
-                    before the page was
-                    refreshed or closed.
-                  </p>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={
-                      recoverArticle
-                    }
-                    className="rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white hover:bg-amber-600"
-                  >
-                    Recover
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={
-                      discardRecoveredArticle
-                    }
-                    className="rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100"
-                  >
-                    Discard
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-        {/* =================================================
-            ERROR
-        ================================================= */}
-
-        {error && (
-          <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
-            {error}
-          </div>
-        )}
-
-        {/* =================================================
-            HEADER
-        ================================================= */}
-
-        <div className="mb-5 rounded-3xl border border-rose-100 bg-white p-4 shadow-sm sm:p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <main className="min-h-screen bg-gray-50">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="font-display text-xl font-bold text-gray-800">
-                Content Manager
-              </h2>
+              <div className="flex items-center gap-3">
+                <FileText className="h-7 w-7 text-gray-900" />
 
-              <p className="mt-1 text-sm text-gray-500">
-                {posts.length} total ·{' '}
-                {publishedCount}{' '}
-                published ·{' '}
-                {draftCount} drafts
+                <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+                  Blog CMS
+                </h1>
+              </div>
+
+              <p className="mt-2 text-sm text-gray-600">
+                Create, edit, save drafts and publish
+                your articles.
               </p>
             </div>
 
             <button
               type="button"
-              onClick={
-                openNewArticle
-              }
-              className="flex items-center justify-center gap-2 rounded-2xl bg-rose-500 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-600 active:scale-[0.98]"
+              onClick={startNewArticle}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800"
             >
               <Plus className="h-4 w-4" />
-
               New Article
             </button>
           </div>
 
-          {/* SEARCH */}
+          {(error || notice) && (
+            <div
+              className={`mb-6 rounded-xl border px-4 py-3 text-sm ${
+                error
+                  ? 'border-red-200 bg-red-50 text-red-700'
+                  : 'border-green-200 bg-green-50 text-green-700'
+              }`}
+            >
+              {error || notice}
+            </div>
+          )}
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <p className="text-sm text-gray-500">
+                Total Articles
+              </p>
 
-              <input
-                type="search"
-                value={search}
-                onChange={(event) =>
-                  setSearch(
-                    event.target.value
-                  )
-                }
-                placeholder="Search articles, categories or tags..."
-                className="w-full rounded-2xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-100"
-              />
+              <p className="mt-1 text-2xl font-bold text-gray-900">
+                {posts.length}
+              </p>
             </div>
 
-            {/* FILTER */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <p className="text-sm text-gray-500">
+                Published
+              </p>
 
-            <div className="flex rounded-2xl border border-gray-200 bg-gray-50 p-1">
-              {[
-                ['all', 'All'],
-                [
-                  'published',
-                  'Published',
-                ],
-                ['draft', 'Drafts'],
-              ].map(
-                ([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() =>
-                      setFilter(
-                        value as
-                          | 'all'
-                          | 'published'
-                          | 'draft'
-                      )
-                    }
-                    className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
-                      filter === value
-                        ? 'bg-white text-rose-600 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                )
-              )}
+              <p className="mt-1 text-2xl font-bold text-green-600">
+                {publishedCount}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <p className="text-sm text-gray-500">
+                Drafts
+              </p>
+
+              <p className="mt-1 text-2xl font-bold text-amber-600">
+                {draftCount}
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* =================================================
-            ARTICLE LIST
-        ================================================= */}
+          <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="relative w-full lg:max-w-md">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
 
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-7 w-7 animate-spin text-rose-400" />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(event) =>
+                    setSearch(
+                      event.target.value,
+                    )
+                  }
+                  placeholder="Search articles..."
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-4 text-sm outline-none transition focus:border-gray-400 focus:bg-white"
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ['all', 'All'],
+                    [
+                      'published',
+                      'Published',
+                    ],
+                    ['draft', 'Drafts'],
+                  ] as const
+                ).map(
+                  ([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() =>
+                        setFilter(
+                          value,
+                        )
+                      }
+                      className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                        filter === value
+                          ? 'bg-gray-900 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ),
+                )}
+              </div>
+            </div>
           </div>
-        ) : filteredPosts.length ===
-          0 ? (
-          <div className="rounded-3xl border border-dashed border-rose-200 bg-white px-6 py-16 text-center">
-            <FileText className="mx-auto h-10 w-10 text-rose-200" />
 
-            <h3 className="mt-4 text-sm font-semibold text-gray-700">
-              {posts.length ===
-              0
-                ? 'No articles yet'
-                : 'No matching articles'}
-            </h3>
+          {loading ? (
+            <div className="flex min-h-[300px] items-center justify-center rounded-2xl border border-gray-200 bg-white">
+              <div className="flex items-center gap-3 text-sm text-gray-600">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Loading articles...
+              </div>
+            </div>
+          ) : filteredPosts.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-16 text-center">
+              <FileText className="mx-auto h-10 w-10 text-gray-300" />
 
-            <p className="mt-1 text-sm text-gray-400">
-              {posts.length ===
-              0
-                ? 'Create your first article to start building the blog.'
-                : 'Try another search or filter.'}
-            </p>
+              <h2 className="mt-4 text-lg font-semibold text-gray-900">
+                No articles found
+              </h2>
 
-            {posts.length ===
-              0 && (
+              <p className="mt-2 text-sm text-gray-500">
+                Create your first article or change
+                the search/filter.
+              </p>
+
               <button
                 type="button"
-                onClick={
-                  openNewArticle
-                }
-                className="mt-5 rounded-2xl bg-rose-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-rose-600"
+                onClick={startNewArticle}
+                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white"
               >
+                <Plus className="h-4 w-4" />
                 Create Article
               </button>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filteredPosts.map(
-              (post) => (
-                <article
-                  key={post.id}
-                  className="rounded-3xl border border-rose-100 bg-white p-3 shadow-sm transition hover:shadow-md sm:p-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl bg-rose-50 sm:h-20 sm:w-20">
-                      <BlogImage
-                        src={
-                          post.image_url
-                        }
-                        alt={
-                          post.image_alt ||
-                          post.title
-                        }
-                        className="h-full w-full"
-                        loading="lazy"
-                      />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-sm font-bold text-gray-800 sm:text-base">
-                        {post.title}
-                      </h3>
-
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-600">
-                          {post.category}
-                        </span>
-
-                        {post.published ? (
-                          <span className="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-600">
-                            Published
-                          </span>
-                        ) : (
-                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">
-                            Draft
-                          </span>
-                        )}
-
-                        {post.reading_time && (
-                          <span className="text-[11px] text-gray-400">
-                            {
-                              post.reading_time
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <div className="divide-y divide-gray-100">
+                {filteredPosts.map(
+                  (post) => (
+                    <article
+                      key={post.id}
+                      className="flex flex-col gap-4 p-5 transition hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="flex min-w-0 items-center gap-4">
+                        <div className="h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-gray-100">
+                          <BlogImage
+                            src={
+                              post.image_url ||
+                              PLACEHOLDER_IMAGE
                             }
-                          </span>
-                        )}
+                            alt={
+                              post.image_alt ||
+                              post.title ||
+                              'Blog image'
+                            }
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="truncate text-base font-semibold text-gray-900">
+                              {post.title}
+                            </h2>
+
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                                post.published
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-amber-100 text-amber-700'
+                              }`}
+                            >
+                              {post.published
+                                ? 'Published'
+                                : 'Draft'}
+                            </span>
+                          </div>
+
+                          <p className="mt-1 text-sm text-gray-500">
+                            {post.category}
+                            {post.slug
+                              ? ` • /blog/${post.slug}`
+                              : ''}
+                          </p>
+
+                          {post.excerpt && (
+                            <p className="mt-1 line-clamp-2 text-sm text-gray-600">
+                              {post.excerpt}
+                            </p>
+                          )}
+                        </div>
                       </div>
 
-                      <p className="mt-1 hidden truncate text-xs text-gray-400 sm:block">
-                        /blog/
-                        {post.slug}
-                      </p>
-                    </div>
+                      <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        {post.slug && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openArticle(
+                                post,
+                              )
+                            }
+                            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            View
+                          </button>
+                        )}
 
-                    <div className="flex flex-shrink-0 items-center gap-1">
-                      {post.published && (
                         <button
                           type="button"
                           onClick={() =>
-                            openArticle(
-                              post
+                            startEdit(
+                              post,
                             )
                           }
-                          className="hidden rounded-xl p-2 transition hover:bg-blue-50 sm:block"
-                          title="Open article"
+                          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
                         >
-                          <ExternalLink className="h-4 w-4 text-blue-500" />
+                          <Pencil className="h-4 w-4" />
+                          Edit
                         </button>
-                      )}
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          togglePublish(
-                            post
-                          )
-                        }
-                        className="rounded-xl p-2 transition hover:bg-rose-50"
-                        title={
-                          post.published
-                            ? 'Unpublish'
-                            : 'Publish'
-                        }
-                      >
-                        {post.published ? (
-                          <Eye className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <EyeOff className="h-4 w-4 text-gray-400" />
-                        )}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleTogglePublished(
+                              post,
+                            )
+                          }
+                          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                        >
+                          {post.published ? (
+                            <>
+                              <EyeOff className="h-4 w-4" />
+                              Draft
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="h-4 w-4" />
+                              Publish
+                            </>
+                          )}
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleEdit(
-                            post
-                          )
-                        }
-                        className="rounded-xl p-2 transition hover:bg-rose-50"
-                        title="Edit"
-                      >
-                        <Pencil className="h-4 w-4 text-gray-500" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleDelete(
+                        <button
+                          type="button"
+                          disabled={
+                            deletingId ===
                             post.id
-                          )
-                        }
-                        disabled={
-                          deletingId ===
-                          post.id
-                        }
-                        className="rounded-xl p-2 transition hover:bg-red-50 disabled:opacity-50"
-                        title="Delete"
-                      >
-                        {deletingId ===
-                        post.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin text-red-400" />
-                        ) : (
-                          <Trash2 className="h-4 w-4 text-red-400" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              )
-            )}
-          </div>
-        )}
+                          }
+                          onClick={() =>
+                            void handleDelete(
+                              post.id,
+                            )
+                          }
+                          className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {deletingId ===
+                          post.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                          Delete
+                        </button>
+                      </div>
+                    </article>
+                  ),
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
 
-        {/* =================================================
-            EDITOR MODAL
-        ================================================= */}
-
-        {showForm && (
-          <div
-            className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
-          >
-            <div
-              className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl"
-              onClick={(event) =>
+      {showForm && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4 sm:p-6"
+          onMouseDown={(event) => {
+            /*
+             * Do NOT close the editor when the user taps
+             * somewhere outside a field.
+             *
+             * The editor must remain stable while writing.
+             */
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              event.preventDefault();
+            }
+          }}
+        >
+          <div className="mx-auto flex min-h-full max-w-5xl items-center justify-center py-6">
+            <section
+              className="w-full overflow-hidden rounded-2xl bg-white shadow-2xl"
+              onMouseDown={(event) =>
                 event.stopPropagation()
               }
             >
-              {/* HEADER */}
-
-              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-rose-100 bg-white px-5 py-4 sm:px-6">
+              <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 sm:px-6">
                 <div>
-                  <h2 className="font-display text-lg font-bold text-gray-800">
+                  <h2 className="text-lg font-bold text-gray-900">
                     {editingId
                       ? 'Edit Article'
-                      : 'New Article'}
+                      : 'Create Article'}
                   </h2>
 
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="text-xs text-gray-400">
-                      {hasUnsavedChanges
-                        ? 'Changes protected locally'
-                        : 'Ready to edit'}
-                    </span>
-
-                    {hasUnsavedChanges && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                    )}
-                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Your work is automatically kept locally
+                    while you write.
+                  </p>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() =>
-                    resetForm()
-                  }
-                  className="rounded-xl p-2 transition hover:bg-rose-50"
-                  title="Close editor"
+                  onClick={closeEditor}
+                  className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+                  aria-label="Close editor"
                 >
-                  <X className="h-5 w-5 text-gray-500" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
 
               <form
-                onSubmit={
-                  handleSubmit
-                }
-                className="space-y-5 p-5 sm:p-6"
+                onSubmit={(event) => {
+                  void handleSubmit(
+                    event,
+                    false,
+                  );
+                }}
+                className="space-y-6 p-5 sm:p-6"
               >
-                {/* =================================================
-                    IMAGE
-                ================================================= */}
-
-                <section className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-                  <label className="mb-2 block text-xs font-bold text-gray-600">
-                    Featured Image
-                  </label>
-
-                  <div className="flex gap-4">
-                    <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl border border-rose-100 bg-white">
-                      <BlogImage
-                        src={
-                          form.image_url ||
-                          PLACEHOLDER_IMAGE
-                        }
-                        alt={
-                          form.image_alt ||
-                          'Blog image preview'
-                        }
-                        className="h-full w-full"
-                        loading="eager"
-                      />
-                    </div>
-
-                    <div className="flex-1">
-                      <label className="block cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/webp,image/avif,image/jpeg,image/png"
-                          onChange={
-                            handleImageUpload
-                          }
-                          className="hidden"
-                        />
-
-                        <div className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-rose-200 bg-white px-4 py-3 text-sm font-semibold text-rose-500 transition hover:bg-rose-50">
-                          {uploading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Upload className="h-4 w-4" />
-                          )}
-
-                          {uploading
-                            ? 'Uploading...'
-                            : 'Upload Image'}
-                        </div>
-                      </label>
-
-                      <input
-                        type="text"
-                        value={
-                          form.image_url
-                        }
-                        onChange={(event) =>
-                          setForm({
-                            ...form,
-                            image_url:
-                              event.target
-                                .value,
-                          })
-                        }
-                        placeholder="Or paste image URL"
-                        className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
-                      />
-                    </div>
-                  </div>
-                </section>
-
-                {/* =================================================
-                    BASIC CONTENT
-                ================================================= */}
-
-                <section className="space-y-4">
-                  {/* TITLE */}
-
-                  <div>
-                    <label className="mb-1.5 block text-xs font-bold text-gray-600">
-                      Blog Title *
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                  <div className="lg:col-span-2">
+                    <label
+                      htmlFor="title"
+                      className="mb-2 block text-sm font-semibold text-gray-800"
+                    >
+                      Article Title
                     </label>
 
                     <input
-                      type="text"
-                      value={
-                        form.title
+                      id="title"
+                      name="title"
+                      value={form.title}
+                      onChange={
+                        handleTitleChange
                       }
-                      onChange={(event) => {
-                        const title =
-                          event.target
-                            .value;
-
-                        setForm(
-                          (current) => ({
-                            ...current,
-
-                            title,
-
-                            slug:
-                              editingId ||
-                              current.slug
-                                ? current.slug
-                                : safeCmsSlug(
-                                    title
-                                  ),
-                          })
-                        );
-
-                        setHasUnsavedChanges(
-                          true
-                        );
-                      }}
                       placeholder="Enter article title"
-                      className="w-full rounded-2xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
-                      required
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500"
                     />
                   </div>
 
-                  {/* CATEGORY + SLUG */}
+                  <div>
+                    <label
+                      htmlFor="slug"
+                      className="mb-2 block text-sm font-semibold text-gray-800"
+                    >
+                      Slug
+                    </label>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1.5 block text-xs font-bold text-gray-600">
-                        Category *
-                      </label>
+                    <input
+                      id="slug"
+                      name="slug"
+                      value={form.slug}
+                      onChange={
+                        handleSlugChange
+                      }
+                      onBlur={
+                        handleSlugBlur
+                      }
+                      placeholder="article-slug"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500"
+                    />
 
-                      <select
-                        value={
-                          form.category
-                        }
-                        onChange={(event) => {
-                          setForm({
-                            ...form,
-                            category:
-                              event.target
-                                .value,
-                          });
-
-                          setHasUnsavedChanges(
-                            true
-                          );
-                        }}
-                        className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
-                      >
-                        {BLOG_CATEGORIES.map(
-                          (category) => (
-                            <option
-                              key={
-                                category
-                              }
-                              value={
-                                category
-                              }
-                            >
-                              {
-                                category
-                              }
-                            </option>
-                          )
-                        )}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="mb-1.5 block text-xs font-bold text-gray-600">
-                        URL Slug *
-                      </label>
-
-                      <input
-                        type="text"
-                        value={
-                          form.slug
-                        }
-                        onChange={(event) => {
-                          setForm({
-                            ...form,
-                            slug: safeCmsSlug(
-                              event.target
-                                .value
-                            ),
-                          });
-
-                          setHasUnsavedChanges(
-                            true
-                          );
-                        }}
-                        placeholder="example-blog-slug"
-                        className="w-full rounded-2xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
-                        required
-                      />
-
-                      <p className="mt-1 text-[11px] text-gray-400">
-                        URL-safe format:
-                        letters, numbers and
-                        hyphens.
-                      </p>
-                    </div>
+                    <p className="mt-1.5 text-xs text-gray-500">
+                      Example:
+                      relationship-tips
+                    </p>
                   </div>
 
-                  {/* EXCERPT */}
-
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold text-gray-600">
-                      Short Description *
+                    <label
+                      htmlFor="category"
+                      className="mb-2 block text-sm font-semibold text-gray-800"
+                    >
+                      Category
+                    </label>
+
+                    <select
+                      id="category"
+                      name="category"
+                      value={
+                        form.category
+                      }
+                      onChange={
+                        handleFieldChange
+                      }
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-gray-500"
+                    >
+                      {BLOG_CATEGORIES.map(
+                        (category) => (
+                          <option
+                            key={category}
+                            value={
+                              category
+                            }
+                          >
+                            {category}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </div>
+
+                  <div className="lg:col-span-2">
+                    <label
+                      htmlFor="excerpt"
+                      className="mb-2 block text-sm font-semibold text-gray-800"
+                    >
+                      Short Excerpt
                     </label>
 
                     <textarea
+                      id="excerpt"
+                      name="excerpt"
                       value={
                         form.excerpt
                       }
-                      onChange={(event) => {
-                        setForm({
-                          ...form,
-                          excerpt:
-                            event.target
-                              .value,
-                        });
-
-                        setHasUnsavedChanges(
-                          true
-                        );
-                      }}
-                      placeholder="Brief summary for blog cards and search engines"
+                      onChange={
+                        handleFieldChange
+                      }
                       rows={3}
-                      className="w-full resize-none rounded-2xl border border-gray-200 px-3 py-3 text-sm leading-relaxed outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
-                      required
+                      placeholder="Short description shown in article cards and SEO areas..."
+                      className="w-full resize-y rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500"
                     />
                   </div>
 
-                  {/* =================================================
-                      ARTICLE EDITOR
-                  ================================================= */}
-
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold text-gray-600">
-                      Article Content *
+                    <label
+                      htmlFor="author"
+                      className="mb-2 block text-sm font-semibold text-gray-800"
+                    >
+                      Author
                     </label>
 
-                    {/* TOOLBAR */}
+                    <input
+                      id="author"
+                      name="author"
+                      value={
+                        form.author
+                      }
+                      onChange={
+                        handleFieldChange
+                      }
+                      placeholder="Loveons Editorial"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-gray-500"
+                    />
+                  </div>
 
-                    <div className="flex flex-wrap items-center gap-1 rounded-t-2xl border border-b-0 border-gray-200 bg-gray-50 p-2">
+                  <div>
+                    <label
+                      htmlFor="tags"
+                      className="mb-2 block text-sm font-semibold text-gray-800"
+                    >
+                      Tags
+                    </label>
+
+                    <input
+                      id="tags"
+                      name="tags"
+                      value={form.tags}
+                      onChange={
+                        handleFieldChange
+                      }
+                      placeholder="communication, relationships, trust"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-gray-500"
+                    />
+
+                    <p className="mt-1.5 text-xs text-gray-500">
+                      Separate tags with commas.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <label
+                      htmlFor="image_url"
+                      className="block text-sm font-semibold text-gray-800"
+                    >
+                      Featured Image
+                    </label>
+
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50">
+                      {uploading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4" />
+                      )}
+
+                      {uploading
+                        ? 'Uploading...'
+                        : 'Upload Image'}
+
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={
+                          uploading
+                        }
+                        onChange={
+                          handleImageUpload
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div className="md:col-span-2">
+                      <input
+                        id="image_url"
+                        name="image_url"
+                        value={
+                          form.image_url
+                        }
+                        onChange={
+                          handleFieldChange
+                        }
+                        placeholder="https://..."
+                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-gray-500"
+                      />
+                    </div>
+
+                    <div>
+                      <input
+                        id="image_alt"
+                        name="image_alt"
+                        value={
+                          form.image_alt
+                        }
+                        onChange={
+                          handleFieldChange
+                        }
+                        placeholder="Image alt text"
+                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-gray-500"
+                      />
+                    </div>
+                  </div>
+
+                  {form.image_url && (
+                    <div className="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                      <BlogImage
+                        src={
+                          form.image_url
+                        }
+                        alt={
+                          form.image_alt ||
+                          form.title ||
+                          'Featured image'
+                        }
+                        className="max-h-72 w-full object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label
+                      htmlFor="content"
+                      className="block text-sm font-semibold text-gray-800"
+                    >
+                      Article Content
+                    </label>
+
+                    <span className="text-xs text-gray-500">
+                      {estimateReadingTime(
+                        form.content,
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="overflow-hidden rounded-xl border border-gray-200">
+                    <div className="flex flex-wrap items-center gap-1 border-b border-gray-200 bg-gray-50 p-2">
                       <button
                         type="button"
-                        onClick={() =>
-                          wrapSelection(
-                            '**',
-                            '**'
-                          )
+                        onClick={
+                          applyBold
                         }
-                        className="rounded-lg p-2 text-gray-600 hover:bg-white hover:text-rose-600"
+                        className="rounded-lg p-2 text-gray-600 transition hover:bg-white hover:text-gray-900"
                         title="Bold"
                       >
                         <Bold className="h-4 w-4" />
@@ -2001,13 +1657,10 @@ export default function BlogAdmin() {
 
                       <button
                         type="button"
-                        onClick={() =>
-                          wrapSelection(
-                            '*',
-                            '*'
-                          )
+                        onClick={
+                          applyItalic
                         }
-                        className="rounded-lg p-2 text-gray-600 hover:bg-white hover:text-rose-600"
+                        className="rounded-lg p-2 text-gray-600 transition hover:bg-white hover:text-gray-900"
                         title="Italic"
                       >
                         <Italic className="h-4 w-4" />
@@ -2016,9 +1669,9 @@ export default function BlogAdmin() {
                       <button
                         type="button"
                         onClick={
-                          addHeading
+                          applyHeading
                         }
-                        className="rounded-lg p-2 text-gray-600 hover:bg-white hover:text-rose-600"
+                        className="rounded-lg p-2 text-gray-600 transition hover:bg-white hover:text-gray-900"
                         title="Heading"
                       >
                         <Heading2 className="h-4 w-4" />
@@ -2027,9 +1680,9 @@ export default function BlogAdmin() {
                       <button
                         type="button"
                         onClick={
-                          addBullet
+                          applyBulletList
                         }
-                        className="rounded-lg p-2 text-gray-600 hover:bg-white hover:text-rose-600"
+                        className="rounded-lg p-2 text-gray-600 transition hover:bg-white hover:text-gray-900"
                         title="Bullet list"
                       >
                         <List className="h-4 w-4" />
@@ -2038,22 +1691,22 @@ export default function BlogAdmin() {
                       <button
                         type="button"
                         onClick={
-                          addNumbered
+                          applyNumberedList
                         }
-                        className="rounded-lg p-2 text-gray-600 hover:bg-white hover:text-rose-600"
+                        className="rounded-lg p-2 text-gray-600 transition hover:bg-white hover:text-gray-900"
                         title="Numbered list"
                       >
                         <ListOrdered className="h-4 w-4" />
                       </button>
 
-                      <span className="mx-1 h-5 w-px bg-gray-200" />
+                      <div className="mx-1 h-6 w-px bg-gray-200" />
 
                       <button
                         type="button"
                         onClick={
                           openLinkEditor
                         }
-                        className="flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-2 text-xs font-semibold text-rose-600 shadow-sm ring-1 ring-rose-100 hover:bg-rose-50"
+                        className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-white"
                         title="Add link"
                       >
                         <LinkIcon className="h-4 w-4" />
@@ -2065,19 +1718,296 @@ export default function BlogAdmin() {
                         onClick={
                           removeLink
                         }
+                        className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-white"
+                        title="Remove link"
+                      >
+                        <Unlink className="h-4 w-4" />
+                        Remove Link
+                      </button>
+                    </div>
 
-          className="rounded-lg p-2 text-gray-600 hover:bg-red-50 hover:text-red-600"
-          title="Remove link"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div> 
-   </div>
-</section>
-);
-};
+                    <textarea
+                      ref={contentRef}
+                      id="content"
+                      name="content"
+                      value={
+                        form.content
+                      }
+                      onChange={
+                        handleFieldChange
+                      }
+                      rows={18}
+                      placeholder="Write your article here..."
+                      className="min-h-[420px] w-full resize-y border-0 px-4 py-4 text-sm leading-7 text-gray-900 outline-none"
+                    />
+                  </div>
 
-export default BlogAdmin;
+                  <p className="mt-2 text-xs text-gray-500">
+                    You can use Markdown links like
+                    [Google](https://google.com).
+                  </p>
+                </div>
+
+                {linkOpen && (
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900">
+                          Add Link
+                        </h3>
+
+                        <p className="mt-1 text-xs text-gray-500">
+                          Select text in the article,
+                          then enter its URL.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setLinkOpen(
+                            false,
+                          )
+                        }
+                        className="rounded-lg p-1.5 text-gray-500 hover:bg-white hover:text-gray-900"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <input
+                        value={
+                          linkText
+                        }
+                        onChange={(
+                          event,
+                        ) =>
+                          setLinkText(
+                            event.target
+                              .value,
+                          )
+                        }
+                        placeholder="Link text"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500"
+                      />
+
+                      <input
+                        value={
+                          linkUrl
+                        }
+                        onChange={(
+                          event,
+                        ) =>
+                          setLinkUrl(
+                            event.target
+                              .value,
+                          )
+                        }
+                        placeholder="https://example.com"
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500"
+                      />
+                    </div>
+
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={
+                          insertLink
+                        }
+                        className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800"
+                      >
+                        <LinkIcon className="h-4 w-4" />
+                        Insert Link
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                  <div>
+                    <label
+                      htmlFor="meta_title"
+                      className="mb-2 block text-sm font-semibold text-gray-800"
+                    >
+                      SEO Meta Title
+                    </label>
+
+                    <input
+                      id="meta_title"
+                      name="meta_title"
+                      value={
+                        form.meta_title
+                      }
+                      onChange={
+                        handleFieldChange
+                      }
+                      placeholder="SEO title"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-gray-500"
+                    />
+
+                    <p className="mt-1.5 text-xs text-gray-500">
+                      Recommended: around 50–60 characters.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="meta_description"
+                      className="mb-2 block text-sm font-semibold text-gray-800"
+                    >
+                      SEO Meta Description
+                    </label>
+
+                    <textarea
+                      id="meta_description"
+                      name="meta_description"
+                      value={
+                        form.meta_description
+                      }
+                      onChange={
+                        handleFieldChange
+                      }
+                      rows={3}
+                      placeholder="SEO description"
+                      className="w-full resize-y rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-gray-500"
+                    />
+
+                    <p className="mt-1.5 text-xs text-gray-500">
+                      Recommended: around 140–160 characters.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">
+                      Article Status
+                    </p>
+
+                    <p className="mt-1 text-xs text-gray-500">
+                      Save your work as a draft or publish it
+                      when it is ready.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <span
+                      className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold ${
+                        editingId
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {editingId
+                        ? 'Editing existing article'
+                        : 'New article'}
+                    </span>
+
+                    <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-700">
+                      {form.content.trim()
+                        ? 'Unsaved changes are auto-recovered'
+                        : 'Not started'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col-reverse gap-3 border-t border-gray-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                  <button
+                    type="button"
+                    onClick={closeEditor}
+                    disabled={saving}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <X className="h-4 w-4" />
+                    Cancel
+                  </button>
+
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={(event) => {
+                        const formElement =
+                          event.currentTarget.form;
+
+                        if (!formElement) {
+                          return;
+                        }
+
+                        void handleSubmit(
+                          {
+                            preventDefault: () => {},
+                          } as FormEvent<HTMLFormElement>,
+                          false,
+                        );
+                      }}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-800 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {saving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+
+                      {saving
+                        ? 'Saving...'
+                        : 'Save Draft'}
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      onClick={() => {
+                        /*
+                         * The form's normal submit handler saves
+                         * a draft. This flag lets the next handler
+                         * know that this button means Publish.
+                         */
+                      }}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {saving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+
+                      {saving
+                        ? 'Publishing...'
+                        : 'Publish Article'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </section>
+          </div>
+        </div>
+      )}
+
+        {/* 
+         * Editor recovery notice.
+         * This stays outside the form so it does not interfere
+         * with the article fields or submit behaviour.
+         */}
+        
+        {showForm && (
+          <div className="pointer-events-none fixed bottom-4 left-1/2 z-[60] -translate-x-1/2">
+            <div className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-600 shadow-lg">
+              {saving
+                ? 'Saving your article...'
+                : 'Your work is being kept safe locally.'}
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+
+
+
+
 
 
 
