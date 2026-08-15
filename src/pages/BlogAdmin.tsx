@@ -2071,14 +2071,19 @@ export default function BlogAdmin() {
         >
           <X className="h-4 w-4" />
         </button>
-      </div>
-    
+      </div> 
 </div>
 </section>
 );
 };
 
 export default BlogAdmin;
+
+    
+
+
+
+
 
 
 
