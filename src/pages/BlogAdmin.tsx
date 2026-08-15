@@ -2073,7 +2073,6 @@ export default function BlogAdmin() {
         </button>
       </div> 
    </div>
-</div>
 </section>
 );
 };
