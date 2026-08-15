@@ -5,8 +5,8 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type FormEvent,
 } from 'react';
+
 import {
   Plus,
   Trash2,
@@ -32,6 +32,7 @@ import {
 import Seo from '../components/Seo';
 import PageLayout from '../components/PageLayout';
 import BlogImage from '../components/BlogImage';
+
 import {
   fetchAllPosts,
   createPost,
@@ -41,10 +42,13 @@ import {
   estimateReadingTime,
   type BlogPost,
 } from '../lib/blogApi';
+
 import { BLOG_CATEGORIES } from '../lib/blog';
 
 const PLACEHOLDER_IMAGE = '/images/blogs/default.webp';
-const LOCAL_DRAFT_KEY = 'loveons-blog-admin-local-draft-v2';
+
+const LOCAL_DRAFT_KEY =
+  'loveons-blog-admin-local-draft-v3';
 
 type Filter = 'all' | 'published' | 'draft';
 
@@ -62,7 +66,7 @@ interface FormData {
   meta_description: string;
 }
 
-const emptyForm: FormData = {
+const EMPTY_FORM: FormData = {
   title: '',
   slug: '',
   category: 'Communication',
@@ -75,6 +79,10 @@ const emptyForm: FormData = {
   meta_title: '',
   meta_description: '',
 };
+
+/* =========================================================
+   HELPERS
+========================================================= */
 
 function cleanSlug(value: string): string {
   return value
@@ -98,7 +106,9 @@ function isValidLink(value: string): boolean {
 
   if (!url) return false;
 
-  if (url.startsWith('/')) return true;
+  if (url.startsWith('/')) {
+    return true;
+  }
 
   try {
     const parsed = new URL(url);
@@ -112,16 +122,18 @@ function isValidLink(value: string): boolean {
   }
 }
 
-function hasContent(form: Partial<FormData>): boolean {
+function hasContent(
+  data: Partial<FormData>,
+): boolean {
   return Boolean(
-    form.title?.trim() ||
-      form.slug?.trim() ||
-      form.excerpt?.trim() ||
-      form.content?.trim() ||
-      form.image_url?.trim() ||
-      form.tags?.trim() ||
-      form.meta_title?.trim() ||
-      form.meta_description?.trim(),
+    data.title?.trim() ||
+      data.slug?.trim() ||
+      data.excerpt?.trim() ||
+      data.content?.trim() ||
+      data.image_url?.trim() ||
+      data.tags?.trim() ||
+      data.meta_title?.trim() ||
+      data.meta_description?.trim(),
   );
 }
 
@@ -129,69 +141,121 @@ function buildPayload(
   form: FormData,
   published: boolean,
   oldPublishedAt?: string | null,
-) {
-  const slug = cleanSlug(form.slug || form.title);
-
+): Omit<
+  BlogPost,
+  'id' | 'created_at' | 'updated_at'
+> {
   return {
     title: form.title.trim(),
-    slug,
+
+    slug: cleanSlug(
+      form.slug || form.title,
+    ),
+
     category: form.category,
+
     excerpt: form.excerpt.trim(),
+
     content: form.content.trim(),
-    image_url: form.image_url.trim() || null,
+
+    image_url:
+      form.image_url.trim() || null,
+
     image_alt:
       form.image_alt.trim() ||
-      form.title.trim() ||
-      null,
+      form.title.trim(),
+
     author:
       form.author.trim() ||
       'Loveons Editorial',
+
     published,
+
     published_at: published
-      ? oldPublishedAt || new Date().toISOString()
+      ? oldPublishedAt ||
+        new Date().toISOString()
       : oldPublishedAt || null,
-    reading_time: estimateReadingTime(form.content),
+
+    reading_time:
+      estimateReadingTime(
+        form.content,
+      ),
+
     tags: makeTags(form.tags),
+
     meta_title:
       form.meta_title.trim() ||
       form.title.trim(),
+
     meta_description:
       form.meta_description.trim() ||
       form.excerpt.trim(),
   };
 }
 
+/* =========================================================
+   COMPONENT
+========================================================= */
+
 export default function BlogAdmin() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(
-    null,
-  );
+  const [posts, setPosts] =
+    useState<BlogPost[]>([]);
 
-  const [form, setForm] = useState<FormData>({
-    ...emptyForm,
-  });
+  const [loading, setLoading] =
+    useState(true);
 
-  const [uploading, setUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(
-    null,
-  );
+  const [showEditor, setShowEditor] =
+    useState(false);
 
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<Filter>('all');
+  const [editingId, setEditingId] =
+    useState<string | null>(null);
+
+  const [form, setForm] =
+    useState<FormData>({
+      ...EMPTY_FORM,
+    });
+
+  const [saving, setSaving] =
+    useState(false);
+
+  const [uploading, setUploading] =
+    useState(false);
+
+  const [deletingId, setDeletingId] =
+    useState<string | null>(null);
+
+  const [error, setError] =
+    useState('');
+
+  const [notice, setNotice] =
+    useState('');
+
+  const [search, setSearch] =
+    useState('');
+
+  const [filter, setFilter] =
+    useState<Filter>('all');
+
+  const [linkOpen, setLinkOpen] =
+    useState(false);
+
+  const [linkText, setLinkText] =
+    useState('');
+
+  const [linkUrl, setLinkUrl] =
+    useState('');
 
   const contentRef =
-    useRef<HTMLTextAreaElement | null>(null);
+    useRef<HTMLTextAreaElement | null>(
+      null,
+    );
 
-  const draftTimerRef = useRef<number | null>(null);
+  const draftTimerRef =
+    useRef<number | null>(null);
 
-  const [linkOpen, setLinkOpen] = useState(false);
-  const [linkText, setLinkText] = useState('');
-  const [linkUrl, setLinkUrl] = useState('');
+  /* =======================================================
+     STATE
+  ======================================================= */
 
   const setFields = useCallback(
     (patch: Partial<FormData>) => {
@@ -203,257 +267,237 @@ export default function BlogAdmin() {
     [],
   );
 
-  const loadPosts = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError('');
+  /* =======================================================
+     LOAD POSTS
+  ======================================================= */
 
-      const data = await fetchAllPosts();
+  const loadPosts =
+    useCallback(async () => {
+      try {
+        setLoading(true);
+        setError('');
 
-      setPosts(data);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to load posts.',
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        const data =
+          await fetchAllPosts();
+
+        setPosts(data);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Failed to load articles.',
+        );
+      } finally {
+        setLoading(false);
+      }
+    }, []);
 
   useEffect(() => {
     void loadPosts();
   }, [loadPosts]);
 
-  const saveLocalDraft = useCallback(
-    (
-      nextForm: FormData,
-      nextEditingId: string | null,
-    ) => {
+  /* =======================================================
+     LOCAL DRAFT
+  ======================================================= */
+
+  const saveLocalDraft =
+    useCallback(
+      (
+        nextForm: FormData,
+        nextEditingId: string | null,
+      ) => {
+        try {
+          localStorage.setItem(
+            LOCAL_DRAFT_KEY,
+            JSON.stringify({
+              form: nextForm,
+              editingId:
+                nextEditingId,
+              savedAt:
+                new Date().toISOString(),
+            }),
+          );
+        } catch {
+          // Local recovery is optional.
+        }
+      },
+      [],
+    );
+
+  const clearLocalDraft =
+    useCallback(() => {
       try {
-        localStorage.setItem(
+        localStorage.removeItem(
           LOCAL_DRAFT_KEY,
-          JSON.stringify({
-            form: nextForm,
-            editingId: nextEditingId,
-            savedAt: new Date().toISOString(),
-          }),
         );
       } catch {
-        // Local recovery is best effort.
+        // Ignore storage errors.
       }
-    },
-    [],
-  );
-
-  const clearLocalDraft = useCallback(() => {
-    try {
-      localStorage.removeItem(LOCAL_DRAFT_KEY);
-    } catch {
-      // Ignore storage errors.
-    }
-  }, []);
+    }, []);
 
   useEffect(() => {
-    if (!showForm || !hasContent(form)) return;
+    if (!showEditor) return;
 
-    if (draftTimerRef.current) {
-      window.clearTimeout(draftTimerRef.current);
+    if (!hasContent(form)) return;
+
+    if (draftTimerRef.current !== null) {
+      window.clearTimeout(
+        draftTimerRef.current,
+      );
     }
 
-    draftTimerRef.current = window.setTimeout(() => {
-      saveLocalDraft(form, editingId);
-    }, 700);
+    draftTimerRef.current =
+      window.setTimeout(() => {
+        saveLocalDraft(
+          form,
+          editingId,
+        );
+      }, 700);
 
     return () => {
-      if (draftTimerRef.current) {
-        window.clearTimeout(draftTimerRef.current);
+      if (
+        draftTimerRef.current !== null
+      ) {
+        window.clearTimeout(
+          draftTimerRef.current,
+        );
       }
     };
   }, [
     form,
     editingId,
-    showForm,
+    showEditor,
     saveLocalDraft,
   ]);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(
-        LOCAL_DRAFT_KEY,
-      );
+  /* =======================================================
+     EDITOR OPEN / CLOSE
+  ======================================================= */
 
-      if (!raw) return;
+  const openNewArticle = () => {
+    setEditingId(null);
+
+    setForm({
+      ...EMPTY_FORM,
+    });
+
+    setLinkOpen(false);
+    setLinkText('');
+    setLinkUrl('');
+
+    setError('');
+    setNotice('');
+
+    setShowEditor(true);
+  };
+
+  const closeEditor = (
+    clearDraft = true,
+  ) => {
+    if (draftTimerRef.current !== null) {
+      window.clearTimeout(
+        draftTimerRef.current,
+      );
+    }
+
+    setShowEditor(false);
+
+    setEditingId(null);
+
+    setForm({
+      ...EMPTY_FORM,
+    });
+
+    setLinkOpen(false);
+    setLinkText('');
+    setLinkUrl('');
+
+    setError('');
+    setNotice('');
+
+    if (clearDraft) {
+      clearLocalDraft();
+    }
+  };
+
+  /* =======================================================
+     RESTORE LOCAL DRAFT
+  ======================================================= */
+
+  const restoreLocalDraft = () => {
+    try {
+      const raw =
+        localStorage.getItem(
+          LOCAL_DRAFT_KEY,
+        );
+
+      if (!raw) {
+        setNotice(
+          'No local draft found on this device.',
+        );
+        return;
+      }
 
       const saved = JSON.parse(raw) as {
-        form?: FormData;
+        form?: Partial<FormData>;
         editingId?: string | null;
         savedAt?: string;
       };
 
       if (
-        saved.form &&
-        hasContent(saved.form)
+        !saved.form ||
+        !hasContent(saved.form)
       ) {
-        setForm({
-          ...emptyForm,
-          ...saved.form,
-        });
-
-        setEditingId(
-          saved.editingId || null,
-        );
-
-        setShowForm(true);
+        clearLocalDraft();
 
         setNotice(
-          'Recovered your unsaved local draft.',
+          'No usable local draft was found.',
         );
+
+        return;
       }
-    } catch {
-      // Ignore invalid local draft data.
-    }
-  }, []);
 
-  const resetForm = useCallback(() => {
-    setForm({
-      ...emptyForm,
-    });
+      const confirmed =
+        window.confirm(
+          `Restore the saved local draft${
+            saved.savedAt
+              ? ` from ${new Date(
+                  saved.savedAt,
+                ).toLocaleString()}`
+              : ''
+          }?`,
+        );
 
-    setEditingId(null);
-    setError('');
-    setNotice('');
-    setLinkOpen(false);
-    setLinkText('');
-    setLinkUrl('');
-  }, []);
+      if (!confirmed) return;
 
-  const startNewArticle = useCallback(() => {
-    resetForm();
-    setShowForm(true);
-  }, [resetForm]);
-
-  const startEdit = useCallback(
-    (post: BlogPost) => {
       setForm({
-        title: post.title || '',
-        slug: post.slug || '',
-        category:
-          post.category ||
-          'Communication',
-        excerpt: post.excerpt || '',
-        content: post.content || '',
-        image_url:
-          post.image_url || '',
-        image_alt:
-          post.image_alt || '',
-        author:
-          post.author ||
-          'Loveons Editorial',
-        tags: Array.isArray(post.tags)
-          ? post.tags.join(', ')
-          : '',
-        meta_title:
-          post.meta_title ||
-          post.title ||
-          '',
-        meta_description:
-          post.meta_description ||
-          post.excerpt ||
-          '',
+        ...EMPTY_FORM,
+        ...saved.form,
       });
 
-      setEditingId(post.id);
-      setShowForm(true);
-      setError('');
-      setNotice('');
-      setLinkOpen(false);
-    },
-    [],
-  );
+      setEditingId(
+        saved.editingId ?? null,
+      );
 
-  const closeEditor = useCallback(() => {
-    if (hasContent(form)) {
-      saveLocalDraft(
-        form,
-        editingId,
+      setShowEditor(true);
+
+      setError('');
+
+      setNotice(
+        'Local draft restored.',
+      );
+    } catch {
+      setError(
+        'The local draft could not be restored.',
       );
     }
+  };
 
-    setShowForm(false);
-    setLinkOpen(false);
-  }, [
-    form,
-    editingId,
-    saveLocalDraft,
-  ]);
+  /* =======================================================
+     IMAGE UPLOAD
+  ======================================================= */
 
-  const handleFieldChange = useCallback(
-    (
-      event: ChangeEvent<
-        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-      >,
-    ) => {
-      const {
-        name,
-        value,
-      } = event.target;
-
-      setFields({
-        [name]: value,
-      } as Partial<FormData>);
-    },
-    [setFields],
-  );
-
-  const handleTitleChange = useCallback(
-    (
-      event: ChangeEvent<HTMLInputElement>,
-    ) => {
-      const title = event.target.value;
-
-      setForm((current) => ({
-        ...current,
-        title,
-        slug:
-          current.slug.trim() ===
-            '' ||
-          current.slug ===
-            cleanSlug(current.title)
-            ? cleanSlug(title)
-            : current.slug,
-      }));
-    },
-    [],
-  );
-
-  const handleSlugChange = useCallback(
-    (
-      event: ChangeEvent<HTMLInputElement>,
-    ) => {
-      /*
-       * Keep hyphens while typing.
-       * Final cleanup happens when the field loses focus.
-       */
-      setFields({
-        slug: event.target.value,
-      });
-    },
-    [setFields],
-  );
-
-  const handleSlugBlur = useCallback(() => {
-    setForm((current) => ({
-      ...current,
-      slug: cleanSlug(
-        current.slug ||
-          current.title,
-      ),
-    }));
-  }, []);
-
-  const handleImageUpload = useCallback(
+  const handleImageUpload =
     async (
       event: ChangeEvent<HTMLInputElement>,
     ) => {
@@ -475,7 +519,7 @@ export default function BlogAdmin() {
         });
 
         setNotice(
-          'Image uploaded successfully.',
+          'Featured image uploaded.',
         );
       } catch (err) {
         setError(
@@ -488,980 +532,981 @@ export default function BlogAdmin() {
 
         event.target.value = '';
       }
-    },
-    [setFields],
-  );
+    };
 
-  const insertAtCursor = useCallback(
-    (
-      before: string,
-      after = '',
-    ) => {
-      const textarea =
-        contentRef.current;
+  /* =======================================================
+     VALIDATION
+  ======================================================= */
 
-      if (!textarea) return;
-
-      const start =
-        textarea.selectionStart;
-
-      const end =
-        textarea.selectionEnd;
-
-      const selected =
-        form.content.slice(
-          start,
-          end,
-        );
-
-      const replacement =
-        `${before}${selected}${after}`;
-
-      const nextContent =
-        form.content.slice(
-          0,
-          start,
-        ) +
-        replacement +
-        form.content.slice(end);
-
-      setFields({
-        content: nextContent,
-      });
-
-      window.requestAnimationFrame(() => {
-        textarea.focus();
-
-        const cursorPosition =
-          start +
-          replacement.length;
-
-        textarea.setSelectionRange(
-          cursorPosition,
-          cursorPosition,
-        );
-      });
-    },
-    [form.content, setFields],
-  );
-
-  const applyBold = useCallback(() => {
-    insertAtCursor(
-      '**',
-      '**',
-    );
-  }, [insertAtCursor]);
-
-  const applyItalic = useCallback(() => {
-    insertAtCursor(
-      '*',
-      '*',
-    );
-  }, [insertAtCursor]);
-
-  const applyHeading = useCallback(() => {
-    insertAtCursor(
-      '## ',
-    );
-  }, [insertAtCursor]);
-
-  const applyBulletList =
-    useCallback(() => {
-      insertAtCursor(
-        '- ',
+  const validate = (): boolean => {
+    if (!form.title.trim()) {
+      setError(
+        'Please enter a blog title.',
       );
-    }, [insertAtCursor]);
+      return false;
+    }
 
-  const applyNumberedList =
-    useCallback(() => {
-      insertAtCursor(
-        '1. ',
+    if (!form.excerpt.trim()) {
+      setError(
+        'Please enter a short description.',
       );
-    }, [insertAtCursor]);
+      return false;
+    }
 
-  const openLinkEditor =
-    useCallback(() => {
-      const textarea =
-        contentRef.current;
+    if (!form.content.trim()) {
+      setError(
+        'Please enter the article content.',
+      );
+      return false;
+    }
 
-      if (!textarea) return;
+    if (
+      !cleanSlug(
+        form.slug || form.title,
+      )
+    ) {
+      setError(
+        'Please enter a valid title or slug.',
+      );
+      return false;
+    }
 
-      const start =
-        textarea.selectionStart;
+    return true;
+  };
 
-      const end =
-        textarea.selectionEnd;
+  /* =======================================================
+     SAVE ARTICLE
+  ======================================================= */
 
-      const selected =
-        form.content.slice(
-          start,
-          end,
-        );
+  const saveArticle = async (
+    published: boolean,
+  ) => {
+    if (!validate()) return;
 
-      setLinkText(selected);
-      setLinkUrl('');
-      setLinkOpen(true);
+    try {
+      setSaving(true);
       setError('');
-    }, [form.content]);
+      setNotice('');
 
-  const insertLink =
-    useCallback(() => {
-      const text =
-        linkText.trim();
+      const existing =
+        editingId
+          ? posts.find(
+              (post) =>
+                post.id ===
+                editingId,
+            )
+          : undefined;
 
-      const url =
-        linkUrl.trim();
-
-      if (!text) {
-        setError(
-          'Select or enter the link text first.',
+      const payload =
+        buildPayload(
+          form,
+          published,
+          existing?.published_at,
         );
-        return;
+
+      if (editingId) {
+        await updatePost(
+          editingId,
+          payload,
+        );
+      } else {
+        await createPost(
+          payload,
+        );
       }
 
-      if (!isValidLink(url)) {
-        setError(
-          'Enter a valid http, https, or internal / link.',
-        );
-        return;
-      }
+      await loadPosts();
 
-      const textarea =
-        contentRef.current;
+      clearLocalDraft();
 
-      if (!textarea) {
-        setError(
-          'Unable to place the link.',
-        );
-        return;
-      }
+      setNotice(
+        published
+          ? 'Article published successfully.'
+          : 'Draft saved successfully.',
+      );
 
-      const start =
-        textarea.selectionStart;
+      setShowEditor(false);
 
-      const end =
-        textarea.selectionEnd;
+      setEditingId(null);
 
-      const selected =
-        form.content.slice(
-          start,
-          end,
-        );
-
-      const finalText =
-        selected || text;
-
-      const markdown =
-        `[${finalText}](${url})`;
-
-      const nextContent =
-        form.content.slice(
-          0,
-          start,
-        ) +
-        markdown +
-        form.content.slice(end);
-
-      setFields({
-        content: nextContent,
+      setForm({
+        ...EMPTY_FORM,
       });
 
       setLinkOpen(false);
       setLinkText('');
       setLinkUrl('');
-      setNotice(
-        'Link added to the article.',
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to save article.',
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /* =======================================================
+     EDIT
+  ======================================================= */
+
+  const handleEdit = (
+    post: BlogPost,
+  ) => {
+    setEditingId(post.id);
+
+    setForm({
+      title: post.title || '',
+      slug: post.slug || '',
+      category:
+        post.category ||
+        'Communication',
+      excerpt: post.excerpt || '',
+      content: post.content || '',
+      image_url:
+        post.image_url || '',
+      image_alt:
+        post.image_alt || '',
+      author:
+        post.author ||
+        'Loveons Editorial',
+      tags:
+        post.tags?.join(', ') ||
+        '',
+      meta_title:
+        post.meta_title || '',
+      meta_description:
+        post.meta_description ||
+        '',
+    });
+
+    setLinkOpen(false);
+    setLinkText('');
+    setLinkUrl('');
+
+    setError('');
+    setNotice('');
+
+    setShowEditor(true);
+  };
+
+  /* =======================================================
+     DELETE
+  ======================================================= */
+
+  const handleDelete = async (
+    id: string,
+  ) => {
+    const confirmed =
+      window.confirm(
+        'Delete this article permanently? This cannot be undone.',
       );
 
-      window.requestAnimationFrame(() => {
-        textarea.focus();
+    if (!confirmed) return;
 
-        const position =
-          start +
-          markdown.length;
+    try {
+      setDeletingId(id);
+      setError('');
+      setNotice('');
 
-        textarea.setSelectionRange(
-          position,
-          position,
-        );
-      });
-    }, [
-      form.content,
-      linkText,
-      linkUrl,
-      setFields,
-    ]);
+      await deletePost(id);
 
-  const removeLink =
-    useCallback(() => {
-      const textarea =
-        contentRef.current;
-
-      if (!textarea) return;
-
-      const start =
-        textarea.selectionStart;
-
-      const end =
-        textarea.selectionEnd;
-
-      const selected =
-        form.content.slice(
-          start,
-          end,
-        );
-
-      const markdownMatch =
-        selected.match(
-          /^\[([^\]]+)\]\(([^)]+)\)$/,
-        );
-
-      if (!markdownMatch) {
-        setError(
-          'Select a complete Markdown link to remove it.',
-        );
-        return;
-      }
-
-      const nextContent =
-        form.content.slice(
-          0,
-          start,
-        ) +
-        markdownMatch[1] +
-        form.content.slice(end);
-
-      setFields({
-        content: nextContent,
-      });
+      await loadPosts();
 
       setNotice(
-        'Link removed.',
+        'Article deleted.',
       );
-    }, [
-      form.content,
-      setFields,
-    ]);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Delete failed.',
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
-  const handleSubmit = useCallback(
+  /* =======================================================
+     PUBLISH / UNPUBLISH
+  ======================================================= */
+
+  const togglePublish =
     async (
-      event: FormEvent<HTMLFormElement>,
-      publish: boolean,
+      post: BlogPost,
     ) => {
-      event.preventDefault();
-
-      if (!form.title.trim()) {
-        setError('Please enter an article title.');
-        return;
-      }
-
-      if (!form.content.trim()) {
-        setError('Please enter article content.');
-        return;
-      }
-
-      const slug = cleanSlug(
-        form.slug || form.title,
-      );
-
-      if (!slug) {
-        setError(
-          'Please enter a valid article slug.',
-        );
-        return;
-      }
-
       try {
-        setSaving(true);
         setError('');
         setNotice('');
 
-        const existingPost =
-          editingId
-            ? posts.find(
-                (post) =>
-                  post.id === editingId,
-              )
-            : undefined;
+        const next =
+          !post.published;
 
-        const payload = buildPayload(
+        await updatePost(
+          post.id,
           {
-            ...form,
-            slug,
+            published: next,
+            published_at: next
+              ? post.published_at ||
+                new Date().toISOString()
+              : post.published_at,
           },
-          publish,
-          existingPost?.published_at ||
-            null,
         );
-
-        if (editingId) {
-          await updatePost(
-            editingId,
-            payload,
-          );
-
-          setNotice(
-            publish
-              ? 'Article published successfully.'
-              : 'Article saved as draft.',
-          );
-        } else {
-          await createPost(
-            payload,
-          );
-
-          setNotice(
-            publish
-              ? 'Article published successfully.'
-              : 'Draft saved successfully.',
-          );
-        }
-
-        clearLocalDraft();
 
         await loadPosts();
 
-        setShowForm(false);
-        setEditingId(null);
-
-        setForm({
-          ...emptyForm,
-        });
-
-        setLinkOpen(false);
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'Unable to save the article.',
-        );
-      } finally {
-        setSaving(false);
-      }
-    },
-    [
-      form,
-      editingId,
-      posts,
-      clearLocalDraft,
-      loadPosts,
-    ],
-  );
-
-  const handleDelete = useCallback(
-    async (id: string) => {
-      const confirmed =
-        window.confirm(
-          'Are you sure you want to delete this article?',
-        );
-
-      if (!confirmed) return;
-
-      try {
-        setDeletingId(id);
-        setError('');
-
-        await deletePost(id);
-
-        setPosts((current) =>
-          current.filter(
-            (post) => post.id !== id,
-          ),
-        );
-
-        if (editingId === id) {
-          setShowForm(false);
-          setEditingId(null);
-          resetForm();
-        }
-
         setNotice(
-          'Article deleted successfully.',
+          next
+            ? 'Article published.'
+            : 'Article moved to draft.',
         );
       } catch (err) {
         setError(
           err instanceof Error
             ? err.message
-            : 'Unable to delete the article.',
+            : 'Publish status update failed.',
         );
-      } finally {
-        setDeletingId(null);
       }
-    },
-    [
-      editingId,
-      resetForm,
-    ],
-  );
+    };
 
-  const handleTogglePublished =
-    useCallback(
-      async (post: BlogPost) => {
-        try {
-          setError('');
+  /* =======================================================
+     OPEN ARTICLE
+  ======================================================= */
 
-          const nextPublished =
-            !post.published;
-
-          await updatePost(
-            post.id,
-            buildPayload(
-              {
-                title:
-                  post.title || '',
-                slug:
-                  post.slug || '',
-                category:
-                  post.category ||
-                  'Communication',
-                excerpt:
-                  post.excerpt || '',
-                content:
-                  post.content || '',
-                image_url:
-                  post.image_url || '',
-                image_alt:
-                  post.image_alt || '',
-                author:
-                  post.author ||
-                  'Loveons Editorial',
-                tags:
-                  Array.isArray(
-                    post.tags,
-                  )
-                    ? post.tags.join(', ')
-                    : '',
-                meta_title:
-                  post.meta_title ||
-                  '',
-                meta_description:
-                  post.meta_description ||
-                  '',
-              },
-              nextPublished,
-              post.published_at ||
-                null,
-            ),
-          );
-
-          setPosts((current) =>
-            current.map(
-              (item) =>
-                item.id === post.id
-                  ? {
-                      ...item,
-                      published:
-                        nextPublished,
-                      published_at:
-                        nextPublished
-                          ? item.published_at ||
-                            new Date().toISOString()
-                          : item.published_at,
-                    }
-                  : item,
-            ),
-          );
-
-          setNotice(
-            nextPublished
-              ? 'Article published.'
-              : 'Article moved to draft.',
-          );
-        } catch (err) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'Unable to update article status.',
-          );
-        }
-      },
-      [],
+  const openArticle = (
+    post: BlogPost,
+  ) => {
+    window.open(
+      `/blog/${post.slug}`,
+      '_blank',
+      'noopener,noreferrer',
     );
+  };
+
+  /* =======================================================
+     TEXT EDITOR
+  ======================================================= */
+
+  const insertContent = (
+    value: string,
+    start?: number,
+    end?: number,
+  ) => {
+    const textarea =
+      contentRef.current;
+
+    if (!textarea) {
+      setFields({
+        content:
+          form.content + value,
+      });
+
+      return;
+    }
+
+    const from =
+      start ??
+      textarea.selectionStart;
+
+    const to =
+      end ??
+      textarea.selectionEnd;
+
+    const next =
+      form.content.slice(
+        0,
+        from,
+      ) +
+      value +
+      form.content.slice(to);
+
+    setFields({
+      content: next,
+    });
+
+    requestAnimationFrame(() => {
+      textarea.focus();
+
+      const position =
+        from + value.length;
+
+      textarea.setSelectionRange(
+        position,
+        position,
+      );
+    });
+  };
+
+  const wrapSelection = (
+    before: string,
+    after = before,
+  ) => {
+    const textarea =
+      contentRef.current;
+
+    if (!textarea) return;
+
+    const start =
+      textarea.selectionStart;
+
+    const end =
+      textarea.selectionEnd;
+
+    const selected =
+      form.content.slice(
+        start,
+        end,
+      );
+
+    if (!selected) {
+      setError(
+        'Select some text first.',
+      );
+      return;
+    }
+
+    insertContent(
+      `${before}${selected}${after}`,
+      start,
+      end,
+    );
+
+    setError('');
+  };
+
+  /* =======================================================
+     LINK EDITOR
+  ======================================================= */
+
+  const openLinkEditor = () => {
+    const textarea =
+      contentRef.current;
+
+    const start =
+      textarea?.selectionStart ?? 0;
+
+    const end =
+      textarea?.selectionEnd ?? 0;
+
+    const selected =
+      form.content.slice(
+        start,
+        end,
+      );
+
+    setLinkText(selected);
+
+    setLinkUrl('');
+
+    setError('');
+
+    setLinkOpen(true);
+  };
+
+  const addLink = () => {
+    const text =
+      linkText.trim();
+
+    const url =
+      linkUrl.trim();
+
+    if (!text) {
+      setError(
+        'Select some text or enter link text first.',
+      );
+      return;
+    }
+
+    if (!isValidLink(url)) {
+      setError(
+        'Use /blog/slug or a full http/https URL.',
+      );
+      return;
+    }
+
+    const textarea =
+      contentRef.current;
+
+    const start =
+      textarea?.selectionStart ??
+      form.content.length;
+
+    const end =
+      textarea?.selectionEnd ??
+      start;
+
+    insertContent(
+      `[${text}](${url})`,
+      start,
+      end,
+    );
+
+    setLinkOpen(false);
+
+    setLinkText('');
+    setLinkUrl('');
+
+    setError('');
+  };
+
+  const removeLink = () => {
+    const textarea =
+      contentRef.current;
+
+    if (!textarea) {
+      setError(
+        'Select the complete markdown link first.',
+      );
+      return;
+    }
+
+    const start =
+      textarea.selectionStart;
+
+    const end =
+      textarea.selectionEnd;
+
+    if (start === end) {
+      setError(
+        'Select the complete markdown link first.',
+      );
+      return;
+    }
+
+    const selected =
+      form.content.slice(
+        start,
+        end,
+      );
+
+    const match =
+      selected.match(
+        /^\[([\s\S]+)\]\(([^)]+)\)$/,
+      );
+
+    if (!match) {
+      setError(
+        'The selected text is not a markdown link.',
+      );
+      return;
+    }
+
+    insertContent(
+      match[1],
+      start,
+      end,
+    );
+
+    setError('');
+  };
+
+  /* =======================================================
+     FILTERS
+  ======================================================= */
 
   const filteredPosts =
     posts.filter((post) => {
-      const searchValue =
-        search.trim().toLowerCase();
+      const query =
+        search
+          .trim()
+          .toLowerCase();
 
       const matchesSearch =
-        !searchValue ||
+        !query ||
         post.title
-          ?.toLowerCase()
-          .includes(searchValue) ||
-        post.slug
-          ?.toLowerCase()
-          .includes(searchValue) ||
+          .toLowerCase()
+          .includes(query) ||
         post.category
-          ?.toLowerCase()
-          .includes(searchValue);
+          .toLowerCase()
+          .includes(query) ||
+        post.slug
+          .toLowerCase()
+          .includes(query) ||
+        post.tags.some(
+          (tag) =>
+            tag
+              .toLowerCase()
+              .includes(query),
+        );
 
-      if (!matchesSearch) {
-        return false;
-      }
+      const matchesFilter =
+        filter === 'all' ||
+        (filter ===
+          'published' &&
+          post.published) ||
+        (filter === 'draft' &&
+          !post.published);
 
-      if (filter === 'published') {
-        return Boolean(post.published);
-      }
-
-      if (filter === 'draft') {
-        return !post.published;
-      }
-
-      return true;
+      return (
+        matchesSearch &&
+        matchesFilter
+      );
     });
 
   const publishedCount =
     posts.filter(
-      (post) => post.published,
+      (post) =>
+        post.published,
     ).length;
 
   const draftCount =
     posts.filter(
-      (post) => !post.published,
+      (post) =>
+        !post.published,
     ).length;
 
-  const openArticle =
-    (post: BlogPost) => {
-      if (!post.slug) return;
-
-      window.open(
-        `/blog/${post.slug}`,
-        '_blank',
-        'noopener,noreferrer',
-      );
-    };
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
-    <PageLayout>
+    <>
       <Seo
-        title="Blog CMS"
-        description="Manage blog articles."
+        title="Blog Admin — Loveons"
+        description="Manage Loveons blog articles, drafts, publishing and SEO metadata."
+        path="/admin/blog"
       />
 
-      <main className="min-h-screen bg-gray-50">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <PageLayout
+        title="Blog Admin"
+        subtitle="Create, edit, draft and publish Loveons articles."
+      >
+        {/* GLOBAL ERROR */}
+
+        {error && (
+          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {notice && !error && (
+          <div className="mb-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+            {notice}
+          </div>
+        )}
+
+        {/* HEADER */}
+
+        <div className="mb-5 rounded-3xl border border-rose-100 bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="flex items-center gap-3">
-                <FileText className="h-7 w-7 text-gray-900" />
-
-                <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
-                  Blog CMS
-                </h1>
-              </div>
-
-              <p className="mt-2 text-sm text-gray-600">
-                Create, edit, save drafts and publish
-                your articles.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={startNewArticle}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800"
-            >
-              <Plus className="h-4 w-4" />
-              New Article
-            </button>
-          </div>
-
-          {(error || notice) && (
-            <div
-              className={`mb-6 rounded-xl border px-4 py-3 text-sm ${
-                error
-                  ? 'border-red-200 bg-red-50 text-red-700'
-                  : 'border-green-200 bg-green-50 text-green-700'
-              }`}
-            >
-              {error || notice}
-            </div>
-          )}
-
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-              <p className="text-sm text-gray-500">
-                Total Articles
-              </p>
-
-              <p className="mt-1 text-2xl font-bold text-gray-900">
-                {posts.length}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-              <p className="text-sm text-gray-500">
-                Published
-              </p>
-
-              <p className="mt-1 text-2xl font-bold text-green-600">
-                {publishedCount}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-              <p className="text-sm text-gray-500">
-                Drafts
-              </p>
-
-              <p className="mt-1 text-2xl font-bold text-amber-600">
-                {draftCount}
-              </p>
-            </div>
-          </div>
-
-          <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="relative w-full lg:max-w-md">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-
-                <input
-                  type="search"
-                  value={search}
-                  onChange={(event) =>
-                    setSearch(
-                      event.target.value,
-                    )
-                  }
-                  placeholder="Search articles..."
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-4 text-sm outline-none transition focus:border-gray-400 focus:bg-white"
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {(
-                  [
-                    ['all', 'All'],
-                    [
-                      'published',
-                      'Published',
-                    ],
-                    ['draft', 'Drafts'],
-                  ] as const
-                ).map(
-                  ([value, label]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() =>
-                        setFilter(
-                          value,
-                        )
-                      }
-                      className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                        filter === value
-                          ? 'bg-gray-900 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ),
-                )}
-              </div>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="flex min-h-[300px] items-center justify-center rounded-2xl border border-gray-200 bg-white">
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Loading articles...
-              </div>
-            </div>
-          ) : filteredPosts.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-16 text-center">
-              <FileText className="mx-auto h-10 w-10 text-gray-300" />
-
-              <h2 className="mt-4 text-lg font-semibold text-gray-900">
-                No articles found
+              <h2 className="font-display text-xl font-bold text-gray-800">
+                Content Manager
               </h2>
 
-              <p className="mt-2 text-sm text-gray-500">
-                Create your first article or change
-                the search/filter.
+              <p className="mt-1 text-sm text-gray-500">
+                {posts.length} total ·{' '}
+                {publishedCount}{' '}
+                published ·{' '}
+                {draftCount} drafts
               </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={
+                  restoreLocalDraft
+                }
+                className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+              >
+                Restore Draft
+              </button>
 
               <button
                 type="button"
-                onClick={startNewArticle}
-                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white"
+                onClick={
+                  openNewArticle
+                }
+                className="flex items-center gap-2 rounded-2xl bg-rose-500 px-5 py-3 text-sm font-semibold text-white hover:bg-rose-600"
               >
                 <Plus className="h-4 w-4" />
-                Create Article
+                New Article
               </button>
             </div>
-          ) : (
-            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-              <div className="divide-y divide-gray-100">
-                {filteredPosts.map(
-                  (post) => (
-                    <article
-                      key={post.id}
-                      className="flex flex-col gap-4 p-5 transition hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div className="flex min-w-0 items-center gap-4">
-                        <div className="h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-gray-100">
-                          <BlogImage
-                            src={
-                              post.image_url ||
-                              PLACEHOLDER_IMAGE
-                            }
-                            alt={
-                              post.image_alt ||
-                              post.title ||
-                              'Blog image'
-                            }
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
+          </div>
 
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="truncate text-base font-semibold text-gray-900">
-                              {post.title}
-                            </h2>
+          <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
 
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                                post.published
-                                  ? 'bg-green-100 text-green-700'
-                                  : 'bg-amber-100 text-amber-700'
-                              }`}
-                            >
-                              {post.published
-                                ? 'Published'
-                                : 'Draft'}
-                            </span>
-                          </div>
-
-                          <p className="mt-1 text-sm text-gray-500">
-                            {post.category}
-                            {post.slug
-                              ? ` • /blog/${post.slug}`
-                              : ''}
-                          </p>
-
-                          {post.excerpt && (
-                            <p className="mt-1 line-clamp-2 text-sm text-gray-600">
-                              {post.excerpt}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex shrink-0 flex-wrap items-center gap-2">
-                        {post.slug && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              openArticle(
-                                post,
-                              )
-                            }
-                            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                            View
-                          </button>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            startEdit(
-                              post,
-                            )
-                          }
-                          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-                        >
-                          <Pencil className="h-4 w-4" />
-                          Edit
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void handleTogglePublished(
-                              post,
-                            )
-                          }
-                          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-                        >
-                          {post.published ? (
-                            <>
-                              <EyeOff className="h-4 w-4" />
-                              Draft
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="h-4 w-4" />
-                              Publish
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={
-                            deletingId ===
-                            post.id
-                          }
-                          onClick={() =>
-                            void handleDelete(
-                              post.id,
-                            )
-                          }
-                          className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {deletingId ===
-                          post.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                          Delete
-                        </button>
-                      </div>
-                    </article>
-                  ),
-                )}
-              </div>
+              <input
+                type="search"
+                value={search}
+                onChange={(event) =>
+                  setSearch(
+                    event.target.value,
+                  )
+                }
+                placeholder="Search articles..."
+                className="w-full rounded-2xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-sm outline-none focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-100"
+              />
             </div>
-          )}
-        </div>
-      </main>
 
-      {showForm && (
-        <div
-          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4 sm:p-6"
-          onMouseDown={(event) => {
-            /*
-             * Do NOT close the editor when the user taps
-             * somewhere outside a field.
-             *
-             * The editor must remain stable while writing.
-             */
-            if (
-              event.target ===
-              event.currentTarget
-            ) {
-              event.preventDefault();
+            <div className="flex rounded-2xl border border-gray-200 bg-gray-50 p-1">
+              {[
+                ['all', 'All'],
+                [
+                  'published',
+                  'Published',
+                ],
+                ['draft', 'Drafts'],
+              ].map(
+                ([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() =>
+                      setFilter(
+                        value as Filter,
+                      )
+                    }
+                    className={`rounded-xl px-3 py-2 text-xs font-semibold ${
+                      filter === value
+                        ? 'bg-white text-rose-600 shadow-sm'
+                        : 'text-gray-500'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ),
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* LIST */}
+
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="h-7 w-7 animate-spin text-rose-400" />
+          </div>
+        ) : filteredPosts.length ===
+          0 ? (
+          <div className="rounded-3xl border border-dashed border-rose-200 bg-white px-6 py-16 text-center">
+            <FileText className="mx-auto h-10 w-10 text-rose-200" />
+
+            <h3 className="mt-4 text-sm font-semibold text-gray-700">
+              {posts.length ===
+              0
+                ? 'No articles yet'
+                : 'No matching articles'}
+            </h3>
+
+            {posts.length ===
+              0 && (
+              <button
+                type="button"
+                onClick={
+                  openNewArticle
+                }
+                className="mt-5 rounded-2xl bg-rose-500 px-5 py-3 text-sm font-semibold text-white"
+              >
+                Create Article
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredPosts.map(
+              (post) => (
+                <article
+                  key={post.id}
+                  className="rounded-3xl border border-rose-100 bg-white p-3 shadow-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl bg-rose-50 sm:h-20 sm:w-20">
+                      <BlogImage
+                        src={
+                          post.image_url ||
+                          PLACEHOLDER_IMAGE
+                        }
+                        alt={
+                          post.image_alt ||
+                          post.title
+                        }
+                        className="h-full w-full"
+                        loading="lazy"
+                      />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-sm font-bold text-gray-800 sm:text-base">
+                        {post.title}
+                      </h3>
+
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-600">
+                          {post.category}
+                        </span>
+
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                            post.published
+                              ? 'bg-green-50 text-green-600'
+                              : 'bg-gray-100 text-gray-500'
+                          }`}
+                        >
+                          {post.published
+                            ? 'Published'
+                            : 'Draft'}
+                        </span>
+                      </div>
+
+                      <p className="mt-1 hidden truncate text-xs text-gray-400 sm:block">
+                        /blog/
+                        {post.slug}
+                      </p>
+                    </div>
+
+                    <div className="flex gap-1">
+                      {post.published && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openArticle(
+                              post,
+                            )
+                          }
+                          className="hidden rounded-xl p-2 hover:bg-blue-50 sm:block"
+                          title="Open"
+                        >
+                          <ExternalLink className="h-4 w-4 text-blue-500" />
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          togglePublish(
+                            post,
+                          )
+                        }
+                        className="rounded-xl p-2 hover:bg-rose-50"
+                        title={
+                          post.published
+                            ? 'Unpublish'
+                            : 'Publish'
+                        }
+                      >
+                        {post.published ? (
+                          <Eye className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <EyeOff className="h-4 w-4 text-gray-400" />
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleEdit(
+                            post,
+                          )
+                        }
+                        className="rounded-xl p-2 hover:bg-rose-50"
+                        title="Edit"
+                      >
+                        <Pencil className="h-4 w-4 text-gray-500" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDelete(
+                            post.id,
+                          )
+                        }
+                        disabled={
+                          deletingId ===
+                          post.id
+                        }
+                        className="rounded-xl p-2 hover:bg-red-50"
+                        title="Delete"
+                      >
+                        {deletingId ===
+                        post.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-red-400" />
+                        ) : (
+                          <Trash2 className="h-4 w-4 text-red-400" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ),
+            )}
+          </div>
+        )}
+
+        {/* EDITOR */}
+
+        {showEditor && (
+          <div
+            className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+            onMouseDown={(event) =>
+              event.stopPropagation()
             }
-          }}
-        >
-          <div className="mx-auto flex min-h-full max-w-5xl items-center justify-center py-6">
-            <section
-              className="w-full overflow-hidden rounded-2xl bg-white shadow-2xl"
+          >
+            <div
+              className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl"
               onMouseDown={(event) =>
                 event.stopPropagation()
               }
             >
-              <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 sm:px-6">
+              {/* EDITOR HEADER */}
+
+              <div className="sticky top-0 z-20 flex items-center justify-between border-b border-rose-100 bg-white px-5 py-4">
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">
+                  <h2 className="font-display text-lg font-bold text-gray-800">
                     {editingId
                       ? 'Edit Article'
-                      : 'Create Article'}
+                      : 'New Article'}
                   </h2>
 
-                  <p className="mt-1 text-xs text-gray-500">
-                    Your work is automatically kept locally
-                    while you write.
+                  <p className="text-xs text-gray-400">
+                    Your work stays here until you save or cancel.
                   </p>
                 </div>
 
                 <button
                   type="button"
-                  onClick={closeEditor}
-                  className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
-                  aria-label="Close editor"
+                  onClick={() =>
+                    closeEditor(true)
+                  }
+                  className="rounded-xl p-2 hover:bg-rose-50"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-5 w-5 text-gray-500" />
                 </button>
               </div>
 
-              <form
-                onSubmit={(event) => {
-                  void handleSubmit(
-                    event,
-                    false,
-                  );
-                }}
-                className="space-y-6 p-5 sm:p-6"
-              >
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-                  <div className="lg:col-span-2">
-                    <label
-                      htmlFor="title"
-                      className="mb-2 block text-sm font-semibold text-gray-800"
-                    >
-                      Article Title
-                    </label>
+              {/* NO FORM TAG HERE */}
 
-                    <input
-                      id="title"
-                      name="title"
-                      value={form.title}
-                      onChange={
-                        handleTitleChange
-                      }
-                      placeholder="Enter article title"
-                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500"
-                    />
+              <div className="space-y-5 p-5 sm:p-6">
+                {/* IMAGE */}
+
+                <section className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                  <label className="mb-2 block text-xs font-bold text-gray-600">
+                    Featured Image
+                  </label>
+
+                  <div className="flex gap-4">
+                    <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-white">
+                      <BlogImage
+                        src={
+                          form.image_url ||
+                          PLACEHOLDER_IMAGE
+                        }
+                        alt={
+                          form.image_alt ||
+                          form.title
+                        }
+                        className="h-full w-full"
+                        loading="eager"
+                      />
+                    </div>
+
+                    <div className="flex-1">
+                      <label className="block cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/webp,image/avif,image/jpeg,image/png"
+                          onChange={
+                            handleImageUpload
+                          }
+                          className="hidden"
+                        />
+
+                        <div className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-rose-200 bg-white px-4 py-3 text-sm font-semibold text-rose-500">
+                          {uploading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Upload className="h-4 w-4" />
+                          )}
+
+                          {uploading
+                            ? 'Uploading...'
+                            : 'Upload Image'}
+                        </div>
+                      </label>
+
+                      <input
+                        type="text"
+                        value={
+                          form.image_url
+                        }
+                        onChange={(event) =>
+                          setFields({
+                            image_url:
+                              event.target
+                                .value,
+                          })
+                        }
+                        placeholder="Or paste image URL"
+                        className="mt-2 w-full rounded-2xl border border-gray-200 px-3 py-3 text-sm"
+                      />
+                    </div>
                   </div>
+                </section>
 
+                {/* TITLE */}
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-gray-600">
+                    Blog Title *
+                  </label>
+
+                  <input
+                    type="text"
+                    value={form.title}
+                    onChange={(event) => {
+                      const title =
+                        event.target
+                          .value;
+
+                      setFields({
+                        title,
+                        slug:
+                          editingId ||
+                          form.slug
+                            ? form.slug
+                            : cleanSlug(
+                                title,
+                              ),
+                      });
+                    }}
+                    placeholder="Enter article title"
+                    className="w-full rounded-2xl border border-gray-200 px-3 py-3 text-sm"
+                  />
+                </div>
+
+                {/* CATEGORY + SLUG */}
+
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label
-                      htmlFor="slug"
-                      className="mb-2 block text-sm font-semibold text-gray-800"
-                    >
-                      Slug
-                    </label>
-
-                    <input
-                      id="slug"
-                      name="slug"
-                      value={form.slug}
-                      onChange={
-                        handleSlugChange
-                      }
-                      onBlur={
-                        handleSlugBlur
-                      }
-                      placeholder="article-slug"
-                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500"
-                    />
-
-                    <p className="mt-1.5 text-xs text-gray-500">
-                      Example:
-                      relationship-tips
-                    </p>
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="category"
-                      className="mb-2 block text-sm font-semibold text-gray-800"
-                    >
+                    <label className="mb-1.5 block text-xs font-bold text-gray-600">
                       Category
                     </label>
 
                     <select
-                      id="category"
-                      name="category"
                       value={
                         form.category
                       }
-                      onChange={
-                        handleFieldChange
+                      onChange={(event) =>
+                        setFields({
+                          category:
+                            event.target
+                              .value,
+                        })
                       }
-                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-gray-500"
+                      className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm"
                     >
                       {BLOG_CATEGORIES.map(
                         (category) => (
                           <option
-                            key={category}
+                            key={
+                              category
+                            }
                             value={
                               category
                             }
@@ -1473,476 +1518,420 @@ export default function BlogAdmin() {
                     </select>
                   </div>
 
-                  <div className="lg:col-span-2">
-                    <label
-                      htmlFor="excerpt"
-                      className="mb-2 block text-sm font-semibold text-gray-800"
-                    >
-                      Short Excerpt
-                    </label>
-
-                    <textarea
-                      id="excerpt"
-                      name="excerpt"
-                      value={
-                        form.excerpt
-                      }
-                      onChange={
-                        handleFieldChange
-                      }
-                      rows={3}
-                      placeholder="Short description shown in article cards and SEO areas..."
-                      className="w-full resize-y rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500"
-                    />
-                  </div>
-
                   <div>
-                    <label
-                      htmlFor="author"
-                      className="mb-2 block text-sm font-semibold text-gray-800"
-                    >
-                      Author
+                    <label className="mb-1.5 block text-xs font-bold text-gray-600">
+                      URL Slug
                     </label>
 
                     <input
-                      id="author"
-                      name="author"
+                      type="text"
                       value={
-                        form.author
+                        form.slug
                       }
-                      onChange={
-                        handleFieldChange
+                      onChange={(event) =>
+                        setFields({
+                          slug:
+                            event.target
+                              .value,
+                        })
                       }
-                      placeholder="Loveons Editorial"
-                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-gray-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="tags"
-                      className="mb-2 block text-sm font-semibold text-gray-800"
-                    >
-                      Tags
-                    </label>
-
-                    <input
-                      id="tags"
-                      name="tags"
-                      value={form.tags}
-                      onChange={
-                        handleFieldChange
+                      onBlur={() =>
+                        setFields({
+                          slug: cleanSlug(
+                            form.slug ||
+                              form.title,
+                          ),
+                        })
                       }
-                      placeholder="communication, relationships, trust"
-                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-gray-500"
+                      placeholder="honest-conversation"
+                      className="w-full rounded-2xl border border-gray-200 px-3 py-3 text-sm"
                     />
 
-                    <p className="mt-1.5 text-xs text-gray-500">
-                      Separate tags with commas.
+                    <p className="mt-1 text-[11px] text-gray-400">
+                      Hyphen `-` is allowed.
                     </p>
                   </div>
                 </div>
 
+                {/* EXCERPT */}
+
                 <div>
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <label
-                      htmlFor="image_url"
-                      className="block text-sm font-semibold text-gray-800"
+                  <label className="mb-1.5 block text-xs font-bold text-gray-600">
+                    Short Description *
+                  </label>
+
+                  <textarea
+                    value={
+                      form.excerpt
+                    }
+                    onChange={(event) =>
+                      setFields({
+                        excerpt:
+                          event.target
+                            .value,
+                      })
+                    }
+                    rows={3}
+                    className="w-full resize-none rounded-2xl border border-gray-200 px-3 py-3 text-sm"
+                  />
+                </div>
+
+                {/* CONTENT TOOLBAR */}
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-gray-600">
+                    Article Content *
+                  </label>
+
+                  <div className="flex flex-wrap gap-1 rounded-t-2xl border border-b-0 border-gray-200 bg-gray-50 p-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        wrapSelection(
+                          '**',
+                          '**',
+                        )
+                      }
+                      className="rounded-lg p-2 hover:bg-white"
+                      title="Bold"
                     >
-                      Featured Image
-                    </label>
+                      <Bold className="h-4 w-4" />
+                    </button>
 
-                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50">
-                      {uploading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Upload className="h-4 w-4" />
-                      )}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        wrapSelection(
+                          '*',
+                          '*',
+                        )
+                      }
+                      className="rounded-lg p-2 hover:bg-white"
+                      title="Italic"
+                    >
+                      <Italic className="h-4 w-4" />
+                    </button>
 
-                      {uploading
-                        ? 'Uploading...'
-                        : 'Upload Image'}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        wrapSelection(
+                          '## ',
+                          '',
+                        )
+                      }
+                      className="rounded-lg p-2 hover:bg-white"
+                      title="Heading"
+                    >
+                      <Heading2 className="h-4 w-4" />
+                    </button>
 
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        disabled={
-                          uploading
-                        }
-                        onChange={
-                          handleImageUpload
-                        }
-                      />
-                    </label>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        wrapSelection(
+                          '- ',
+                          '',
+                        )
+                      }
+                      className="rounded-lg p-2 hover:bg-white"
+                      title="Bullet"
+                    >
+                      <List className="h-4 w-4" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        wrapSelection(
+                          '1. ',
+                          '',
+                        )
+                      }
+                      className="rounded-lg p-2 hover:bg-white"
+                      title="Numbered list"
+                    >
+                      <ListOrdered className="h-4 w-4" />
+                    </button>
+
+                    <span className="mx-1 h-5 w-px bg-gray-200" />
+
+                    <button
+                      type="button"
+                      onClick={
+                        openLinkEditor
+                      }
+                      className="flex items-center gap-1 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-rose-600"
+                    >
+                      <LinkIcon className="h-4 w-4" />
+                      Add Link
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={
+                        removeLink
+                      }
+                      className="rounded-lg p-2 hover:bg-white"
+                      title="Remove Link"
+                    >
+                      <Unlink className="h-4 w-4" />
+                    </button>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <div className="md:col-span-2">
-                      <input
-                        id="image_url"
-                        name="image_url"
-                        value={
-                          form.image_url
-                        }
-                        onChange={
-                          handleFieldChange
-                        }
-                        placeholder="https://..."
-                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-gray-500"
-                      />
-                    </div>
+                  <textarea
+                    ref={contentRef}
+                    value={
+                      form.content
+                    }
+                    onChange={(event) =>
+                      setFields({
+                        content:
+                          event.target
+                            .value,
+                      })
+                    }
+                    rows={16}
+                    className="w-full resize-y rounded-b-2xl border border-gray-200 px-3 py-3 text-sm leading-7"
+                  />
 
-                    <div>
-                      <input
-                        id="image_alt"
-                        name="image_alt"
-                        value={
-                          form.image_alt
-                        }
-                        onChange={
-                          handleFieldChange
-                        }
-                        placeholder="Image alt text"
-                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-gray-500"
-                      />
-                    </div>
-                  </div>
+                  {/* LINK PANEL */}
 
-                  {form.image_url && (
-                    <div className="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-                      <BlogImage
-                        src={
-                          form.image_url
-                        }
-                        alt={
-                          form.image_alt ||
-                          form.title ||
-                          'Featured image'
-                        }
-                        className="max-h-72 w-full object-cover"
-                      />
+                  {linkOpen && (
+                    <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h4 className="text-sm font-bold text-gray-700">
+                          Add Link
+                        </h4>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLinkOpen(
+                              false,
+                            );
+                            setLinkText(
+                              '',
+                            );
+                            setLinkUrl(
+                              '',
+                            );
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        <input
+                          type="text"
+                          value={
+                            linkText
+                          }
+                          onChange={(
+                            event,
+                          ) =>
+                            setLinkText(
+                              event
+                                .target
+                                .value,
+                            )
+                          }
+                          placeholder="Honest Conversation"
+                          className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm"
+                        />
+
+                        <input
+                          type="text"
+                          value={
+                            linkUrl
+                          }
+                          onChange={(
+                            event,
+                          ) =>
+                            setLinkUrl(
+                              event
+                                .target
+                                .value,
+                            )
+                          }
+                          placeholder="https://example.com"
+                          className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={
+                            addLink
+                          }
+                          className="rounded-xl bg-rose-500 px-4 py-2.5 text-xs font-semibold text-white"
+                        >
+                          Insert Link
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
 
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <label
-                      htmlFor="content"
-                      className="block text-sm font-semibold text-gray-800"
-                    >
-                      Article Content
-                    </label>
+                {/* AUTHOR + TAGS */}
 
-                    <span className="text-xs text-gray-500">
-                      {estimateReadingTime(
-                        form.content,
-                      )}
-                    </span>
-                  </div>
-
-                  <div className="overflow-hidden rounded-xl border border-gray-200">
-                    <div className="flex flex-wrap items-center gap-1 border-b border-gray-200 bg-gray-50 p-2">
-                      <button
-                        type="button"
-                        onClick={
-                          applyBold
-                        }
-                        className="rounded-lg p-2 text-gray-600 transition hover:bg-white hover:text-gray-900"
-                        title="Bold"
-                      >
-                        <Bold className="h-4 w-4" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={
-                          applyItalic
-                        }
-                        className="rounded-lg p-2 text-gray-600 transition hover:bg-white hover:text-gray-900"
-                        title="Italic"
-                      >
-                        <Italic className="h-4 w-4" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={
-                          applyHeading
-                        }
-                        className="rounded-lg p-2 text-gray-600 transition hover:bg-white hover:text-gray-900"
-                        title="Heading"
-                      >
-                        <Heading2 className="h-4 w-4" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={
-                          applyBulletList
-                        }
-                        className="rounded-lg p-2 text-gray-600 transition hover:bg-white hover:text-gray-900"
-                        title="Bullet list"
-                      >
-                        <List className="h-4 w-4" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={
-                          applyNumberedList
-                        }
-                        className="rounded-lg p-2 text-gray-600 transition hover:bg-white hover:text-gray-900"
-                        title="Numbered list"
-                      >
-                        <ListOrdered className="h-4 w-4" />
-                      </button>
-
-                      <div className="mx-1 h-6 w-px bg-gray-200" />
-
-                      <button
-                        type="button"
-                        onClick={
-                          openLinkEditor
-                        }
-                        className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-white"
-                        title="Add link"
-                      >
-                        <LinkIcon className="h-4 w-4" />
-                        Add Link
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={
-                          removeLink
-                        }
-                        className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-white"
-                        title="Remove link"
-                      >
-                        <Unlink className="h-4 w-4" />
-                        Remove Link
-                      </button>
-                    </div>
-
-                    <textarea
-                      ref={contentRef}
-                      id="content"
-                      name="content"
-                      value={
-                        form.content
-                      }
-                      onChange={
-                        handleFieldChange
-                      }
-                      rows={18}
-                      placeholder="Write your article here..."
-                      className="min-h-[420px] w-full resize-y border-0 px-4 py-4 text-sm leading-7 text-gray-900 outline-none"
-                    />
-                  </div>
-
-                  <p className="mt-2 text-xs text-gray-500">
-                    You can use Markdown links like
-                    [Google](https://google.com).
-                  </p>
-                </div>
-
-                {linkOpen && (
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                    <div className="mb-3 flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-semibold text-gray-900">
-                          Add Link
-                        </h3>
-
-                        <p className="mt-1 text-xs text-gray-500">
-                          Select text in the article,
-                          then enter its URL.
-                        </p>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setLinkOpen(
-                            false,
-                          )
-                        }
-                        className="rounded-lg p-1.5 text-gray-500 hover:bg-white hover:text-gray-900"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <input
-                        value={
-                          linkText
-                        }
-                        onChange={(
-                          event,
-                        ) =>
-                          setLinkText(
-                            event.target
-                              .value,
-                          )
-                        }
-                        placeholder="Link text"
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500"
-                      />
-
-                      <input
-                        value={
-                          linkUrl
-                        }
-                        onChange={(
-                          event,
-                        ) =>
-                          setLinkUrl(
-                            event.target
-                              .value,
-                          )
-                        }
-                        placeholder="https://example.com"
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500"
-                      />
-                    </div>
-
-                    <div className="mt-3 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={
-                          insertLink
-                        }
-                        className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800"
-                      >
-                        <LinkIcon className="h-4 w-4" />
-                        Insert Link
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label
-                      htmlFor="meta_title"
-                      className="mb-2 block text-sm font-semibold text-gray-800"
-                    >
-                      SEO Meta Title
+                    <label className="mb-1.5 block text-xs font-bold text-gray-600">
+                      Author
                     </label>
 
                     <input
-                      id="meta_title"
-                      name="meta_title"
+                      type="text"
                       value={
-                        form.meta_title
+                        form.author
                       }
-                      onChange={
-                        handleFieldChange
+                      onChange={(event) =>
+                        setFields({
+                          author:
+                            event.target
+                              .value,
+                        })
                       }
-                      placeholder="SEO title"
-                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-gray-500"
+                      className="w-full rounded-2xl border border-gray-200 px-3 py-3 text-sm"
                     />
-
-                    <p className="mt-1.5 text-xs text-gray-500">
-                      Recommended: around 50–60 characters.
-                    </p>
                   </div>
 
                   <div>
-                    <label
-                      htmlFor="meta_description"
-                      className="mb-2 block text-sm font-semibold text-gray-800"
-                    >
-                      SEO Meta Description
+                    <label className="mb-1.5 block text-xs font-bold text-gray-600">
+                      Tags
                     </label>
 
-                    <textarea
-                      id="meta_description"
-                      name="meta_description"
+                    <input
+                      type="text"
                       value={
-                        form.meta_description
+                        form.tags
                       }
-                      onChange={
-                        handleFieldChange
+                      onChange={(event) =>
+                        setFields({
+                          tags:
+                            event.target
+                              .value,
+                        })
                       }
-                      rows={3}
-                      placeholder="SEO description"
-                      className="w-full resize-y rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-gray-500"
+                      placeholder="communication, trust, relationships"
+                      className="w-full rounded-2xl border border-gray-200 px-3 py-3 text-sm"
                     />
-
-                    <p className="mt-1.5 text-xs text-gray-500">
-                      Recommended: around 140–160 characters.
-                    </p>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">
-                      Article Status
-                    </p>
+                {/* IMAGE ALT */}
 
-                    <p className="mt-1 text-xs text-gray-500">
-                      Save your work as a draft or publish it
-                      when it is ready.
-                    </p>
-                  </div>
+                <div className="rounded-2xl bg-gray-50 p-4">
+                  <label className="mb-1.5 block text-xs font-bold text-gray-600">
+                    Image Alt Text
+                  </label>
 
-                  <div className="flex flex-wrap gap-2">
-                    <span
-                      className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold ${
-                        editingId
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {editingId
-                        ? 'Editing existing article'
-                        : 'New article'}
-                    </span>
+                  <input
+                    type="text"
+                    value={
+                      form.image_alt
+                    }
+                    onChange={(event) =>
+                      setFields({
+                        image_alt:
+                          event.target
+                            .value,
+                      })
+                    }
+                    placeholder="Describe the featured image"
+                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm"
+                  />
+                </div>
 
-                    <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-700">
-                      {form.content.trim()
-                        ? 'Unsaved changes are auto-recovered'
-                        : 'Not started'}
-                    </span>
+                {/* SEO */}
+
+                <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
+                  <h3 className="mb-4 text-sm font-bold text-gray-700">
+                    SEO
+                  </h3>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="mb-1.5 block text-xs font-bold text-gray-600">
+                        Meta Title
+                      </label>
+
+                      <input
+                        type="text"
+                        value={
+                          form.meta_title
+                        }
+                        onChange={(event) =>
+                          setFields({
+                            meta_title:
+                              event.target
+                                .value,
+                          })
+                        }
+                        maxLength={70}
+                        className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm"
+                      />
+
+                      <p className="mt-1 text-[11px] text-gray-400">
+                        {
+                          form
+                            .meta_title
+                            .length
+                        }
+                        /70
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-xs font-bold text-gray-600">
+                        Meta Description
+                      </label>
+
+                      <textarea
+                        value={
+                          form.meta_description
+                        }
+                        onChange={(event) =>
+                          setFields({
+                            meta_description:
+                              event.target
+                                .value,
+                          })
+                        }
+                        maxLength={170}
+                        rows={3}
+                        className="w-full resize-none rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm"
+                      />
+
+                      <p className="mt-1 text-[11px] text-gray-400">
+                        {
+                          form
+                            .meta_description
+                            .length
+                        }
+                        /170
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col-reverse gap-3 border-t border-gray-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                  <button
-                    type="button"
-                    onClick={closeEditor}
-                    disabled={saving}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <X className="h-4 w-4" />
-                    Cancel
-                  </button>
+                {/* ACTIONS */}
 
-                  <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="sticky bottom-0 -mx-5 border-t border-rose-100 bg-white px-5 pt-4 sm:-mx-6 sm:px-6">
+                  <div className="grid gap-2 sm:grid-cols-4">
                     <button
                       type="button"
-                      disabled={saving}
-                      onClick={(event) => {
-                        const formElement =
-                          event.currentTarget.form;
-
-                        if (!formElement) {
-                          return;
-                        }
-
-                        void handleSubmit(
-                          {
-                            preventDefault: () => {},
-                          } as FormEvent<HTMLFormElement>,
+                      onClick={() =>
+                        saveArticle(
                           false,
-                        );
-                      }}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-800 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        )
+                      }
+                      disabled={
+                        saving ||
+                        uploading
+                      }
+                      className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 disabled:opacity-50"
                     >
                       {saving ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -1950,22 +1939,21 @@ export default function BlogAdmin() {
                         <Save className="h-4 w-4" />
                       )}
 
-                      {saving
-                        ? 'Saving...'
-                        : 'Save Draft'}
+                      Save Draft
                     </button>
 
                     <button
-                      type="submit"
-                      disabled={saving}
-                      onClick={() => {
-                        /*
-                         * The form's normal submit handler saves
-                         * a draft. This flag lets the next handler
-                         * know that this button means Publish.
-                         */
-                      }}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      type="button"
+                      onClick={() =>
+                        saveArticle(
+                          true,
+                        )
+                      }
+                      disabled={
+                        saving ||
+                        uploading
+                      }
+                      className="flex items-center justify-center gap-2 rounded-2xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
                     >
                       {saving ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -1973,28 +1961,52 @@ export default function BlogAdmin() {
                         <Eye className="h-4 w-4" />
                       )}
 
-                      {saving
-                        ? 'Publishing...'
+                      {editingId
+                        ? 'Save & Publish'
                         : 'Publish Article'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        saveLocalDraft(
+                          form,
+                          editingId,
+                        );
+
+                        setNotice(
+                          'Local draft saved on this device.',
+                        );
+                      }}
+                      disabled={saving}
+                      className="rounded-2xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-600 disabled:opacity-50"
+                    >
+                      Keep Local Draft
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        closeEditor(
+                          true,
+                        )
+                      }
+                      disabled={saving}
+                      className="rounded-2xl px-4 py-3 text-sm font-semibold text-gray-500 disabled:opacity-50"
+                    >
+                      Cancel
                     </button>
                   </div>
                 </div>
-              </form>
-            </section>
-          </div>
-        </div>
-       {showForm && (
-          <div className="pointer-events-none fixed bottom-4 left-1/2 z-[60] -translate-x-1/2">
-            <div className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-600 shadow-lg">
-              {saving
-                ? 'Saving your article...'
-                : 'Your work is being kept safe locally.'}
+              </div>
             </div>
           </div>
         )}
-      </>
-    );
-  }
+      </PageLayout>
+    </>
+  );
+}
+
 
 
 
