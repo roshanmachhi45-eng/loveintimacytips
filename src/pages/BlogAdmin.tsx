@@ -2065,5 +2065,16 @@ export default function BlogAdmin() {
                         onClick={
                           removeLink
                         }
-                        className="rounded-lg p-2 text-gray-
+
+          className="rounded-lg p-2 text-gray-600 hover:bg-red-50 hover:text-red-600"
+          title="Remove link"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default BlogAdmin;
 
