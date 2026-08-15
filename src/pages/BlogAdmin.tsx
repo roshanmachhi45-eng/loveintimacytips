@@ -2073,11 +2073,22 @@ export default function BlogAdmin() {
         </button>
       </div> 
 </div>
+
+</form>
 </section>
 );
 };
 
 export default BlogAdmin;
+
+
+
+
+
+
+
+
+
 
     
 
