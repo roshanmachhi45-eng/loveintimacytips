@@ -47,8 +47,25 @@ import {
 
 import { BLOG_CATEGORIES } from '../lib/blog';
 
+/* =========================================================
+   CONSTANTS
+   ========================================================= */
+
 const PLACEHOLDER_IMAGE =
   '/images/blogs/default.webp';
+
+/*
+ * Browser-only temporary recovery storage.
+ *
+ * This is NOT the Supabase database.
+ * It is only used to protect the article while the
+ * administrator is typing.
+ */
+const LOCAL_DRAFT_KEY =
+  'loveons_blog_admin_unsaved_v19';
+
+const LOCAL_DRAFT_MAX_AGE =
+  1000 * 60 * 60 * 24 * 7;
 
 /* =========================================================
    FORM TYPE
@@ -67,6 +84,10 @@ interface FormData {
   meta_title: string;
   meta_description: string;
 }
+
+/* =========================================================
+   EMPTY FORM
+   ========================================================= */
 
 const emptyForm: FormData = {
   title: '',
@@ -93,14 +114,73 @@ function makeTags(value: string): string[] {
     .filter(Boolean);
 }
 
+/*
+ * CMS slug helper.
+ *
+ * Only:
+ * a-z
+ * 0-9
+ * hyphen
+ *
+ * are allowed.
+ */
+function safeCmsSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/['’]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-');
+}
+
+/* =========================================================
+   LINK VALIDATION
+   ========================================================= */
+
+function isValidLink(value: string): boolean {
+  const url = value.trim();
+
+  if (!url) {
+    return false;
+  }
+
+  /*
+   * Internal links.
+   *
+   * Example:
+   * /blog/building-trust
+   */
+  if (url.startsWith('/')) {
+    return true;
+  }
+
+  /*
+   * External links.
+   */
+  try {
+    const parsed = new URL(url);
+
+    return (
+      parsed.protocol === 'http:' ||
+      parsed.protocol === 'https:'
+    );
+  } catch {
+    return false;
+  }
+}
+
+/* =========================================================
+   PAYLOAD
+   ========================================================= */
+
 function createPayload(
   form: FormData,
   published: boolean,
   existingPublishedAt?: string | null
 ) {
-  const finalSlug = slugify(
-    form.slug || form.title
-  );
+  const finalSlug =
+    safeCmsSlug(form.slug || form.title);
 
   const readingTime =
     estimateReadingTime(form.content);
@@ -149,42 +229,7 @@ function createPayload(
 }
 
 /* =========================================================
-   LINK HELPERS
-   ========================================================= */
-
-function isValidLink(url: string) {
-  const value = url.trim();
-
-  if (!value) {
-    return false;
-  }
-
-  /*
-   * Internal links:
-   * /blog/example
-   * /blog?category=Dating
-   */
-  if (value.startsWith('/')) {
-    return true;
-  }
-
-  /*
-   * External links.
-   */
-  try {
-    const parsed = new URL(value);
-
-    return (
-      parsed.protocol === 'http:' ||
-      parsed.protocol === 'https:'
-    );
-  } catch {
-    return false;
-  }
-}
-
-/* =========================================================
-   BLOG ADMIN
+   COMPONENT
    ========================================================= */
 
 export default function BlogAdmin() {
@@ -224,10 +269,26 @@ export default function BlogAdmin() {
     >('all');
 
   /*
-   * Article textarea reference.
-   *
-   * Used for inserting links/formatting
-   * exactly where the cursor/selection is.
+   * Unsaved changes.
+   */
+  const [hasUnsavedChanges, setHasUnsavedChanges] =
+    useState(false);
+
+  /*
+   * Recovery.
+   */
+  const [showRecovery, setShowRecovery] =
+    useState(false);
+
+  const [recoveryData, setRecoveryData] =
+    useState<{
+      editingId: string | null;
+      form: FormData;
+      savedAt: number;
+    } | null>(null);
+
+  /*
+   * Article textarea.
    */
   const contentRef =
     useRef<HTMLTextAreaElement | null>(
@@ -245,6 +306,13 @@ export default function BlogAdmin() {
 
   const [linkUrl, setLinkUrl] =
     useState('');
+
+  /*
+   * Prevent the initial recovery check from
+   * being confused with an empty form.
+   */
+  const recoveryChecked =
+    useRef(false);
 
   /* =======================================================
      LOAD POSTS
@@ -278,47 +346,326 @@ export default function BlogAdmin() {
   }, [loadPosts]);
 
   /* =======================================================
-     RESET
+     RECOVER LOCAL ARTICLE
      ======================================================= */
 
-  const resetForm = () => {
+  useEffect(() => {
+    if (recoveryChecked.current) {
+      return;
+    }
+
+    recoveryChecked.current = true;
+
+    try {
+      const raw =
+        window.localStorage.getItem(
+          LOCAL_DRAFT_KEY
+        );
+
+      if (!raw) {
+        return;
+      }
+
+      const parsed = JSON.parse(raw);
+
+      if (
+        !parsed ||
+        typeof parsed !== 'object' ||
+        !parsed.form ||
+        typeof parsed.savedAt !==
+          'number'
+      ) {
+        window.localStorage.removeItem(
+          LOCAL_DRAFT_KEY
+        );
+
+        return;
+      }
+
+      const age =
+        Date.now() -
+        parsed.savedAt;
+
+      if (
+        age >
+        LOCAL_DRAFT_MAX_AGE
+      ) {
+        window.localStorage.removeItem(
+          LOCAL_DRAFT_KEY
+        );
+
+        return;
+      }
+
+      const recoveredForm: FormData = {
+        ...emptyForm,
+        ...parsed.form,
+      };
+
+      const hasActualContent =
+        recoveredForm.title.trim() ||
+        recoveredForm.excerpt.trim() ||
+        recoveredForm.content.trim() ||
+        recoveredForm.slug.trim();
+
+      if (!hasActualContent) {
+        window.localStorage.removeItem(
+          LOCAL_DRAFT_KEY
+        );
+
+        return;
+      }
+
+      setRecoveryData({
+        editingId:
+          parsed.editingId ??
+          null,
+
+        form: recoveredForm,
+
+        savedAt:
+          parsed.savedAt,
+      });
+
+      setShowRecovery(true);
+    } catch {
+      try {
+        window.localStorage.removeItem(
+          LOCAL_DRAFT_KEY
+        );
+      } catch {
+        // Ignore storage failure.
+      }
+    }
+  }, []);
+
+  /* =======================================================
+     AUTO SAVE TO LOCAL STORAGE
+     ======================================================= */
+
+  useEffect(() => {
+    if (!showForm) {
+      return;
+    }
+
+    const hasContent =
+      form.title.trim() ||
+      form.excerpt.trim() ||
+      form.content.trim() ||
+      form.slug.trim() ||
+      form.tags.trim() ||
+      form.meta_title.trim() ||
+      form.meta_description.trim();
+
+    if (!hasContent) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(
+        LOCAL_DRAFT_KEY,
+        JSON.stringify({
+          editingId,
+          form,
+          savedAt: Date.now(),
+        })
+      );
+
+      setHasUnsavedChanges(true);
+    } catch {
+      /*
+       * If browser storage is unavailable,
+       * the CMS still continues working normally.
+       */
+    }
+  }, [
+    showForm,
+    editingId,
+    form,
+  ]);
+
+  /* =======================================================
+     PAGE LEAVE WARNING
+     ======================================================= */
+
+  useEffect(() => {
+    if (
+      !showForm ||
+      !hasUnsavedChanges
+    ) {
+      return;
+    }
+
+    const handleBeforeUnload = (
+      event: BeforeUnloadEvent
+    ) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener(
+      'beforeunload',
+      handleBeforeUnload
+    );
+
+    return () => {
+      window.removeEventListener(
+        'beforeunload',
+        handleBeforeUnload
+      );
+    };
+  }, [
+    showForm,
+    hasUnsavedChanges,
+  ]);
+
+  /* =======================================================
+     RESET FORM
+     ======================================================= */
+
+  const clearLocalRecovery = () => {
+    try {
+      window.localStorage.removeItem(
+        LOCAL_DRAFT_KEY
+      );
+    } catch {
+      // Ignore storage failure.
+    }
+  };
+
+  const resetForm = (
+    force = false
+  ) => {
+    if (
+      !force &&
+      showForm &&
+      hasUnsavedChanges
+    ) {
+      const confirmed =
+        window.confirm(
+          'You have unsaved changes. Are you sure you want to close this article?'
+        );
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     setEditingId(null);
-    setForm(emptyForm);
+
+    setForm({
+      ...emptyForm,
+    });
+
     setShowForm(false);
 
+    setHasUnsavedChanges(false);
+
     setLinkOpen(false);
+
     setLinkText('');
+
     setLinkUrl('');
 
     setError('');
+
+    clearLocalRecovery();
   };
+
+  /* =======================================================
+     NEW ARTICLE
+     ======================================================= */
 
   const openNewArticle = () => {
+    if (
+      showForm &&
+      hasUnsavedChanges
+    ) {
+      const confirmed =
+        window.confirm(
+          'You have unsaved changes. Start a new article and discard the current changes?'
+        );
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     setEditingId(null);
-    setForm(emptyForm);
+
+    setForm({
+      ...emptyForm,
+    });
 
     setLinkOpen(false);
+
     setLinkText('');
+
     setLinkUrl('');
 
     setError('');
+
+    setHasUnsavedChanges(false);
+
+    clearLocalRecovery();
+
     setShowForm(true);
   };
+
+  /* =======================================================
+     RECOVER ARTICLE
+     ======================================================= */
+
+  const recoverArticle = () => {
+    if (!recoveryData) {
+      return;
+    }
+
+    setEditingId(
+      recoveryData.editingId
+    );
+
+    setForm({
+      ...recoveryData.form,
+    });
+
+    setHasUnsavedChanges(true);
+
+    setShowForm(true);
+
+    setShowRecovery(false);
+
+    setRecoveryData(null);
+
+    setError('');
+  };
+
+  const discardRecoveredArticle =
+    () => {
+      clearLocalRecovery();
+
+      setRecoveryData(null);
+
+      setShowRecovery(false);
+    };
 
   /* =======================================================
      IMAGE UPLOAD
      ======================================================= */
 
   const handleImageUpload = async (
-    e: ChangeEvent<HTMLInputElement>
+    event: ChangeEvent<HTMLInputElement>
   ) => {
     const file =
-      e.target.files?.[0];
+      event.target.files?.[0];
 
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     try {
       setUploading(true);
+
       setError('');
 
       const url =
@@ -328,6 +675,8 @@ export default function BlogAdmin() {
         ...current,
         image_url: url,
       }));
+
+      setHasUnsavedChanges(true);
     } catch (err) {
       setError(
         err instanceof Error
@@ -336,12 +685,13 @@ export default function BlogAdmin() {
       );
     } finally {
       setUploading(false);
-      e.target.value = '';
+
+      event.target.value = '';
     }
   };
 
   /* =======================================================
-     VALIDATION
+     VALIDATE
      ======================================================= */
 
   const validateForm = () => {
@@ -349,6 +699,7 @@ export default function BlogAdmin() {
       setError(
         'Please enter a blog title.'
       );
+
       return false;
     }
 
@@ -356,6 +707,7 @@ export default function BlogAdmin() {
       setError(
         'Please enter a short description.'
       );
+
       return false;
     }
 
@@ -363,17 +715,21 @@ export default function BlogAdmin() {
       setError(
         'Please enter the article content.'
       );
+
       return false;
     }
 
-    const finalSlug = slugify(
-      form.slug || form.title
-    );
+    const finalSlug =
+      safeCmsSlug(
+        form.slug ||
+          form.title
+      );
 
     if (!finalSlug) {
       setError(
         'Please enter a valid title or slug.'
       );
+
       return false;
     }
 
@@ -387,24 +743,30 @@ export default function BlogAdmin() {
   const saveArticle = async (
     published: boolean
   ) => {
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
 
     try {
       setSaving(true);
+
       setError('');
 
-      const existingPost = editingId
-        ? posts.find(
-            (post) =>
-              post.id === editingId
-          )
-        : null;
+      const existingPost =
+        editingId
+          ? posts.find(
+              (post) =>
+                post.id ===
+                editingId
+            )
+          : null;
 
-      const payload = createPayload(
-        form,
-        published,
-        existingPost?.published_at
-      );
+      const payload =
+        createPayload(
+          form,
+          published,
+          existingPost?.published_at
+        );
 
       if (editingId) {
         await updatePost(
@@ -422,24 +784,65 @@ export default function BlogAdmin() {
         );
       }
 
+      /*
+       * IMPORTANT:
+       * Reload only after the database
+       * request succeeds.
+       */
       await loadPosts();
 
-      resetForm();
+      /*
+       * Database save succeeded.
+       * Now local recovery copy can be removed.
+       */
+      clearLocalRecovery();
+
+      setHasUnsavedChanges(false);
+
+      setEditingId(null);
+
+      setForm({
+        ...emptyForm,
+      });
+
+      setLinkOpen(false);
+
+      setLinkText('');
+
+      setLinkUrl('');
+
+      setShowForm(false);
+
+      setError('');
     } catch (err) {
+      /*
+       * Keep the editor open.
+       * Keep local backup.
+       *
+       * This is important:
+       * if Supabase save fails, the article
+       * must NOT disappear.
+       */
       setError(
         err instanceof Error
           ? err.message
-          : 'Failed to save article'
+          : 'Failed to save article. Your article is still open and has been kept locally.'
       );
+
+      setHasUnsavedChanges(true);
     } finally {
       setSaving(false);
     }
   };
 
+  /* =======================================================
+     FORM SUBMIT
+     ======================================================= */
+
   const handleSubmit = async (
-    e: FormEvent
+    event: FormEvent
   ) => {
-    e.preventDefault();
+    event.preventDefault();
 
     await saveArticle(false);
   };
@@ -451,18 +854,36 @@ export default function BlogAdmin() {
   const handleEdit = (
     post: BlogPost
   ) => {
+    if (
+      showForm &&
+      hasUnsavedChanges
+    ) {
+      const confirmed =
+        window.confirm(
+          'You have unsaved changes. Open another article and discard the current changes?'
+        );
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     setEditingId(post.id);
 
     setForm({
       title: post.title,
 
-      slug: post.slug,
+      slug:
+        post.slug || '',
 
-      category: post.category,
+      category:
+        post.category,
 
-      excerpt: post.excerpt,
+      excerpt:
+        post.excerpt,
 
-      content: post.content,
+      content:
+        post.content,
 
       image_url:
         post.image_url || '',
@@ -474,20 +895,35 @@ export default function BlogAdmin() {
         post.author ||
         'Loveons Editorial',
 
-      tags: post.tags.join(', '),
+      tags:
+        post.tags.join(', '),
 
       meta_title:
         post.meta_title || '',
 
       meta_description:
-        post.meta_description || '',
+        post.meta_description ||
+        '',
     });
 
     setLinkOpen(false);
+
     setLinkText('');
+
     setLinkUrl('');
 
     setError('');
+
+    setHasUnsavedChanges(
+      false
+    );
+
+    /*
+     * Existing article editing should not
+     * inherit a previous new-article recovery.
+     */
+    clearLocalRecovery();
+
     setShowForm(true);
   };
 
@@ -503,10 +939,13 @@ export default function BlogAdmin() {
         'Delete this article permanently? This action cannot be undone.'
       );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
     try {
       setDeletingId(id);
+
       setError('');
 
       await deletePost(id);
@@ -575,59 +1014,54 @@ export default function BlogAdmin() {
   };
 
   /* =======================================================
-     INSERT TEXT AT CURSOR
+     INSERT CONTENT AT SELECTION
      ======================================================= */
 
   const insertIntoContent = (
     value: string,
-    selectionStart?: number,
-    selectionEnd?: number
+    start?: number,
+    end?: number
   ) => {
     const textarea =
       contentRef.current;
 
-    if (!textarea) {
-      setForm((current) => ({
-        ...current,
-        content:
-          current.content + value,
-      }));
+    const selectionStart =
+      start ??
+      textarea?.selectionStart ??
+      form.content.length;
 
-      return;
-    }
-
-    const start =
-      selectionStart ??
-      textarea.selectionStart;
-
-    const end =
-      selectionEnd ??
-      textarea.selectionEnd;
-
-    const currentContent =
-      form.content;
+    const selectionEnd =
+      end ??
+      textarea?.selectionEnd ??
+      selectionStart;
 
     const newContent =
-      currentContent.slice(
+      form.content.slice(
         0,
-        start
+        selectionStart
       ) +
       value +
-      currentContent.slice(end);
+      form.content.slice(
+        selectionEnd
+      );
 
     setForm((current) => ({
       ...current,
       content: newContent,
     }));
 
-    /*
-     * Put cursor after inserted content.
-     */
+    setHasUnsavedChanges(true);
+
     requestAnimationFrame(() => {
+      if (!textarea) {
+        return;
+      }
+
       textarea.focus();
 
       const nextPosition =
-        start + value.length;
+        selectionStart +
+        value.length;
 
       textarea.setSelectionRange(
         nextPosition,
@@ -637,42 +1071,37 @@ export default function BlogAdmin() {
   };
 
   /* =======================================================
-     OPEN LINK EDITOR
+     ADD LINK
      ======================================================= */
 
   const openLinkEditor = () => {
     const textarea =
       contentRef.current;
 
-    if (!textarea) {
-      setLinkText('');
-      setLinkUrl('');
-      setLinkOpen(true);
-      return;
-    }
-
     const start =
-      textarea.selectionStart;
+      textarea?.selectionStart ??
+      form.content.length;
 
     const end =
-      textarea.selectionEnd;
+      textarea?.selectionEnd ??
+      start;
 
-    const selected =
+    const selectedText =
       form.content.slice(
         start,
         end
       );
 
-    setLinkText(selected);
+    setLinkText(
+      selectedText
+    );
 
     setLinkUrl('');
 
     setLinkOpen(true);
-  };
 
-  /* =======================================================
-     ADD LINK
-     ======================================================= */
+    setError('');
+  };
 
   const addLink = () => {
     const text =
@@ -683,15 +1112,17 @@ export default function BlogAdmin() {
 
     if (!text) {
       setError(
-        'Select some text or enter link text first.'
+        'Select the text you want to link, or enter link text.'
       );
+
       return;
     }
 
     if (!isValidLink(url)) {
       setError(
-        'Enter a valid internal or external URL.'
+        'Enter a valid URL. Example: /blog/example or https://example.com'
       );
+
       return;
     }
 
@@ -706,6 +1137,13 @@ export default function BlogAdmin() {
       textarea?.selectionEnd ??
       start;
 
+    /*
+     * IMPORTANT:
+     * Only selected text becomes the link.
+     *
+     * Result:
+     * [honest conversation](https://google.com)
+     */
     const markdownLink =
       `[${text}](${url})`;
 
@@ -716,13 +1154,16 @@ export default function BlogAdmin() {
     );
 
     setLinkOpen(false);
+
     setLinkText('');
+
     setLinkUrl('');
+
     setError('');
   };
 
   /* =======================================================
-     REMOVE LINK FROM SELECTED TEXT
+     REMOVE LINK
      ======================================================= */
 
   const removeLink = () => {
@@ -730,6 +1171,10 @@ export default function BlogAdmin() {
       contentRef.current;
 
     if (!textarea) {
+      setError(
+        'Select a link first.'
+      );
+
       return;
     }
 
@@ -741,8 +1186,9 @@ export default function BlogAdmin() {
 
     if (start === end) {
       setError(
-        'Select a linked text first.'
+        'Select the linked text first.'
       );
+
       return;
     }
 
@@ -755,11 +1201,11 @@ export default function BlogAdmin() {
     /*
      * Converts:
      *
-     * [Text](url)
+     * [honest conversation](https://google.com)
      *
-     * back to:
+     * to:
      *
-     * Text
+     * honest conversation
      */
     const plainText =
       selected.replace(
@@ -767,10 +1213,14 @@ export default function BlogAdmin() {
         '$1'
       );
 
-    if (plainText === selected) {
+    if (
+      plainText ===
+      selected
+    ) {
       setError(
-        'Selected text does not look like a blog link.'
+        'The selected text is not a Markdown link.'
       );
+
       return;
     }
 
@@ -784,7 +1234,7 @@ export default function BlogAdmin() {
   };
 
   /* =======================================================
-     SIMPLE MARKDOWN FORMATTING
+     FORMATTING
      ======================================================= */
 
   const wrapSelection = (
@@ -794,7 +1244,9 @@ export default function BlogAdmin() {
     const textarea =
       contentRef.current;
 
-    if (!textarea) return;
+    if (!textarea) {
+      return;
+    }
 
     const start =
       textarea.selectionStart;
@@ -812,6 +1264,7 @@ export default function BlogAdmin() {
       setError(
         'Select some text first.'
       );
+
       return;
     }
 
@@ -825,25 +1278,36 @@ export default function BlogAdmin() {
   };
 
   const addHeading = () => {
-    wrapSelection('## ', '');
+    wrapSelection(
+      '## ',
+      ''
+    );
   };
 
   const addBullet = () => {
-    wrapSelection('• ', '');
+    wrapSelection(
+      '- ',
+      ''
+    );
   };
 
   const addNumbered = () => {
-    wrapSelection('1. ', '');
+    wrapSelection(
+      '1. ',
+      ''
+    );
   };
 
   /* =======================================================
-     SEARCH / FILTER
+     SEARCH
      ======================================================= */
 
   const filteredPosts =
     posts.filter((post) => {
       const query =
-        search.trim().toLowerCase();
+        search
+          .trim()
+          .toLowerCase();
 
       const matchesSearch =
         !query ||
@@ -856,15 +1320,17 @@ export default function BlogAdmin() {
         post.slug
           .toLowerCase()
           .includes(query) ||
-        post.tags.some((tag) =>
-          tag
-            .toLowerCase()
-            .includes(query)
+        post.tags.some(
+          (tag) =>
+            tag
+              .toLowerCase()
+              .includes(query)
         );
 
       const matchesFilter =
         filter === 'all' ||
-        (filter === 'published' &&
+        (filter ===
+          'published' &&
           post.published) ||
         (filter === 'draft' &&
           !post.published);
@@ -877,16 +1343,18 @@ export default function BlogAdmin() {
 
   const publishedCount =
     posts.filter(
-      (post) => post.published
+      (post) =>
+        post.published
     ).length;
 
   const draftCount =
     posts.filter(
-      (post) => !post.published
+      (post) =>
+        !post.published
     ).length;
 
   /* =======================================================
-     UI
+     RENDER
      ======================================================= */
 
   return (
@@ -901,15 +1369,65 @@ export default function BlogAdmin() {
         title="Blog Admin"
         subtitle="Create, edit, draft and publish Loveons articles."
       >
-        {/* ERROR */}
+        {/* =================================================
+            RECOVERY NOTICE
+        ================================================= */}
+
+        {showRecovery &&
+          recoveryData && (
+            <div className="mb-5 rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-bold text-amber-800">
+                    Unsaved article recovered
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-amber-700">
+                    We found an article
+                    you were working on
+                    before the page was
+                    refreshed or closed.
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={
+                      recoverArticle
+                    }
+                    className="rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-white hover:bg-amber-600"
+                  >
+                    Recover
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={
+                      discardRecoveredArticle
+                    }
+                    className="rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100"
+                  >
+                    Discard
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        {/* =================================================
+            ERROR
+        ================================================= */}
 
         {error && (
-          <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
             {error}
           </div>
         )}
 
-        {/* HEADER */}
+        {/* =================================================
+            HEADER
+        ================================================= */}
 
         <div className="mb-5 rounded-3xl border border-rose-100 bg-white p-4 shadow-sm sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -939,7 +1457,7 @@ export default function BlogAdmin() {
             </button>
           </div>
 
-          {/* SEARCH + FILTER */}
+          {/* SEARCH */}
 
           <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
             <div className="relative">
@@ -948,15 +1466,17 @@ export default function BlogAdmin() {
               <input
                 type="search"
                 value={search}
-                onChange={(e) =>
+                onChange={(event) =>
                   setSearch(
-                    e.target.value
+                    event.target.value
                   )
                 }
                 placeholder="Search articles, categories or tags..."
                 className="w-full rounded-2xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-100"
               />
             </div>
+
+            {/* FILTER */}
 
             <div className="flex rounded-2xl border border-gray-200 bg-gray-50 p-1">
               {[
@@ -993,7 +1513,9 @@ export default function BlogAdmin() {
           </div>
         </div>
 
-        {/* ARTICLE LIST */}
+        {/* =================================================
+            ARTICLE LIST
+        ================================================= */}
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
@@ -1175,15 +1697,14 @@ export default function BlogAdmin() {
         {showForm && (
           <div
             className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
-            onClick={resetForm}
           >
             <div
               className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl"
-              onClick={(e) =>
-                e.stopPropagation()
+              onClick={(event) =>
+                event.stopPropagation()
               }
             >
-              {/* MODAL HEADER */}
+              {/* HEADER */}
 
               <div className="sticky top-0 z-10 flex items-center justify-between border-b border-rose-100 bg-white px-5 py-4 sm:px-6">
                 <div>
@@ -1193,19 +1714,26 @@ export default function BlogAdmin() {
                       : 'New Article'}
                   </h2>
 
-                  <p className="mt-0.5 text-xs text-gray-400">
-                    Save as draft first,
-                    then publish when
-                    ready.
-                  </p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="text-xs text-gray-400">
+                      {hasUnsavedChanges
+                        ? 'Changes protected locally'
+                        : 'Ready to edit'}
+                    </span>
+
+                    {hasUnsavedChanges && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                    )}
+                  </div>
                 </div>
 
                 <button
                   type="button"
-                  onClick={
-                    resetForm
+                  onClick={() =>
+                    resetForm()
                   }
                   className="rounded-xl p-2 transition hover:bg-rose-50"
+                  title="Close editor"
                 >
                   <X className="h-5 w-5 text-gray-500" />
                 </button>
@@ -1217,7 +1745,9 @@ export default function BlogAdmin() {
                 }
                 className="space-y-5 p-5 sm:p-6"
               >
-                {/* IMAGE */}
+                {/* =================================================
+                    IMAGE
+                ================================================= */}
 
                 <section className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                   <label className="mb-2 block text-xs font-bold text-gray-600">
@@ -1269,11 +1799,12 @@ export default function BlogAdmin() {
                         value={
                           form.image_url
                         }
-                        onChange={(e) =>
+                        onChange={(event) =>
                           setForm({
                             ...form,
                             image_url:
-                              e.target.value,
+                              event.target
+                                .value,
                           })
                         }
                         placeholder="Or paste image URL"
@@ -1283,7 +1814,9 @@ export default function BlogAdmin() {
                   </div>
                 </section>
 
-                {/* BASIC CONTENT */}
+                {/* =================================================
+                    BASIC CONTENT
+                ================================================= */}
 
                 <section className="space-y-4">
                   {/* TITLE */}
@@ -1298,21 +1831,31 @@ export default function BlogAdmin() {
                       value={
                         form.title
                       }
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          title:
-                            e.target.value,
-                          slug:
-                            editingId ||
-                            form.slug
-                              ? form.slug
-                              : slugify(
-                                  e.target
-                                    .value
-                                ),
-                        })
-                      }
+                      onChange={(event) => {
+                        const title =
+                          event.target
+                            .value;
+
+                        setForm(
+                          (current) => ({
+                            ...current,
+
+                            title,
+
+                            slug:
+                              editingId ||
+                              current.slug
+                                ? current.slug
+                                : safeCmsSlug(
+                                    title
+                                  ),
+                          })
+                        );
+
+                        setHasUnsavedChanges(
+                          true
+                        );
+                      }}
                       placeholder="Enter article title"
                       className="w-full rounded-2xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
                       required
@@ -1331,14 +1874,18 @@ export default function BlogAdmin() {
                         value={
                           form.category
                         }
-                        onChange={(e) =>
+                        onChange={(event) => {
                           setForm({
                             ...form,
                             category:
-                              e.target
+                              event.target
                                 .value,
-                          })
-                        }
+                          });
+
+                          setHasUnsavedChanges(
+                            true
+                          );
+                        }}
                         className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
                       >
                         {BLOG_CATEGORIES.map(
@@ -1370,19 +1917,29 @@ export default function BlogAdmin() {
                         value={
                           form.slug
                         }
-                        onChange={(e) =>
+                        onChange={(event) => {
                           setForm({
                             ...form,
-                            slug: slugify(
-                              e.target
+                            slug: safeCmsSlug(
+                              event.target
                                 .value
                             ),
-                          })
-                        }
+                          });
+
+                          setHasUnsavedChanges(
+                            true
+                          );
+                        }}
                         placeholder="example-blog-slug"
                         className="w-full rounded-2xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
                         required
                       />
+
+                      <p className="mt-1 text-[11px] text-gray-400">
+                        URL-safe format:
+                        letters, numbers and
+                        hyphens.
+                      </p>
                     </div>
                   </div>
 
@@ -1397,14 +1954,18 @@ export default function BlogAdmin() {
                       value={
                         form.excerpt
                       }
-                      onChange={(e) =>
+                      onChange={(event) => {
                         setForm({
                           ...form,
                           excerpt:
-                            e.target
+                            event.target
                               .value,
-                        })
-                      }
+                        });
+
+                        setHasUnsavedChanges(
+                          true
+                        );
+                      }}
                       placeholder="Brief summary for blog cards and search engines"
                       rows={3}
                       className="w-full resize-none rounded-2xl border border-gray-200 px-3 py-3 text-sm leading-relaxed outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
@@ -1432,8 +1993,8 @@ export default function BlogAdmin() {
                             '**'
                           )
                         }
-                        title="Bold"
                         className="rounded-lg p-2 text-gray-600 hover:bg-white hover:text-rose-600"
+                        title="Bold"
                       >
                         <Bold className="h-4 w-4" />
                       </button>
@@ -1446,8 +2007,8 @@ export default function BlogAdmin() {
                             '*'
                           )
                         }
-                        title="Italic"
                         className="rounded-lg p-2 text-gray-600 hover:bg-white hover:text-rose-600"
+                        title="Italic"
                       >
                         <Italic className="h-4 w-4" />
                       </button>
@@ -1457,8 +2018,8 @@ export default function BlogAdmin() {
                         onClick={
                           addHeading
                         }
-                        title="Heading"
                         className="rounded-lg p-2 text-gray-600 hover:bg-white hover:text-rose-600"
+                        title="Heading"
                       >
                         <Heading2 className="h-4 w-4" />
                       </button>
@@ -1468,8 +2029,8 @@ export default function BlogAdmin() {
                         onClick={
                           addBullet
                         }
-                        title="Bullet"
                         className="rounded-lg p-2 text-gray-600 hover:bg-white hover:text-rose-600"
+                        title="Bullet list"
                       >
                         <List className="h-4 w-4" />
                       </button>
@@ -1479,407 +2040,30 @@ export default function BlogAdmin() {
                         onClick={
                           addNumbered
                         }
-                        title="Numbered"
                         className="rounded-lg p-2 text-gray-600 hover:bg-white hover:text-rose-600"
+                        title="Numbered list"
                       >
                         <ListOrdered className="h-4 w-4" />
                       </button>
 
                       <span className="mx-1 h-5 w-px bg-gray-200" />
 
-                      {/* ADD LINK */}
-
                       <button
                         type="button"
                         onClick={
                           openLinkEditor
                         }
-                        title="Add Link"
                         className="flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-2 text-xs font-semibold text-rose-600 shadow-sm ring-1 ring-rose-100 hover:bg-rose-50"
+                        title="Add link"
                       >
                         <LinkIcon className="h-4 w-4" />
                         Add Link
                       </button>
-
-                      {/* REMOVE LINK */}
 
                       <button
                         type="button"
                         onClick={
                           removeLink
                         }
-                        title="Remove Link"
-                        className="rounded-lg p-2 text-gray-500 hover:bg-white hover:text-red-500"
-                      >
-                        <Unlink className="h-4 w-4" />
-                      </button>
-                    </div>
+                        className="rounded-lg p-2 text-gray-
 
-                    <textarea
-                      ref={
-                        contentRef
-                      }
-                      value={
-                        form.content
-                      }
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          content:
-                            e.target
-                              .value,
-                        })
-                      }
-                      placeholder="Write your complete article here. Select text and use Add Link to create internal or external links."
-                      rows={16}
-                      className="w-full resize-y rounded-b-2xl border border-gray-200 px-3 py-3 text-sm leading-7 outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
-                      required
-                    />
-
-                    <p className="mt-1.5 text-[11px] text-gray-400">
-                      Select text → Add Link
-                      → enter URL. Use
-                      internal URLs such as
-                      /blog/example for SEO-friendly
-                      internal links.
-                    </p>
-
-                    {/* =================================================
-                        LINK EDITOR
-                    ================================================= */}
-
-                    {linkOpen && (
-                      <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50/60 p-4">
-                        <div className="mb-3 flex items-center justify-between">
-                          <div>
-                            <h4 className="text-sm font-bold text-gray-700">
-                              Add Article Link
-                            </h4>
-
-                            <p className="mt-0.5 text-[11px] text-gray-400">
-                              Internal links help
-                              visitors discover
-                              related articles.
-                            </p>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setLinkOpen(
-                                false
-                              )
-                            }
-                            className="rounded-lg p-1.5 hover:bg-white"
-                          >
-                            <X className="h-4 w-4 text-gray-500" />
-                          </button>
-                        </div>
-
-                        <div className="space-y-3">
-                          {/* LINK TEXT */}
-
-                          <div>
-                            <label className="mb-1 block text-[11px] font-bold text-gray-600">
-                              Link Text
-                            </label>
-
-                            <input
-                              type="text"
-                              value={
-                                linkText
-                              }
-                              onChange={(e) =>
-                                setLinkText(
-                                  e.target
-                                    .value
-                                )
-                              }
-                              placeholder="Example: Building Trust"
-                              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
-                            />
-                          </div>
-
-                          {/* URL */}
-
-                          <div>
-                            <label className="mb-1 block text-[11px] font-bold text-gray-600">
-                              URL
-                            </label>
-
-                            <input
-                              type="text"
-                              value={
-                                linkUrl
-                              }
-                              onChange={(e) =>
-                                setLinkUrl(
-                                  e.target
-                                    .value
-                                )
-                              }
-                              placeholder="/blog/building-trust or https://example.com"
-                              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
-                            />
-                          </div>
-
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={
-                                addLink
-                              }
-                              className="flex items-center gap-2 rounded-xl bg-rose-500 px-4 py-2.5 text-xs font-semibold text-white hover:bg-rose-600"
-                            >
-                              <LinkIcon className="h-3.5 w-3.5" />
-                              Insert Link
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setLinkOpen(
-                                  false
-                                );
-                                setLinkText(
-                                  ''
-                                );
-                                setLinkUrl(
-                                  ''
-                                );
-                              }}
-                              className="rounded-xl px-4 py-2.5 text-xs font-semibold text-gray-500 hover:bg-white"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </section>
-
-                {/* AUTHOR + TAGS */}
-
-                <section className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-1.5 block text-xs font-bold text-gray-600">
-                      Author
-                    </label>
-
-                    <input
-                      type="text"
-                      value={
-                        form.author
-                      }
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          author:
-                            e.target
-                              .value,
-                        })
-                      }
-                      placeholder="Loveons Editorial"
-                      className="w-full rounded-2xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1.5 block text-xs font-bold text-gray-600">
-                      Tags
-                    </label>
-
-                    <input
-                      type="text"
-                      value={
-                        form.tags
-                      }
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          tags: e.target
-                            .value,
-                        })
-                      }
-                      placeholder="communication, trust, relationships"
-                      className="w-full rounded-2xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
-                    />
-                  </div>
-                </section>
-
-                {/* IMAGE SEO */}
-
-                <section className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-                  <h3 className="mb-4 text-sm font-bold text-gray-700">
-                    Image & Accessibility
-                  </h3>
-
-                  <label className="mb-1.5 block text-xs font-bold text-gray-600">
-                    Image Alt Text
-                  </label>
-
-                  <input
-                    type="text"
-                    value={
-                      form.image_alt
-                    }
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        image_alt:
-                          e.target
-                            .value,
-                      })
-                    }
-                    placeholder="Describe the featured image"
-                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
-                  />
-                </section>
-
-                {/* SEO */}
-
-                <section className="rounded-2xl border border-rose-100 bg-rose-50/50 p-4">
-                  <h3 className="mb-4 text-sm font-bold text-gray-700">
-                    Search Engine Optimization
-                  </h3>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="mb-1.5 block text-xs font-bold text-gray-600">
-                        Meta Title
-                      </label>
-
-                      <input
-                        type="text"
-                        value={
-                          form.meta_title
-                        }
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            meta_title:
-                              e.target
-                                .value,
-                          })
-                        }
-                        placeholder="Defaults to article title"
-                        maxLength={70}
-                        className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
-                      />
-
-                      <p className="mt-1 text-[11px] text-gray-400">
-                        {
-                          form
-                            .meta_title
-                            .length
-                        }
-                        /70
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="mb-1.5 block text-xs font-bold text-gray-600">
-                        Meta Description
-                      </label>
-
-                      <textarea
-                        value={
-                          form.meta_description
-                        }
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            meta_description:
-                              e.target
-                                .value,
-                          })
-                        }
-                        placeholder="Defaults to article description"
-                        maxLength={170}
-                        rows={3}
-                        className="w-full resize-none rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
-                      />
-
-                      <p className="mt-1 text-[11px] text-gray-400">
-                        {
-                          form
-                            .meta_description
-                            .length
-                        }
-                        /170
-                      </p>
-                    </div>
-                  </div>
-                </section>
-
-                {/* ACTIONS */}
-
-                <div className="sticky bottom-0 -mx-5 border-t border-rose-100 bg-white px-5 pb-1 pt-4 sm:-mx-6 sm:px-6">
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        saveArticle(
-                          false
-                        )
-                      }
-                      disabled={
-                        saving ||
-                        uploading
-                      }
-                      className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
-                    >
-                      {saving ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Save className="h-4 w-4" />
-                      )}
-
-                      Save Draft
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        saveArticle(
-                          true
-                        )
-                      }
-                      disabled={
-                        saving ||
-                        uploading
-                      }
-                      className="flex items-center justify-center gap-2 rounded-2xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:opacity-50"
-                    >
-                      {saving ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-
-                      {editingId
-                        ? 'Save & Publish'
-                        : 'Publish Article'}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={
-                        resetForm
-                      }
-                      disabled={saving}
-                      className="rounded-2xl px-4 py-3 text-sm font-semibold text-gray-500 transition hover:bg-gray-50 disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-      </PageLayout>
-    </>
-  );
-}
