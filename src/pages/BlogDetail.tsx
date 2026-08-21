@@ -19,16 +19,7 @@ import {
   type BlogPost,
 } from '../lib/blogApi';
 
-import { DEFAULT_ARTICLES } from '../lib/defaultArticles';
 import { BRAND } from '../lib/brand';
-
-/* =========================================================
-   TYPES
-   ========================================================= */
-
-interface ArticleParagraphProps {
-  text: string;
-}
 
 /* =========================================================
    CONSTANTS
@@ -172,164 +163,6 @@ function getLocalImageFallback(
 }
 
 /* =========================================================
-   SAFE LINK HELPERS
-   ========================================================= */
-
-function isExternalUrl(url: string): boolean {
-  return (
-    url.startsWith('http://') ||
-    url.startsWith('https://') ||
-    url.startsWith('//')
-  );
-}
-
-function isInternalBlogUrl(url: string): boolean {
-  return (
-    url.startsWith('/blog/') ||
-    url.startsWith('/blog?')
-  );
-}
-
-/**
- * Converts simple markdown-style links:
- *
- * [Relationship Tips](/blog/relationship-tips)
- *
- * into React Router links.
- *
- * This avoids dangerouslySetInnerHTML and keeps
- * article content safer.
- */
-function renderArticleText(
-  text: string
-): React.ReactNode[] {
-  const nodes: React.ReactNode[] = [];
-
-  const linkPattern =
-    /\[([^\]]+)\]\(([^)\s]+)\)/g;
-
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = linkPattern.exec(text)) !== null) {
-    const [fullMatch, label, url] = match;
-
-    if (match.index > lastIndex) {
-      nodes.push(
-        text.slice(lastIndex, match.index)
-      );
-    }
-
-    const safeLabel = label.trim();
-    const safeUrl = url.trim();
-
-    if (
-      safeUrl &&
-      (safeUrl.startsWith('/') ||
-        isExternalUrl(safeUrl))
-    ) {
-      if (
-        safeUrl.startsWith('/') &&
-        isInternalBlogUrl(safeUrl)
-      ) {
-        nodes.push(
-          <Link
-            key={`${safeUrl}-${match.index}`}
-            to={safeUrl}
-            className="font-medium text-rose-500 underline decoration-rose-200 underline-offset-2 transition hover:text-rose-600"
-          >
-            {safeLabel}
-          </Link>
-        );
-      } else if (
-        safeUrl.startsWith('/')
-      ) {
-        nodes.push(
-          <Link
-            key={`${safeUrl}-${match.index}`}
-            to={safeUrl}
-            className="font-medium text-rose-500 underline decoration-rose-200 underline-offset-2 transition hover:text-rose-600"
-          >
-            {safeLabel}
-          </Link>
-        );
-      } else {
-        nodes.push(
-          <a
-            key={`${safeUrl}-${match.index}`}
-            href={safeUrl}
-            target="_blank"
-            rel="noopener noreferrer nofollow"
-            className="font-medium text-rose-500 underline decoration-rose-200 underline-offset-2 transition hover:text-rose-600"
-          >
-            {safeLabel}
-          </a>
-        );
-      }
-    } else {
-      nodes.push(fullMatch);
-    }
-
-    lastIndex =
-      match.index + fullMatch.length;
-  }
-
-  if (lastIndex < text.length) {
-    nodes.push(text.slice(lastIndex));
-  }
-
-  return nodes;
-}
-
-/* =========================================================
-   ARTICLE PARAGRAPH
-   ========================================================= */
-
-function ArticleParagraph({
-  text,
-}: ArticleParagraphProps) {
-  const trimmed = text.trim();
-
-  if (!trimmed) {
-    return null;
-  }
-
-  /*
-   * Simple heading detection.
-   *
-   * CMS content can use:
-   *
-   * # Heading
-   * ## Heading
-   */
-  if (trimmed.startsWith('## ')) {
-    return (
-      <h3 className="mt-8 mb-3 font-display text-lg font-bold leading-tight text-gray-800">
-        {renderArticleText(
-          trimmed.replace(/^##\s+/, '')
-        )}
-      </h3>
-    );
-  }
-
-  if (trimmed.startsWith('# ')) {
-    return (
-      <h2 className="mt-8 mb-3 font-display text-xl font-bold leading-tight text-gray-800">
-        {renderArticleText(
-          trimmed.replace(/^#\s+/, '')
-        )}
-      </h2>
-    );
-  }
-
-  return (
-    <p className="mb-5 text-sm leading-7 text-gray-600 sm:text-[15px] sm:leading-8">
-      {renderArticleText(trimmed)}
-    </p>
-  );
-}
-
-/* =========================================================
    BLOG DETAIL
    ========================================================= */
 
@@ -379,8 +212,7 @@ export default function BlogDetail() {
 
       try {
         /*
-         * First source:
-         * Published Supabase article.
+         * Contentful is now the only source of articles.
          */
         const data =
           await fetchPostBySlug(slug);
@@ -390,11 +222,15 @@ export default function BlogDetail() {
         }
 
         /*
-         * Database article found.
+         * Article found in Contentful.
          */
         if (data) {
           setPost(data);
 
+          /*
+           * Related articles also come only
+           * from Contentful.
+           */
           try {
             const relatedData =
               await fetchRelatedPosts(
@@ -407,32 +243,17 @@ export default function BlogDetail() {
               return;
             }
 
-            if (relatedData.length > 0) {
-              setRelated(relatedData);
-            } else {
-              /*
-               * Keep the existing fallback behaviour
-               * from v17.
-               */
-              setRelated(
-                DEFAULT_ARTICLES
-                  .filter(
-                    (article) =>
-                      article.slug !== data.slug
-                  )
-                  .slice(0, 3)
-              );
-            }
-          } catch {
+            setRelated(
+              relatedData || []
+            );
+          } catch (relatedError) {
+            console.error(
+              'Failed to load related Contentful posts:',
+              relatedError
+            );
+
             if (!cancelled) {
-              setRelated(
-                DEFAULT_ARTICLES
-                  .filter(
-                    (article) =>
-                      article.slug !== data.slug
-                  )
-                  .slice(0, 3)
-              );
+              setRelated([]);
             }
           }
 
@@ -440,64 +261,22 @@ export default function BlogDetail() {
         }
 
         /*
-         * Database did not return the article.
+         * No Contentful article found.
          *
-         * Preserve v17's DEFAULT_ARTICLES fallback.
+         * We intentionally DO NOT fall back
+         * to the old 6 Bolt AI articles.
          */
-        const fallback =
-          DEFAULT_ARTICLES.find(
-            (article) =>
-              article.slug === slug
-          );
-
-        if (fallback) {
-          setPost(
-            fallback as BlogPost
-          );
-
-          setRelated(
-            DEFAULT_ARTICLES
-              .filter(
-                (article) =>
-                  article.slug !== slug
-              )
-              .slice(0, 3) as BlogPost[]
-          );
-
-          return;
-        }
-
         setError('Article not found.');
-      } catch {
-        if (cancelled) {
-          return;
-        }
+      } catch (requestError) {
+        console.error(
+          'Failed to load Contentful article:',
+          requestError
+        );
 
-        /*
-         * Preserve v17 fallback behaviour
-         * even if Supabase request fails.
-         */
-        const fallback =
-          DEFAULT_ARTICLES.find(
-            (article) =>
-              article.slug === slug
+        if (!cancelled) {
+          setError(
+            'Unable to load this article.'
           );
-
-        if (fallback) {
-          setPost(
-            fallback as BlogPost
-          );
-
-          setRelated(
-            DEFAULT_ARTICLES
-              .filter(
-                (article) =>
-                  article.slug !== slug
-              )
-              .slice(0, 3) as BlogPost[]
-          );
-        } else {
-          setError('Article not found.');
         }
       } finally {
         if (!cancelled) {
@@ -546,8 +325,8 @@ export default function BlogDetail() {
   const handleImageError = () => {
     /*
      * First attempt:
-     * Convert Supabase/external image to
-     * local /images/blogs filename.
+     * Convert external image URL or filename
+     * to a local /images/blogs filename.
      */
     if (
       !imageFallbackTried &&
@@ -560,8 +339,7 @@ export default function BlogDetail() {
 
       if (
         localFallback !== imageSrc &&
-        localFallback !==
-          DEFAULT_BLOG_IMAGE
+        localFallback !== DEFAULT_BLOG_IMAGE
       ) {
         setImageFallbackTried(true);
         setImageLoaded(false);
@@ -585,61 +363,7 @@ export default function BlogDetail() {
   };
 
   /* =======================================================
-     ARTICLE CONTENT
-     ======================================================= */
-
-  const paragraphs = useMemo(() => {
-    if (!post) {
-      return [];
-    }
-
-    /*
-     * CMS article content.
-     */
-    if (
-      post.content &&
-      post.content.trim().length > 0
-    ) {
-      return post.content
-        .split(/\n\s*\n/)
-        .map((paragraph) =>
-          paragraph.trim()
-        )
-        .filter(Boolean);
-    }
-
-    /*
-     * Existing fallback article content.
-     *
-     * DEFAULT_ARTICLES is intentionally preserved
-     * so old/static articles do not break.
-     */
-    const fallbackArticle =
-      DEFAULT_ARTICLES.find(
-        (article) =>
-          article.slug === post.slug
-      );
-
-    if (
-      fallbackArticle &&
-      fallbackArticle.content
-    ) {
-      return fallbackArticle.content
-        .split(/\n\s*\n/)
-        .map((paragraph) =>
-          paragraph.trim()
-        )
-        .filter(Boolean);
-    }
-
-    return [
-      post.excerpt,
-      'This article is part of the Loveons collection of relationship guidance.',
-    ].filter(Boolean);
-  }, [post]);
-
-  /* =======================================================
-     SEO
+     SEO IMAGE
      ======================================================= */
 
   const seoImage = useMemo(() => {
@@ -648,6 +372,10 @@ export default function BlogDetail() {
     );
   }, [post]);
 
+  /* =======================================================
+     CANONICAL URL
+     ======================================================= */
+
   const canonicalUrl = useMemo(() => {
     if (!post) {
       return `${BRAND.domain}/blog/${slug || ''}`;
@@ -655,6 +383,10 @@ export default function BlogDetail() {
 
     return `${BRAND.domain}/blog/${post.slug}`;
   }, [post, slug]);
+
+  /* =======================================================
+     STRUCTURED DATA
+     ======================================================= */
 
   const structuredData = useMemo(() => {
     if (!post) {
@@ -679,6 +411,7 @@ export default function BlogDetail() {
 
       author: {
         '@type': 'Person',
+
         name:
           post.author ||
           'Loveons Editorial',
@@ -686,7 +419,9 @@ export default function BlogDetail() {
 
       publisher: {
         '@type': 'Organization',
+
         name: BRAND.name,
+
         url: BRAND.domain,
       },
 
@@ -701,6 +436,7 @@ export default function BlogDetail() {
 
       mainEntityOfPage: {
         '@type': 'WebPage',
+
         '@id': canonicalUrl,
       },
 
@@ -800,6 +536,7 @@ export default function BlogDetail() {
 
       <div className="min-h-screen pb-12 pt-14">
         <div className="mx-auto max-w-2xl px-4">
+
           {/* =================================================
               BACK TO HOME
           ================================================= */}
@@ -819,11 +556,11 @@ export default function BlogDetail() {
             "
           >
             <ArrowLeft className="h-4 w-4" />
-
             Back to Home
           </Link>
 
           <article>
+
             {/* ===============================================
                 FEATURED IMAGE
             =============================================== */}
@@ -885,24 +622,26 @@ export default function BlogDetail() {
 
               {/* CATEGORY */}
 
-              <span
-                className="
-                  absolute
-                  left-3
-                  top-3
-                  z-20
-                  rounded-full
-                  bg-white/90
-                  px-2.5
-                  py-1
-                  text-xs
-                  font-semibold
-                  text-rose-600
-                  backdrop-blur-sm
-                "
-              >
-                {post.category}
-              </span>
+              {post.category && (
+                <span
+                  className="
+                    absolute
+                    left-3
+                    top-3
+                    z-20
+                    rounded-full
+                    bg-white/90
+                    px-2.5
+                    py-1
+                    text-xs
+                    font-semibold
+                    text-rose-600
+                    backdrop-blur-sm
+                  "
+                >
+                  {post.category}
+                </span>
+              )}
             </div>
 
             {/* ===============================================
@@ -983,12 +722,14 @@ export default function BlogDetail() {
             {/* ===============================================
                 ARTICLE CONTENT
 
-                IMPORTANT:
-                This is intentionally isolated.
+                Contentful Rich Text is converted into
+                safe HTML by blogApi.ts.
 
-                Future TTS will read only this element.
-                Navbar, footer, related articles,
-                buttons and tags stay outside it.
+                IMPORTANT:
+                We render the HTML directly here instead
+                of treating <p>, <h2>, <h3>, etc. as text.
+
+                This fixes the visible HTML tag problem.
             =============================================== */}
 
             <div
@@ -997,17 +738,88 @@ export default function BlogDetail() {
               className="
                 article-content
                 text-gray-600
+
+                [&_p]:mb-5
+                [&_p]:text-sm
+                [&_p]:leading-7
+                [&_p]:text-gray-600
+                sm:[&_p]:text-[15px]
+                sm:[&_p]:leading-8
+
+                [&_h1]:mb-4
+                [&_h1]:mt-8
+                [&_h1]:font-display
+                [&_h1]:text-2xl
+                [&_h1]:font-bold
+                [&_h1]:leading-tight
+                [&_h1]:text-gray-800
+
+                [&_h2]:mb-3
+                [&_h2]:mt-8
+                [&_h2]:font-display
+                [&_h2]:text-xl
+                [&_h2]:font-bold
+                [&_h2]:leading-tight
+                [&_h2]:text-gray-800
+
+                [&_h3]:mb-3
+                [&_h3]:mt-7
+                [&_h3]:font-display
+                [&_h3]:text-lg
+                [&_h3]:font-bold
+                [&_h3]:leading-tight
+                [&_h3]:text-gray-800
+
+                [&_h4]:mb-2
+                [&_h4]:mt-6
+                [&_h4]:font-display
+                [&_h4]:text-base
+                [&_h4]:font-bold
+                [&_h4]:text-gray-800
+
+                [&_ul]:mb-5
+                [&_ul]:ml-6
+                [&_ul]:list-disc
+                [&_ul]:space-y-2
+
+                [&_ol]:mb-5
+                [&_ol]:ml-6
+                [&_ol]:list-decimal
+                [&_ol]:space-y-2
+
+                [&_li]:text-sm
+                [&_li]:leading-7
+                [&_li]:text-gray-600
+                sm:[&_li]:text-[15px]
+                sm:[&_li]:leading-8
+
+                [&_blockquote]:my-6
+                [&_blockquote]:border-l-4
+                [&_blockquote]:border-rose-200
+                [&_blockquote]:pl-4
+                [&_blockquote]:italic
+                [&_blockquote]:text-gray-500
+
+                [&_a]:font-medium
+                [&_a]:text-rose-500
+                [&_a]:underline
+                [&_a]:decoration-rose-200
+                [&_a]:underline-offset-2
+                [&_a]:transition
+                [&_a:hover]:text-rose-600
+
+                [&_strong]:font-semibold
+                [&_strong]:text-gray-800
+
+                [&_em]:italic
+
+                [&_hr]:my-8
+                [&_hr]:border-rose-100
               "
-            >
-              {paragraphs.map(
-                (paragraph, index) => (
-                  <ArticleParagraph
-                    key={`${post.id}-${index}`}
-                    text={paragraph}
-                  />
-                )
-              )}
-            </div>
+              dangerouslySetInnerHTML={{
+                __html: post.content || '',
+              }}
+            />
 
             {/* ===============================================
                 TAGS
@@ -1047,6 +859,9 @@ export default function BlogDetail() {
 
           {/* =================================================
               RELATED ARTICLES
+
+              ONLY CONTENTFUL ARTICLES ARE USED.
+              No DEFAULT_ARTICLES fallback.
           ================================================= */}
 
           {related.length > 0 && (
@@ -1105,6 +920,7 @@ export default function BlogDetail() {
               </div>
             </section>
           )}
+
         </div>
       </div>
     </>
