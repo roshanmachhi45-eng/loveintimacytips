@@ -2,8 +2,10 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, BookOpen, Loader2 } from 'lucide-react';
 import BlogCard from './BlogCard';
-import { fetchPublishedPosts, type BlogPost } from '../lib/blogApi';
-import { DEFAULT_ARTICLES } from '../lib/defaultArticles';
+import {
+  fetchPublishedPosts,
+  type BlogPost,
+} from '../lib/blogApi';
 
 export default function BlogSection() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -12,26 +14,34 @@ export default function BlogSection() {
   useEffect(() => {
     let cancelled = false;
 
-    fetchPublishedPosts()
-      .then((data) => {
+    async function loadPosts() {
+      setLoading(true);
+
+      try {
+        const data = await fetchPublishedPosts();
+
         if (cancelled) return;
 
-        setPosts(
-          data && data.length > 0
-            ? data
-            : DEFAULT_ARTICLES
+        // Contentful is the only source of blog posts.
+        // No fallback to old hard-coded articles.
+        setPosts(data || []);
+      } catch (error) {
+        console.error(
+          'Failed to load Contentful blog posts:',
+          error
         );
-      })
-      .catch(() => {
+
         if (!cancelled) {
-          setPosts(DEFAULT_ARTICLES);
+          setPosts([]);
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) {
           setLoading(false);
         }
-      });
+      }
+    }
+
+    loadPosts();
 
     return () => {
       cancelled = true;
@@ -44,9 +54,11 @@ export default function BlogSection() {
       className="mt-14 scroll-mt-20 px-4 sm:mt-16"
     >
       <div className="mx-auto max-w-2xl">
+
         {/* Section Header */}
         <div className="mb-6 flex items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-2.5">
+
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-50">
               <BookOpen className="h-5 w-5 text-rose-500" />
             </div>
