@@ -31,23 +31,16 @@ export const FALLBACK_IMAGE = '/images/blogs/default.webp';
    ========================================================= */
 
 const CONTENTFUL_SPACE_ID =
-  process.env.CONTENTFUL_SPACE_ID;
+  import.meta.env.VITE_CONTENTFUL_SPACE_ID;
 
 const CONTENTFUL_ACCESS_TOKEN =
-  process.env.CONTENTFUL_ACCESS_TOKEN;
+  import.meta.env.VITE_CONTENTFUL_ACCESS_TOKEN;
 
 const CONTENTFUL_ENVIRONMENT =
-  process.env.CONTENTFUL_ENVIRONMENT || 'master';
+  import.meta.env.VITE_CONTENTFUL_ENVIRONMENT || 'master';
 
-/*
- * IMPORTANT:
- * This must match the Content Type ID of your Blog Post model.
- *
- * If you created the content type with ID "blogPost",
- * leave this as it is.
- */
 const CONTENTFUL_CONTENT_TYPE =
-  process.env.CONTENTFUL_CONTENT_TYPE || 'blogPost';
+  import.meta.env.VITE_CONTENTFUL_CONTENT_TYPE || 'blogPost';
 
 /* =========================================================
    CONTENTFUL TYPES
@@ -57,17 +50,21 @@ interface ContentfulAsset {
   sys?: {
     id?: string;
   };
+
   fields?: {
     title?: string;
     description?: string;
+
     file?: {
       url?: string;
+
       details?: {
         image?: {
           width?: number;
           height?: number;
         };
       };
+
       fileName?: string;
       contentType?: string;
     };
@@ -88,17 +85,20 @@ interface ContentfulEntry {
     updatedAt?: string;
     publishedAt?: string;
   };
+
   fields: {
     title?: string;
     slug?: string;
     category?: string;
     excerpt?: string;
     content?: ContentfulRichTextNode;
+
     featuredImage?: {
       sys?: {
         id?: string;
       };
     };
+
     author?: string;
     publishedDate?: string;
     seoTitle?: string;
@@ -108,6 +108,7 @@ interface ContentfulEntry {
 
 interface ContentfulResponse {
   items?: ContentfulEntry[];
+
   includes?: {
     Asset?: ContentfulAsset[];
   };
@@ -133,13 +134,13 @@ const LOCAL_BLOG_IMAGES: Record<string, string> = {
 function validateContentfulConfig(): void {
   if (!CONTENTFUL_SPACE_ID) {
     throw new Error(
-      'Missing CONTENTFUL_SPACE_ID environment variable.'
+      'Missing VITE_CONTENTFUL_SPACE_ID environment variable.'
     );
   }
 
   if (!CONTENTFUL_ACCESS_TOKEN) {
     throw new Error(
-      'Missing CONTENTFUL_ACCESS_TOKEN environment variable.'
+      'Missing VITE_CONTENTFUL_ACCESS_TOKEN environment variable.'
     );
   }
 }
@@ -158,7 +159,9 @@ function getContentfulUrl(
     `${CONTENTFUL_SPACE_ID}/environments/` +
     `${CONTENTFUL_ENVIRONMENT}/entries`;
 
-  return query ? `${baseUrl}?${query}` : baseUrl;
+  return query
+    ? `${baseUrl}?${query}`
+    : baseUrl;
 }
 
 /* =========================================================
@@ -319,7 +322,8 @@ export function estimateReadingTime(
 
   const words = cleanContent
     .split(/\s+/)
-    .filter(Boolean).length;
+    .filter(Boolean)
+    .length;
 
   const minutes = Math.max(
     1,
@@ -369,11 +373,12 @@ function getAssetUrl(
     };
   }
 
-  const fullUrl = rawUrl.startsWith('//')
-    ? `https:${rawUrl}`
-    : rawUrl.startsWith('http')
-      ? rawUrl
-      : `https://${rawUrl}`;
+  const fullUrl =
+    rawUrl.startsWith('//')
+      ? `https:${rawUrl}`
+      : rawUrl.startsWith('http')
+        ? rawUrl
+        : `https://${rawUrl}`;
 
   return {
     url: fullUrl,
@@ -415,7 +420,10 @@ function resolveBlogImage(
     )
   ) {
     const filename =
-      rawImage.split('/').pop()?.toLowerCase();
+      rawImage
+        .split('/')
+        .pop()
+        ?.toLowerCase();
 
     if (filename) {
       const localFile =
@@ -518,7 +526,11 @@ function normalizeContentfulPost(
       fields.title || '',
 
     slug:
-      slugify(fields.slug || fields.title || ''),
+      slugify(
+        fields.slug ||
+        fields.title ||
+        ''
+      ),
 
     category:
       fields.category || '',
@@ -571,6 +583,7 @@ function normalizeContentfulPost(
 
   return {
     ...post,
+
     image_url:
       resolveBlogImage(post),
   };
@@ -583,14 +596,18 @@ function normalizeContentfulPost(
 export async function fetchPublishedPosts():
   Promise<BlogPost[]> {
   try {
-    const query = new URLSearchParams({
-      content_type:
-        CONTENTFUL_CONTENT_TYPE,
-      order:
-        '-fields.publishedDate',
-      include: '2',
-      limit: '100',
-    });
+    const query =
+      new URLSearchParams({
+        content_type:
+          CONTENTFUL_CONTENT_TYPE,
+
+        order:
+          '-fields.publishedDate',
+
+        include: '2',
+
+        limit: '100',
+      });
 
     const response =
       await contentfulFetch(
@@ -694,9 +711,9 @@ export async function fetchRelatedPosts(
         (post) =>
           post.category
             .toLowerCase() ===
-            category.toLowerCase() &&
+          category.toLowerCase() &&
           post.slug !==
-            slugify(excludeSlug)
+          slugify(excludeSlug)
       )
       .slice(0, limit);
   } catch (error) {
@@ -716,17 +733,18 @@ export async function fetchRelatedPosts(
 export async function fetchAllPosts():
   Promise<BlogPost[]> {
   try {
-    const query = new URLSearchParams({
-      content_type:
-        CONTENTFUL_CONTENT_TYPE,
+    const query =
+      new URLSearchParams({
+        content_type:
+          CONTENTFUL_CONTENT_TYPE,
 
-      order:
-        '-sys.createdAt',
+        order:
+          '-sys.createdAt',
 
-      include: '2',
+        include: '2',
 
-      limit: '100',
-    });
+        limit: '100',
+      });
 
     const response =
       await contentfulFetch(
@@ -755,7 +773,6 @@ export async function fetchAllPosts():
    =========================================================
 
    Contentful Content Delivery API is READ-ONLY.
-
    Creating/updating/deleting Contentful entries requires
    the Content Management API and a server-side CMA token.
 
