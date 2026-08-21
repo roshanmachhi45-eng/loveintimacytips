@@ -1,33 +1,58 @@
 
 import { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import {
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
-const Home = lazy(() => import('./pages/Home'));
-const About = lazy(() => import('./pages/About'));
-const Contact = lazy(() => import('./pages/Contact'));
-const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
-const Disclaimer = lazy(() => import('./pages/Disclaimer'));
-const Terms = lazy(() => import('./pages/Terms'));
+const Home = lazy(
+  () => import('./pages/Home')
+);
+
+const About = lazy(
+  () => import('./pages/About')
+);
+
+const Contact = lazy(
+  () => import('./pages/Contact')
+);
+
+const PrivacyPolicy = lazy(
+  () => import('./pages/PrivacyPolicy')
+);
+
+const Disclaimer = lazy(
+  () => import('./pages/Disclaimer')
+);
+
+const Terms = lazy(
+  () => import('./pages/Terms')
+);
 
 // BLOG LISTING
-const Blog = lazy(() => import('./pages/Blog'));
+const Blog = lazy(
+  () => import('./pages/Blog')
+);
 
 // BLOG ARTICLE
-const BlogDetail = lazy(() => import('./pages/BlogDetail'));
-
-// BLOG ADMIN
-const BlogAdmin = lazy(() => import('./pages/BlogAdmin'));
+const BlogDetail = lazy(
+  () => import('./pages/BlogDetail')
+);
 
 function PageLoader() {
   return (
     <div className="flex items-center justify-center py-20">
       <div
         className="
-          h-8 w-8 rounded-full
-          border-2 border-rose-200
+          h-8
+          w-8
+          rounded-full
+          border-2
+          border-rose-200
           border-t-rose-500
           animate-spin
         "
@@ -52,6 +77,7 @@ export default function App() {
             />
 
             {/* EXISTING PAGES */}
+
             <Route
               path="/about"
               element={<About />}
@@ -73,6 +99,7 @@ export default function App() {
             />
 
             {/* TERMS & CONDITIONS */}
+
             <Route
               path="/terms"
               element={<Terms />}
@@ -80,30 +107,33 @@ export default function App() {
 
             {/* =========================================
                 BLOG LISTING
+
                 /blog
                 /blog?category=Communication
                 ========================================= */}
+
             <Route
               path="/blog"
               element={<Blog />}
             />
 
             {/* BLOG ARTICLE */}
+
             <Route
               path="/blog/:slug"
               element={<BlogDetail />}
             />
 
-            {/* ADMIN */}
-            <Route
-              path="/admin/blog"
-              element={<BlogAdmin />}
-            />
-
             {/* SAFETY FALLBACK */}
+
             <Route
               path="*"
-              element={<Navigate to="/" replace />}
+              element={
+                <Navigate
+                  to="/"
+                  replace
+                />
+              }
             />
 
           </Routes>
@@ -114,5 +144,3 @@ export default function App() {
     </div>
   );
 }
-
-            
