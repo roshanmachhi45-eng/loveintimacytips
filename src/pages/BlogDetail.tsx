@@ -34,7 +34,7 @@ import { BRAND } from '../lib/brand';
 
 /* =========================================================
    TYPES
-   ========================================================= */
+========================================================= */
 
 interface TocItem {
   id: string;
@@ -42,9 +42,14 @@ interface TocItem {
   level: 2 | 3;
 }
 
+interface PreparedArticle {
+  html: string;
+  tocItems: TocItem[];
+}
+
 /* =========================================================
    CONSTANTS
-   ========================================================= */
+========================================================= */
 
 const DEFAULT_BLOG_IMAGE =
   '/images/blogs/default.webp';
@@ -53,7 +58,7 @@ const TOC_SCROLL_OFFSET = 100;
 
 /* =========================================================
    DATE
-   ========================================================= */
+========================================================= */
 
 function formatDate(
   dateStr: string | null | undefined
@@ -80,20 +85,8 @@ function formatDate(
 
 /* =========================================================
    IMAGE HELPERS
-   ========================================================= */
+========================================================= */
 
-/**
- * Converts supported image references into
- * browser-friendly URLs.
- *
- * Supported:
- *
- * /images/blogs/example.webp
- * images/blogs/example.webp
- * ./images/blogs/example.webp
- * example.webp
- * https://example.com/example.webp
- */
 function resolveBlogImage(
   src: string | null | undefined
 ): string {
@@ -107,16 +100,12 @@ function resolveBlogImage(
     return DEFAULT_BLOG_IMAGE;
   }
 
-  /*
-   * Root-relative local path.
-   */
+  /* Root-relative local path */
   if (value.startsWith('/')) {
     return value;
   }
 
-  /*
-   * External image URL.
-   */
+  /* External image URL */
   if (
     value.startsWith('http://') ||
     value.startsWith('https://')
@@ -124,29 +113,18 @@ function resolveBlogImage(
     return value;
   }
 
-  /*
-   * Relative local path.
-   */
+  /* Relative local path */
   if (
     value.startsWith('images/') ||
     value.startsWith('./images/')
   ) {
-    return `/${value.replace(
-      /^\.?\//,
-      ''
-    )}`;
+    return `/${value.replace(/^\.?\//, '')}`;
   }
 
-  /*
-   * Filename only.
-   */
+  /* Filename only */
   return `/images/blogs/${value}`;
 }
 
-/**
- * Creates a local fallback from an external
- * image URL or filename.
- */
 function getLocalImageFallback(
   src: string | null | undefined
 ): string {
@@ -172,7 +150,7 @@ function getLocalImageFallback(
       return `/images/blogs/${filename}`;
     }
   } catch {
-    // Not an absolute URL.
+    /* Not an absolute URL */
   }
 
   const filename =
@@ -195,44 +173,59 @@ function getLocalImageFallback(
 
 /* =========================================================
    TOC HELPERS
-   ========================================================= */
+========================================================= */
 
 /**
- * Creates a safe slug from heading text.
- *
- * This is mainly a fallback for older Contentful
- * HTML that may not already contain an id.
+ * Creates a safe ID from heading text.
  */
 function slugifyHeading(
   text: string
 ): string {
-  return text
+  const slug = text
     .toLowerCase()
     .trim()
     .replace(/[^\w\s-]/g, '')
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '');
+
+  return slug || 'section';
 }
 
 /**
- * Extracts H2 and H3 headings from the
- * rendered Contentful HTML.
+ * Prepares Contentful article HTML.
  *
- * blogApi.ts already creates heading IDs.
- * This function uses those IDs whenever
- * they are available.
+ * - Finds all H2 and H3 headings
+ * - Creates unique IDs
+ * - Builds TOC items
+ * - Returns modified HTML with those IDs
+ *
+ * This is the important TOC fix.
  */
-function extractTocItems(
+function prepareArticleContent(
   html: string
-): TocItem[] {
+): PreparedArticle {
   if (!html) {
-    return [];
+    return {
+      html: '',
+      tocItems: [],
+    };
   }
 
-  const parser =
-    new DOMParser();
+  /*
+   * DOMParser is available in the browser.
+   * If it is not available for any reason,
+   * safely return the original HTML.
+   */
+  if (typeof DOMParser === 'undefined') {
+    return {
+      html,
+      tocItems: [],
+    };
+  }
 
-  const document =
+  const parser = new DOMParser();
+
+  const parsedDocument =
     parser.parseFromString(
       html,
       'text/html'
@@ -240,90 +233,14 @@ function extractTocItems(
 
   const headings =
     Array.from(
-      document.querySelectorAll(
+      parsedDocument.querySelectorAll(
         'h2, h3'
       )
     );
 
-  const usedIds =
-    new Set<string>();
+  const usedIds = new Set<string>();
 
-  return headings
-    .map((heading) => {
-      const text =
-        heading.textContent
-          ?.trim() || '';
-
-      if (!text) {
-        return null;
-      }
-
-      let id =
-        heading.getAttribute('id') ||
-        slugifyHeading(text);
-
-      if (!id) {
-        id = 'section';
-      }
-
-      /*
-       * Protect against duplicate IDs.
-       */
-      const originalId =
-        id;
-
-      let counter = 2;
-
-      while (
-        usedIds.has(id)
-      ) {
-        id =
-          `${originalId}-${counter}`;
-
-        counter += 1;
-      }
-
-      usedIds.add(id);
-
-      return {
-        id,
-        text,
-        level:
-          heading.tagName.toLowerCase() ===
-          'h3'
-            ? 3
-            : 2,
-      };
-    })
-    .filter(
-      (
-        item
-      ): item is TocItem =>
-        item !== null
-    );
-}
-
-/**
- * Ensures every H2/H3 in the actual DOM
- * has the same ID that the TOC uses.
- *
- * This also supports older articles that
- * were created before automatic IDs were added.
- */
-function ensureHeadingIds(
-  container: HTMLElement
-): TocItem[] {
-  const headings =
-    Array.from(
-      container.querySelectorAll(
-        'h2, h3'
-      )
-    );
-
-  const usedIds =
-    new Set<string>();
-
-  const items: TocItem[] = [];
+  const tocItems: TocItem[] = [];
 
   headings.forEach(
     (heading) => {
@@ -335,21 +252,22 @@ function ensureHeadingIds(
         return;
       }
 
+      /*
+       * Keep an existing ID if Contentful/content
+       * already contains one.
+       */
       let id =
         heading.getAttribute('id') ||
         slugifyHeading(text);
-
-      if (!id) {
-        id = 'section';
-      }
 
       const baseId = id;
 
       let counter = 2;
 
-      while (
-        usedIds.has(id)
-      ) {
+      /*
+       * Prevent duplicate heading IDs.
+       */
+      while (usedIds.has(id)) {
         id =
           `${baseId}-${counter}`;
 
@@ -363,24 +281,30 @@ function ensureHeadingIds(
         id
       );
 
-      items.push({
+      const level =
+        heading.tagName.toLowerCase() ===
+        'h3'
+          ? 3
+          : 2;
+
+      tocItems.push({
         id,
         text,
-        level:
-          heading.tagName.toLowerCase() ===
-          'h3'
-            ? 3
-            : 2,
+        level,
       });
     }
   );
 
-  return items;
+  return {
+    html:
+      parsedDocument.body.innerHTML,
+    tocItems,
+  };
 }
 
 /* =========================================================
    SMOOTH SCROLL
-   ========================================================= */
+========================================================= */
 
 function scrollToHeading(
   id: string
@@ -411,7 +335,7 @@ function scrollToHeading(
 
   /*
    * Update URL hash without causing
-   * the browser's default jump.
+   * browser default jump.
    */
   window.history.replaceState(
     null,
@@ -422,7 +346,7 @@ function scrollToHeading(
 
 /* =========================================================
    BLOG DETAIL
-   ========================================================= */
+========================================================= */
 
 export default function BlogDetail() {
   const { slug } =
@@ -457,15 +381,12 @@ export default function BlogDetail() {
     setImageFallbackTried,
   ] = useState(false);
 
-  const [
-    tocItems,
-    setTocItems,
-  ] = useState<TocItem[]>([]);
-
-  const [
-    tocOpen,
-    setTocOpen,
-  ] = useState(false);
+  /*
+   * TOC is open by default so it is
+   * clearly visible on the website.
+   */
+  const [tocOpen, setTocOpen] =
+    useState(true);
 
   const [
     activeTocId,
@@ -476,7 +397,7 @@ export default function BlogDetail() {
 
   /* =======================================================
      LOAD ARTICLE
-     ======================================================= */
+  ======================================================= */
 
   useEffect(() => {
     let cancelled = false;
@@ -494,13 +415,12 @@ export default function BlogDetail() {
       setError('');
       setPost(null);
       setRelated([]);
-      setTocItems([]);
       setActiveTocId(null);
 
       try {
         /*
-         * Contentful is now the only
-         * source of articles.
+         * Contentful is the only source
+         * of blog articles.
          */
         const data =
           await fetchPostBySlug(
@@ -511,9 +431,6 @@ export default function BlogDetail() {
           return;
         }
 
-        /*
-         * Article found in Contentful.
-         */
         if (data) {
           setPost(data);
 
@@ -552,12 +469,6 @@ export default function BlogDetail() {
           return;
         }
 
-        /*
-         * No Contentful article found.
-         *
-         * We intentionally DO NOT
-         * fall back to old articles.
-         */
         setError(
           'Article not found.'
         );
@@ -589,8 +500,8 @@ export default function BlogDetail() {
   }, [slug]);
 
   /* =======================================================
-     PREPARE IMAGE WHEN ARTICLE CHANGES
-     ======================================================= */
+     PREPARE IMAGE
+  ======================================================= */
 
   useEffect(() => {
     if (!post) {
@@ -615,77 +526,79 @@ export default function BlogDetail() {
   }, [post]);
 
   /* =======================================================
-     BUILD TOC FROM ARTICLE DOM
-     ======================================================= */
+     PREPARE ARTICLE + TOC
+  ======================================================= */
+
+  const preparedArticle =
+    useMemo(() => {
+      return prepareArticleContent(
+        post?.content || ''
+      );
+    }, [post?.content]);
+
+  const tocItems =
+    preparedArticle.tocItems;
+
+  /* =======================================================
+     HANDLE HASH / INITIAL SCROLL
+  ======================================================= */
 
   useEffect(() => {
-    if (!post) {
-      setTocItems([]);
+    if (
+      !post ||
+      tocItems.length === 0
+    ) {
       return;
     }
 
-    /*
-     * Wait until the HTML content has
-     * been inserted into the DOM.
-     */
+    const hash =
+      window.location.hash.replace(
+        /^#/,
+        ''
+      );
+
+    if (!hash) {
+      return;
+    }
+
+    let decodedHash = '';
+
+    try {
+      decodedHash =
+        decodeURIComponent(hash);
+    } catch {
+      decodedHash = hash;
+    }
+
+    const matchingItem =
+      tocItems.find(
+        (item) =>
+          item.id === decodedHash
+      );
+
+    if (!matchingItem) {
+      return;
+    }
+
     const timer =
       window.setTimeout(() => {
-        const container =
-          document.getElementById(
-            'blog-article-content'
-          );
+        scrollToHeading(
+          matchingItem.id
+        );
 
-        if (!container) {
-          setTocItems([]);
-          return;
-        }
-
-        const items =
-          ensureHeadingIds(
-            container
-          );
-
-        setTocItems(items);
-
-        /*
-         * If the URL already contains
-         * a hash, scroll to it after
-         * the article is ready.
-         */
-        const hash =
-          window.location.hash.replace(
-            /^#/,
-            ''
-          );
-
-        if (
-          hash &&
-          items.some(
-            (item) =>
-              item.id ===
-              decodeURIComponent(
-                hash
-              )
-          )
-        ) {
-          window.setTimeout(() => {
-            scrollToHeading(
-              decodeURIComponent(
-                hash
-              )
-            );
-          }, 100);
-        }
-      }, 0);
+        setActiveTocId(
+          matchingItem.id
+        );
+      }, 100);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [post]);
+  }, [post, tocItems]);
 
   /* =======================================================
      ACTIVE TOC HEADING
-     ======================================================= */
+  ======================================================= */
 
   useEffect(() => {
     if (
@@ -694,42 +607,44 @@ export default function BlogDetail() {
       return;
     }
 
-    const headingElements =
-      tocItems
-        .map((item) => ({
-          item,
-          element:
-            document.getElementById(
-              item.id
-            ),
-        }))
-        .filter(
-          (
-            entry
-          ): entry is {
-            item: TocItem;
-            element: HTMLElement;
-          } =>
-            Boolean(
-              entry.element
-            )
-        );
-
-    if (
-      headingElements.length === 0
-    ) {
-      return;
-    }
-
     const updateActiveHeading =
       () => {
+        const headingElements =
+          tocItems
+            .map((item) => ({
+              item,
+              element:
+                document.getElementById(
+                  item.id
+                ),
+            }))
+            .filter(
+              (
+                entry
+              ): entry is {
+                item: TocItem;
+                element: HTMLElement;
+              } =>
+                Boolean(
+                  entry.element
+                )
+            );
+
+        if (
+          headingElements.length ===
+          0
+        ) {
+          return;
+        }
+
         const currentPosition =
           window.scrollY +
           TOC_SCROLL_OFFSET +
-          20;
+          30;
 
         let currentId =
-          headingElements[0].item.id;
+          headingElements[0]
+            .item.id;
 
         headingElements.forEach(
           ({
@@ -771,13 +686,13 @@ export default function BlogDetail() {
 
   /* =======================================================
      IMAGE ERROR HANDLING
-     ======================================================= */
+  ======================================================= */
 
   const handleImageError =
     () => {
       /*
        * First attempt:
-       * Convert external image URL
+       * convert external image URL
        * or filename to local image.
        */
       if (
@@ -801,6 +716,7 @@ export default function BlogDetail() {
           );
 
           setImageLoaded(false);
+
           setImageSrc(
             localFallback
           );
@@ -830,7 +746,7 @@ export default function BlogDetail() {
 
   /* =======================================================
      SEO IMAGE
-     ======================================================= */
+  ======================================================= */
 
   const seoImage =
     useMemo(() => {
@@ -841,7 +757,7 @@ export default function BlogDetail() {
 
   /* =======================================================
      CANONICAL URL
-     ======================================================= */
+  ======================================================= */
 
   const canonicalUrl =
     useMemo(() => {
@@ -856,7 +772,7 @@ export default function BlogDetail() {
 
   /* =======================================================
      STRUCTURED DATA
-     ======================================================= */
+  ======================================================= */
 
   const structuredData =
     useMemo(() => {
@@ -868,7 +784,8 @@ export default function BlogDetail() {
         '@context':
           'https://schema.org',
 
-        '@type': 'Article',
+        '@type':
+          'Article',
 
         headline:
           post.meta_title ||
@@ -883,7 +800,9 @@ export default function BlogDetail() {
         ],
 
         author: {
-          '@type': 'Person',
+          '@type':
+            'Person',
+
           name:
             post.author ||
             'Loveons Editorial',
@@ -893,9 +812,11 @@ export default function BlogDetail() {
           '@type':
             'Organization',
 
-          name: BRAND.name,
+          name:
+            BRAND.name,
 
-          url: BRAND.domain,
+          url:
+            BRAND.domain,
         },
 
         datePublished:
@@ -908,11 +829,15 @@ export default function BlogDetail() {
           post.created_at,
 
         mainEntityOfPage: {
-          '@type': 'WebPage',
-          '@id': canonicalUrl,
+          '@type':
+            'WebPage',
+
+          '@id':
+            canonicalUrl,
         },
 
-        url: canonicalUrl,
+        url:
+          canonicalUrl,
 
         articleSection:
           post.category,
@@ -920,7 +845,9 @@ export default function BlogDetail() {
         keywords:
           post.tags &&
           post.tags.length > 0
-            ? post.tags.join(', ')
+            ? post.tags.join(
+                ', '
+              )
             : undefined,
       };
     }, [
@@ -931,7 +858,7 @@ export default function BlogDetail() {
 
   /* =======================================================
      LOADING
-     ======================================================= */
+  ======================================================= */
 
   if (loading) {
     return (
@@ -943,7 +870,7 @@ export default function BlogDetail() {
 
   /* =======================================================
      ERROR
-     ======================================================= */
+  ======================================================= */
 
   if (error || !post) {
     return (
@@ -965,13 +892,13 @@ export default function BlogDetail() {
 
   /* =======================================================
      PAGE
-     ======================================================= */
+  ======================================================= */
 
   return (
     <>
       {/* ===================================================
           SEO
-          =================================================== */}
+      =================================================== */}
 
       <Seo
         title={
@@ -988,7 +915,7 @@ export default function BlogDetail() {
 
       {/* ===================================================
           ARTICLE STRUCTURED DATA
-          =================================================== */}
+      =================================================== */}
 
       {structuredData && (
         <script
@@ -1004,14 +931,14 @@ export default function BlogDetail() {
 
       {/* ===================================================
           PAGE
-          =================================================== */}
+      =================================================== */}
 
       <div className="min-h-screen pb-12 pt-14">
         <div className="mx-auto max-w-2xl px-4">
 
           {/* =================================================
               BACK TO HOME
-              ================================================= */}
+          ================================================= */}
 
           <Link
             to="/"
@@ -1035,7 +962,7 @@ export default function BlogDetail() {
 
             {/* ===============================================
                 FEATURED IMAGE
-                =============================================== */}
+            =============================================== */}
 
             <div
               className="
@@ -1120,7 +1047,7 @@ export default function BlogDetail() {
 
             {/* ===============================================
                 TITLE
-                =============================================== */}
+            =============================================== */}
 
             <h1
               className="
@@ -1137,7 +1064,7 @@ export default function BlogDetail() {
 
             {/* ===============================================
                 EXCERPT
-                =============================================== */}
+            =============================================== */}
 
             {post.excerpt && (
               <p
@@ -1154,7 +1081,7 @@ export default function BlogDetail() {
 
             {/* ===============================================
                 META
-                =============================================== */}
+            =============================================== */}
 
             <div
               className="
@@ -1195,7 +1122,7 @@ export default function BlogDetail() {
 
             {/* ===============================================
                 TABLE OF CONTENTS
-                =============================================== */}
+            =============================================== */}
 
             {tocItems.length > 0 && (
               <aside
@@ -1213,7 +1140,7 @@ export default function BlogDetail() {
                   backdrop-blur
                 "
               >
-                {/* MOBILE / MAIN TOC HEADER */}
+                {/* TOC HEADER */}
 
                 <button
                   type="button"
@@ -1240,7 +1167,14 @@ export default function BlogDetail() {
                   <span className="flex items-center gap-2">
                     <BookOpen className="h-4 w-4 text-rose-500" />
 
-                    <span className="font-display text-sm font-bold text-gray-800">
+                    <span
+                      className="
+                        font-display
+                        text-sm
+                        font-bold
+                        text-gray-800
+                      "
+                    >
                       Table of Contents
                     </span>
                   </span>
@@ -1280,7 +1214,9 @@ export default function BlogDetail() {
                       {tocItems.map(
                         (item) => (
                           <li
-                            key={item.id}
+                            key={
+                              item.id
+                            }
                           >
                             <button
                               type="button"
@@ -1294,8 +1230,8 @@ export default function BlogDetail() {
                                 );
 
                                 /*
-                                 * Close TOC after
-                                 * selecting on mobile.
+                                 * Close after selection
+                                 * on mobile.
                                  */
                                 setTocOpen(
                                   false
@@ -1307,14 +1243,13 @@ export default function BlogDetail() {
                                 px-3
                                 py-2
                                 text-left
-                                text-sm
                                 leading-5
                                 transition
                                 ${
                                   item.level ===
                                   3
                                     ? 'pl-7 text-xs'
-                                    : 'pl-3'
+                                    : 'pl-3 text-sm'
                                 }
                                 ${
                                   activeTocId ===
@@ -1337,7 +1272,7 @@ export default function BlogDetail() {
 
             {/* ===============================================
                 ARTICLE CONTENT
-                =============================================== */}
+            =============================================== */}
 
             <div
               id="blog-article-content"
@@ -1433,14 +1368,13 @@ export default function BlogDetail() {
               "
               dangerouslySetInnerHTML={{
                 __html:
-                  post.content ||
-                  '',
+                  preparedArticle.html,
               }}
             />
 
             {/* ===============================================
                 TAGS
-                =============================================== */}
+            =============================================== */}
 
             {post.tags &&
               post.tags.length >
@@ -1477,8 +1411,8 @@ export default function BlogDetail() {
 
           {/* =================================================
               RELATED ARTICLES
-              ONLY CONTENTFUL ARTICLES ARE USED.
-              ================================================= */}
+              ONLY CONTENTFUL ARTICLES
+          ================================================= */}
 
           {related.length > 0 && (
             <section
@@ -1543,4 +1477,3 @@ export default function BlogDetail() {
     </>
   );
 }
-
