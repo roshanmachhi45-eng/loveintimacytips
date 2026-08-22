@@ -1,9 +1,35 @@
 
-// src/lib/blogApi.ts
+/* =========================================================
+   LOVEONS BLOG API
+   Contentful-powered version
+   With automatic TOC heading IDs
+   ========================================================= */
 
-// ============================================================
-// Contentful Blog API
-// ============================================================
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  excerpt: string;
+  content: string;
+  image_url: string | null;
+  image_alt: string | null;
+  author: string;
+  published: boolean;
+  published_at: string | null;
+  reading_time: string | null;
+  tags: string[];
+  meta_title: string | null;
+  meta_description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const FALLBACK_IMAGE = "/images/blogs/default.webp";
+
+/* =========================================================
+   CONTENTFUL CONFIG
+   ========================================================= */
 
 const CONTENTFUL_SPACE_ID =
   import.meta.env.VITE_CONTENTFUL_SPACE_ID;
@@ -17,69 +43,65 @@ const CONTENTFUL_ENVIRONMENT =
 const CONTENTFUL_CONTENT_TYPE =
   import.meta.env.VITE_CONTENTFUL_CONTENT_TYPE || "blogPost";
 
-const CONTENTFUL_BASE_URL =
-  `https://cdn.contentful.com/spaces/${CONTENTFUL_SPACE_ID}` +
-  `/environments/${CONTENTFUL_ENVIRONMENT}/entries`;
-
-// ============================================================
-// Types
-// ============================================================
-
-export interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  featuredImage: string;
-  excerpt: string;
-  content: any;
-  author: string;
-  category: string;
-  publishedDate: string;
-  seoTitle: string;
-  seoDescription: string;
-}
+/* =========================================================
+   CONTENTFUL TYPES
+   ========================================================= */
 
 interface ContentfulAsset {
   sys?: {
     id?: string;
   };
+
   fields?: {
     title?: string;
     description?: string;
+
     file?: {
       url?: string;
+
       details?: {
         image?: {
           width?: number;
           height?: number;
         };
       };
+
       fileName?: string;
       contentType?: string;
     };
   };
 }
 
+interface ContentfulRichTextNode {
+  nodeType?: string;
+  value?: string;
+  content?: ContentfulRichTextNode[];
+  data?: Record<string, unknown>;
+}
+
 interface ContentfulEntry {
   sys: {
     id: string;
-    publishedAt?: string;
     createdAt?: string;
     updatedAt?: string;
-    contentType?: {
+    publishedAt?: string;
+  };
+
+  fields: {
+    title?: string;
+    slug?: string;
+    category?: string;
+    excerpt?: string;
+
+    content?: ContentfulRichTextNode;
+
+    featuredImage?: {
       sys?: {
         id?: string;
       };
     };
-  };
-  fields: {
-    title?: string;
-    slug?: string;
-    featuredImage?: any;
-    excerpt?: string;
-    content?: any;
+
     author?: string;
-    category?: string;
     publishedDate?: string;
     seoTitle?: string;
     seoDescription?: string;
@@ -88,18 +110,38 @@ interface ContentfulEntry {
 
 interface ContentfulResponse {
   items?: ContentfulEntry[];
+
   includes?: {
     Asset?: ContentfulAsset[];
-    Entry?: any[];
   };
-  total?: number;
 }
 
-// ============================================================
-// Configuration check
-// ============================================================
+/* =========================================================
+   LOCAL BLOG IMAGE MAP
+   ========================================================= */
 
-function validateConfig(): void {
+const LOCAL_BLOG_IMAGES: Record<string, string> = {
+  communication: "/images/blogs/communication.webp",
+
+  conflict: "/images/blogs/conflict.webp",
+
+  "date-ideas": "/images/blogs/date-ideas.webp",
+
+  "relationship-tips":
+    "/images/blogs/relationship-tips.webp",
+
+  relationship:
+    "/images/blogs/relationship.webp",
+
+  trust:
+    "/images/blogs/trust.webp",
+};
+
+/* =========================================================
+   BASIC VALIDATION
+   ========================================================= */
+
+function validateContentfulConfig(): void {
   if (!CONTENTFUL_SPACE_ID) {
     throw new Error(
       "Missing VITE_CONTENTFUL_SPACE_ID environment variable."
@@ -113,538 +155,829 @@ function validateConfig(): void {
   }
 }
 
-// ============================================================
-// Helpers
-// ============================================================
+/* =========================================================
+   CONTENTFUL URL
+   ========================================================= */
 
-function getFieldValue<T>(
-  value: T | { [key: string]: T } | undefined
-): T | undefined {
-  if (value === undefined || value === null) {
-    return undefined;
-  }
+function getContentfulUrl(query = ""): string {
+  validateContentfulConfig();
 
-  // Contentful normally returns the value directly.
-  // This fallback also handles localized field objects.
-  if (
-    typeof value === "object" &&
-    !Array.isArray(value)
-  ) {
-    const objectValue = value as Record<string, T>;
+  const baseUrl =
+    `https://cdn.contentful.com/spaces/` +
+    `${CONTENTFUL_SPACE_ID}/environments/` +
+    `${CONTENTFUL_ENVIRONMENT}/entries`;
 
-    if ("en-US" in objectValue) {
-      return objectValue["en-US"];
-    }
-
-    const firstKey = Object.keys(objectValue)[0];
-
-    if (firstKey) {
-      return objectValue[firstKey];
-    }
-  }
-
-  return value as T;
+  return query
+    ? `${baseUrl}?${query}`
+    : baseUrl;
 }
 
-function getAssetId(value: any): string | null {
-  if (!value) {
-    return null;
-  }
-
-  if (value.sys?.id) {
-    return value.sys.id;
-  }
-
-  if (value.fields?.file?.url) {
-    return null;
-  }
-
-  if (Array.isArray(value)) {
-    const first = value[0];
-
-    if (first?.sys?.id) {
-      return first.sys.id;
-    }
-  }
-
-  return null;
-}
-
-function normalizeImageUrl(url?: string): string {
-  if (!url) {
-    return "";
-  }
-
-  if (url.startsWith("//")) {
-    return `https:${url}`;
-  }
-
-  if (url.startsWith("http://")) {
-    return url.replace("http://", "https://");
-  }
-
-  if (url.startsWith("https://")) {
-    return url;
-  }
-
-  return `https://${url}`;
-}
-
-function findAsset(
-  assetId: string | null,
-  assets: ContentfulAsset[]
-): ContentfulAsset | undefined {
-  if (!assetId) {
-    return undefined;
-  }
-
-  return assets.find(
-    (asset) => asset.sys?.id === assetId
-  );
-}
-
-function getFeaturedImage(
-  value: any,
-  assets: ContentfulAsset[]
-): string {
-  if (!value) {
-    return "";
-  }
-
-  // Direct URL
-  if (typeof value === "string") {
-    return normalizeImageUrl(value);
-  }
-
-  // Contentful asset link
-  const assetId = getAssetId(value);
-
-  if (assetId) {
-    const asset = findAsset(assetId, assets);
-
-    const assetUrl =
-      getFieldValue(
-        asset?.fields?.file?.url
-      );
-
-    if (assetUrl) {
-      return normalizeImageUrl(assetUrl);
-    }
-  }
-
-  // Already expanded asset
-  const directUrl =
-    getFieldValue(
-      value?.fields?.file?.url
-    );
-
-  if (directUrl) {
-    return normalizeImageUrl(directUrl);
-  }
-
-  return "";
-}
-
-function normalizeCategory(value: any): string {
-  if (!value) {
-    return "";
-  }
-
-  if (typeof value === "string") {
-    return value;
-  }
-
-  if (value.fields?.name) {
-    return (
-      getFieldValue(value.fields.name) || ""
-    );
-  }
-
-  if (value.fields?.title) {
-    return (
-      getFieldValue(value.fields.title) || ""
-    );
-  }
-
-  if (value.name) {
-    return value.name;
-  }
-
-  if (value.title) {
-    return value.title;
-  }
-
-  return "";
-}
-
-function normalizeAuthor(value: any): string {
-  if (!value) {
-    return "";
-  }
-
-  if (typeof value === "string") {
-    return value;
-  }
-
-  if (value.fields?.name) {
-    return (
-      getFieldValue(value.fields.name) || ""
-    );
-  }
-
-  if (value.fields?.title) {
-    return (
-      getFieldValue(value.fields.title) || ""
-    );
-  }
-
-  if (value.name) {
-    return value.name;
-  }
-
-  if (value.title) {
-    return value.title;
-  }
-
-  return "";
-}
-
-// ============================================================
-// Contentful request
-// ============================================================
+/* =========================================================
+   CONTENTFUL FETCH
+   ========================================================= */
 
 async function contentfulFetch(
-  searchParams: URLSearchParams
+  query = ""
 ): Promise<ContentfulResponse> {
-  validateConfig();
-
-  const url =
-    `${CONTENTFUL_BASE_URL}?${searchParams.toString()}`;
+  const url = getContentfulUrl(query);
 
   const response = await fetch(url, {
-    method: "GET",
     headers: {
       Authorization:
         `Bearer ${CONTENTFUL_ACCESS_TOKEN}`,
-      Accept: "application/json",
     },
+
+    cache: "no-store",
   });
 
   if (!response.ok) {
-    let errorBody = "";
-
-    try {
-      errorBody = await response.text();
-    } catch {
-      errorBody = "";
-    }
+    const message = await response.text();
 
     throw new Error(
-      `Contentful API error ${response.status} ${response.statusText}` +
-        (errorBody ? `: ${errorBody}` : "")
+      `Contentful API error ${response.status}: ${message}`
     );
   }
 
   return response.json();
 }
 
-// ============================================================
-// Convert Contentful entry → BlogPost
-// ============================================================
+/* =========================================================
+   HTML HELPERS
+   ========================================================= */
 
-function mapEntryToBlogPost(
-  entry: ContentfulEntry,
-  assets: ContentfulAsset[]
-): BlogPost {
-  const fields = entry.fields || {};
-
-  const title =
-    getFieldValue(fields.title) || "";
-
-  const slug =
-    getFieldValue(fields.slug) || "";
-
-  const excerpt =
-    getFieldValue(fields.excerpt) || "";
-
-  const content =
-    getFieldValue(fields.content) ?? null;
-
-  const author =
-    normalizeAuthor(
-      getFieldValue(fields.author)
-    );
-
-  const category =
-    normalizeCategory(
-      getFieldValue(fields.category)
-    );
-
-  const publishedDate =
-    getFieldValue(fields.publishedDate) ||
-    entry.sys.publishedAt ||
-    entry.sys.createdAt ||
-    "";
-
-  const seoTitle =
-    getFieldValue(fields.seoTitle) ||
-    title;
-
-  const seoDescription =
-    getFieldValue(fields.seoDescription) ||
-    excerpt;
-
-  const featuredImage =
-    getFeaturedImage(
-      getFieldValue(fields.featuredImage),
-      assets
-    );
-
-  return {
-    id: entry.sys.id,
-    title,
-    slug,
-    featuredImage,
-    excerpt,
-    content,
-    author,
-    category,
-    publishedDate,
-    seoTitle,
-    seoDescription,
-  };
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
-// ============================================================
-// Fetch all published blog posts
-// ============================================================
+function escapeHtmlAttribute(
+  value: string
+): string {
+  return escapeHtml(value);
+}
 
-export async function fetchPublishedPosts(): Promise<BlogPost[]> {
-  try {
-    const query = new URLSearchParams();
+/* =========================================================
+   SLUGIFY
+   ========================================================= */
 
-    query.set(
-      "content_type",
-      CONTENTFUL_CONTENT_TYPE
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/* =========================================================
+   CREATE UNIQUE HEADING ID
+   ========================================================= */
+
+function createHeadingId(
+  text: string,
+  usedIds: Set<string>
+): string {
+  const base =
+    slugify(text) || "section";
+
+  let id = base;
+  let counter = 2;
+
+  while (usedIds.has(id)) {
+    id = `${base}-${counter}`;
+    counter += 1;
+  }
+
+  usedIds.add(id);
+
+  return id;
+}
+
+/* =========================================================
+   RICH TEXT -> PLAIN TEXT
+   ========================================================= */
+
+function richTextToPlainText(
+  node: ContentfulRichTextNode | undefined
+): string {
+  if (!node) {
+    return "";
+  }
+
+  if (node.nodeType === "text") {
+    return node.value || "";
+  }
+
+  return (node.content || [])
+    .map((child) =>
+      richTextToPlainText(child)
+    )
+    .join(" ");
+}
+
+/* =========================================================
+   RICH TEXT -> HTML
+   WITH AUTOMATIC HEADING IDS
+   ========================================================= */
+
+function richTextToHtml(
+  node:
+    | ContentfulRichTextNode
+    | undefined,
+  usedHeadingIds: Set<string>
+): string {
+  if (!node) {
+    return "";
+  }
+
+  if (node.nodeType === "text") {
+    return escapeHtml(
+      node.value || ""
     );
+  }
 
-    query.set(
-      "order",
-      "-fields.publishedDate"
-    );
-
-    // Include linked featured-image assets.
-    query.set("include", "2");
-
-    // Fetch a reasonable number of posts.
-    query.set("limit", "100");
-
-    const response =
-      await contentfulFetch(query);
-
-    const entries =
-      Array.isArray(response.items)
-        ? response.items
-        : [];
-
-    const assets =
-      Array.isArray(response.includes?.Asset)
-        ? response.includes.Asset
-        : [];
-
-    console.log(
-      `Contentful: fetched ${entries.length} ${CONTENTFUL_CONTENT_TYPE} entries`
-    );
-
-    const posts = entries
-      .filter((entry) => {
-        if (!entry?.sys?.id) {
-          return false;
-        }
-
-        const fields = entry.fields || {};
-
-        const title =
-          getFieldValue(fields.title);
-
-        const slug =
-          getFieldValue(fields.slug);
-
-        // A published Contentful entry is already returned
-        // by the Delivery API. We only require the essential
-        // blog fields here.
-        return Boolean(title && slug);
-      })
-      .map((entry) =>
-        mapEntryToBlogPost(
-          entry,
-          assets
+  const children =
+    (node.content || [])
+      .map((child) =>
+        richTextToHtml(
+          child,
+          usedHeadingIds
         )
-      );
+      )
+      .join("");
 
-    return posts;
-  } catch (error) {
-    console.error(
-      "❌ Contentful fetchPublishedPosts ERROR:",
-      error
-    );
+  switch (node.nodeType) {
+    case "document":
+      return children;
 
-    // IMPORTANT:
-    // Do not silently convert a Contentful API error
-    // into an empty array. This makes debugging possible.
-    throw error;
+    case "paragraph":
+      return `<p>${children}</p>`;
+
+    case "heading-1": {
+      const headingText =
+        richTextToPlainText(node).trim();
+
+      const id =
+        createHeadingId(
+          headingText,
+          usedHeadingIds
+        );
+
+      return `<h1 id="${escapeHtmlAttribute(
+        id
+      )}">${children}</h1>`;
+    }
+
+    case "heading-2": {
+      const headingText =
+        richTextToPlainText(node).trim();
+
+      const id =
+        createHeadingId(
+          headingText,
+          usedHeadingIds
+        );
+
+      return `<h2 id="${escapeHtmlAttribute(
+        id
+      )}">${children}</h2>`;
+    }
+
+    case "heading-3": {
+      const headingText =
+        richTextToPlainText(node).trim();
+
+      const id =
+        createHeadingId(
+          headingText,
+          usedHeadingIds
+        );
+
+      return `<h3 id="${escapeHtmlAttribute(
+        id
+      )}">${children}</h3>`;
+    }
+
+    case "heading-4": {
+      const headingText =
+        richTextToPlainText(node).trim();
+
+      const id =
+        createHeadingId(
+          headingText,
+          usedHeadingIds
+        );
+
+      return `<h4 id="${escapeHtmlAttribute(
+        id
+      )}">${children}</h4>`;
+    }
+
+    case "heading-5": {
+      const headingText =
+        richTextToPlainText(node).trim();
+
+      const id =
+        createHeadingId(
+          headingText,
+          usedHeadingIds
+        );
+
+      return `<h5 id="${escapeHtmlAttribute(
+        id
+      )}">${children}</h5>`;
+    }
+
+    case "heading-6": {
+      const headingText =
+        richTextToPlainText(node).trim();
+
+      const id =
+        createHeadingId(
+          headingText,
+          usedHeadingIds
+        );
+
+      return `<h6 id="${escapeHtmlAttribute(
+        id
+      )}">${children}</h6>`;
+    }
+
+    case "blockquote":
+      return `<blockquote>${children}</blockquote>`;
+
+    case "unordered-list":
+      return `<ul>${children}</ul>`;
+
+    case "ordered-list":
+      return `<ol>${children}</ol>`;
+
+    case "list-item":
+      return `<li>${children}</li>`;
+
+    case "hyperlink": {
+      const uri =
+        typeof node.data?.uri === "string"
+          ? node.data.uri
+          : "#";
+
+      return `<a href="${escapeHtmlAttribute(
+        uri
+      )}">${children}</a>`;
+    }
+
+    case "hr":
+      return "<hr />";
+
+    case "embedded-asset-block":
+      return "";
+
+    default:
+      return children;
   }
 }
 
-// ============================================================
-// Fetch a single blog post by slug
-// ============================================================
+/* =========================================================
+   READING TIME
+   ========================================================= */
+
+export function estimateReadingTime(
+  content: string
+): string {
+  const cleanContent = content
+    .replace(/<[^>]*>/g, " ")
+    .trim();
+
+  if (!cleanContent) {
+    return "1 min read";
+  }
+
+  const words = cleanContent
+    .split(/\s+/)
+    .filter(Boolean)
+    .length;
+
+  const minutes = Math.max(
+    1,
+    Math.ceil(words / 200)
+  );
+
+  return `${minutes} min read`;
+}
+
+/* =========================================================
+   FIND CONTENTFUL IMAGE
+   ========================================================= */
+
+function getAssetUrl(
+  post: ContentfulEntry,
+  response: ContentfulResponse
+): {
+  url: string | null;
+  alt: string | null;
+} {
+  const imageId =
+    post.fields.featuredImage
+      ?.sys?.id;
+
+  if (!imageId) {
+    return {
+      url: null,
+      alt: null,
+    };
+  }
+
+  const asset =
+    (
+      response.includes?.Asset ||
+      []
+    ).find(
+      (item) =>
+        item.sys?.id === imageId
+    );
+
+  const rawUrl =
+    asset?.fields?.file?.url;
+
+  if (!rawUrl) {
+    return {
+      url: null,
+      alt:
+        asset?.fields?.description ||
+        asset?.fields?.title ||
+        null,
+    };
+  }
+
+  const fullUrl =
+    rawUrl.startsWith("//")
+      ? `https:${rawUrl}`
+      : rawUrl.startsWith("http")
+        ? rawUrl
+        : `https://${rawUrl}`;
+
+  return {
+    url: fullUrl,
+
+    alt:
+      asset?.fields?.description ||
+      asset?.fields?.title ||
+      null,
+  };
+}
+
+/* =========================================================
+   RESOLVE BLOG IMAGE
+   ========================================================= */
+
+function resolveBlogImage(
+  post: BlogPost
+): string {
+  const rawImage =
+    post.image_url?.trim();
+
+  if (
+    rawImage &&
+    rawImage.startsWith(
+      "/images/blogs/"
+    )
+  ) {
+    return rawImage;
+  }
+
+  if (
+    rawImage &&
+    /^https?:\/\//i.test(
+      rawImage
+    )
+  ) {
+    return rawImage;
+  }
+
+  if (
+    rawImage &&
+    /^[a-z0-9-]+\.(webp|jpg|jpeg|png|avif)$/i.test(
+      rawImage
+    )
+  ) {
+    const filename =
+      rawImage
+        .split("/")
+        .pop()
+        ?.toLowerCase();
+
+    if (filename) {
+      const localFile =
+        Object.values(
+          LOCAL_BLOG_IMAGES
+        ).find((path) =>
+          path
+            .toLowerCase()
+            .endsWith(filename)
+        );
+
+      if (localFile) {
+        return localFile;
+      }
+    }
+  }
+
+  const searchText = [
+    post.slug,
+    post.title,
+    post.category,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (
+    searchText.includes(
+      "communication"
+    ) ||
+    searchText.includes(
+      "communicate"
+    )
+  ) {
+    return LOCAL_BLOG_IMAGES.communication;
+  }
+
+  if (
+    searchText.includes(
+      "conflict"
+    ) ||
+    searchText.includes(
+      "argument"
+    ) ||
+    searchText.includes(
+      "fighting"
+    )
+  ) {
+    return LOCAL_BLOG_IMAGES.conflict;
+  }
+
+  if (
+    searchText.includes("date") ||
+    searchText.includes("dating")
+  ) {
+    return LOCAL_BLOG_IMAGES[
+      "date-ideas"
+    ];
+  }
+
+  if (
+    searchText.includes("trust") ||
+    searchText.includes(
+      "commitment"
+    )
+  ) {
+    return LOCAL_BLOG_IMAGES.trust;
+  }
+
+  if (
+    searchText.includes(
+      "relationship tip"
+    ) ||
+    searchText.includes(
+      "relationship advice"
+    ) ||
+    searchText.includes(
+      "healthy relationship"
+    )
+  ) {
+    return LOCAL_BLOG_IMAGES[
+      "relationship-tips"
+    ];
+  }
+
+  if (
+    searchText.includes(
+      "relationship"
+    )
+  ) {
+    return LOCAL_BLOG_IMAGES.relationship;
+  }
+
+  return FALLBACK_IMAGE;
+}
+
+/* =========================================================
+   NORMALIZE CONTENTFUL POST
+   ========================================================= */
+
+function normalizeContentfulPost(
+  entry: ContentfulEntry,
+  response: ContentfulResponse
+): BlogPost {
+  const fields =
+    entry.fields || {};
+
+  /*
+   * Every blog gets its own heading ID set.
+   *
+   * Example:
+   *
+   * "Why Communication Matters"
+   * ->
+   * "why-communication-matters"
+   *
+   * Duplicate headings become:
+   * heading
+   * heading-2
+   * heading-3
+   */
+
+  const usedHeadingIds =
+    new Set<string>();
+
+  const contentHtml =
+    richTextToHtml(
+      fields.content,
+      usedHeadingIds
+    );
+
+  const contentPlainText =
+    richTextToPlainText(
+      fields.content
+    );
+
+  const image =
+    getAssetUrl(
+      entry,
+      response
+    );
+
+  const publishedAt =
+    fields.publishedDate ||
+    entry.sys.publishedAt ||
+    null;
+
+  const post: BlogPost = {
+    id: entry.sys.id,
+
+    title:
+      fields.title || "",
+
+    slug:
+      slugify(
+        fields.slug ||
+        fields.title ||
+        ""
+      ),
+
+    category:
+      fields.category || "",
+
+    excerpt:
+      fields.excerpt || "",
+
+    content:
+      contentHtml,
+
+    image_url:
+      image.url,
+
+    image_alt:
+      image.alt,
+
+    author:
+      fields.author || "",
+
+    published:
+      Boolean(
+        entry.sys.publishedAt ||
+        fields.publishedDate
+      ),
+
+    published_at:
+      publishedAt,
+
+    reading_time:
+      estimateReadingTime(
+        contentPlainText
+      ),
+
+    tags: [],
+
+    meta_title:
+      fields.seoTitle || null,
+
+    meta_description:
+      fields.seoDescription ||
+      null,
+
+    created_at:
+      entry.sys.createdAt ||
+      new Date().toISOString(),
+
+    updated_at:
+      entry.sys.updatedAt ||
+      new Date().toISOString(),
+  };
+
+  return {
+    ...post,
+
+    image_url:
+      resolveBlogImage(post),
+  };
+}
+
+/* =========================================================
+   FETCH PUBLISHED POSTS
+   ========================================================= */
+
+export async function fetchPublishedPosts():
+  Promise<BlogPost[]> {
+  try {
+    const query =
+      new URLSearchParams({
+        content_type:
+          CONTENTFUL_CONTENT_TYPE,
+
+        order:
+          "-fields.publishedDate",
+
+        include: "2",
+
+        limit: "100",
+      });
+
+    const response =
+      await contentfulFetch(
+        query.toString()
+      );
+
+    return (
+      response.items || []
+    )
+      .filter((entry) =>
+        Boolean(
+          entry.sys.publishedAt ||
+          entry.fields.publishedDate
+        )
+      )
+      .map((entry) =>
+        normalizeContentfulPost(
+          entry,
+          response
+        )
+      );
+  } catch (error) {
+    console.error(
+      "fetchPublishedPosts:",
+      error
+    );
+
+    return [];
+  }
+}
+
+/* =========================================================
+   FETCH SINGLE PUBLISHED POST
+   ========================================================= */
 
 export async function fetchPostBySlug(
   slug: string
 ): Promise<BlogPost | null> {
   try {
-    if (!slug) {
-      return null;
-    }
+    const cleanSlug =
+      slugify(slug);
 
-    const query = new URLSearchParams();
+    const query =
+      new URLSearchParams({
+        content_type:
+          CONTENTFUL_CONTENT_TYPE,
 
-    query.set(
-      "content_type",
-      CONTENTFUL_CONTENT_TYPE
-    );
+        "fields.slug":
+          cleanSlug,
 
-    query.set(
-      "fields.slug",
-      slug
-    );
+        include: "2",
 
-    query.set(
-      "limit",
-      "1"
-    );
-
-    query.set(
-      "include",
-      "2"
-    );
+        limit: "1",
+      });
 
     const response =
-      await contentfulFetch(query);
+      await contentfulFetch(
+        query.toString()
+      );
 
     const entry =
-      response.items?.[0];
+      (
+        response.items || []
+      ).find((item) =>
+        Boolean(
+          item.sys.publishedAt ||
+          item.fields.publishedDate
+        )
+      );
 
     if (!entry) {
       return null;
     }
 
-    const assets =
-      Array.isArray(response.includes?.Asset)
-        ? response.includes.Asset
-        : [];
-
-    return mapEntryToBlogPost(
+    return normalizeContentfulPost(
       entry,
-      assets
+      response
     );
   } catch (error) {
     console.error(
-      "❌ Contentful fetchPostBySlug ERROR:",
+      "fetchPostBySlug:",
       error
     );
 
-    throw error;
+    return null;
   }
 }
 
-// ============================================================
-// Fetch a single blog post by Contentful entry ID
-// ============================================================
+/* =========================================================
+   COMPATIBILITY ALIAS
+   IMPORTANT:
+   BlogDetails.tsx currently expects
+   fetchPostsBySlug (plural "Posts").
 
-export async function fetchPostById(
-  id: string
+   Keep this export so both names work.
+   ========================================================= */
+
+export async function fetchPostsBySlug(
+  slug: string
 ): Promise<BlogPost | null> {
-  try {
-    if (!id) {
-      return null;
-    }
-
-    const query = new URLSearchParams();
-
-    query.set(
-      "sys.id",
-      id
-    );
-
-    query.set(
-      "content_type",
-      CONTENTFUL_CONTENT_TYPE
-    );
-
-    query.set(
-      "limit",
-      "1"
-    );
-
-    query.set(
-      "include",
-      "2"
-    );
-
-    const response =
-      await contentfulFetch(query);
-
-    const entry =
-      response.items?.[0];
-
-    if (!entry) {
-      return null;
-    }
-
-    const assets =
-      Array.isArray(response.includes?.Asset)
-        ? response.includes.Asset
-        : [];
-
-    return mapEntryToBlogPost(
-      entry,
-      assets
-    );
-  } catch (error) {
-    console.error(
-      "❌ Contentful fetchPostById ERROR:",
-      error
-    );
-
-    throw error;
-  }
+  return fetchPostBySlug(slug);
 }
 
-// ============================================================
-// Fetch posts by category
-// ============================================================
+/* =========================================================
+   FETCH RELATED POSTS
+   ========================================================= */
 
-export async function fetchPostsByCategory(
-  category: string
+export async function fetchRelatedPosts(
+  category: string,
+  excludeSlug: string,
+  limit = 3
 ): Promise<BlogPost[]> {
   try {
-    if (!category) {
-      return fetchPublishedPosts();
-    }
-
-    const allPosts =
+    const posts =
       await fetchPublishedPosts();
 
-    return allPosts.filter(
-      (post) =>
-        post.category.toLowerCase() ===
-        category.toLowerCase()
+    return posts
+      .filter(
+        (post) =>
+          post.category
+            .toLowerCase() ===
+            category.toLowerCase() &&
+          post.slug !==
+            slugify(excludeSlug)
+      )
+      .slice(0, limit);
+  } catch (error) {
+    console.error(
+      "fetchRelatedPosts:",
+      error
+    );
+
+    return [];
+  }
+}
+
+/* =========================================================
+   FETCH ALL POSTS
+   ========================================================= */
+
+export async function fetchAllPosts():
+  Promise<BlogPost[]> {
+  try {
+    const query =
+      new URLSearchParams({
+        content_type:
+          CONTENTFUL_CONTENT_TYPE,
+
+        order:
+          "-sys.createdAt",
+
+        include: "2",
+
+        limit: "100",
+      });
+
+    const response =
+      await contentfulFetch(
+        query.toString()
+      );
+
+    return (
+      response.items || []
+    ).map((entry) =>
+      normalizeContentfulPost(
+        entry,
+        response
+      )
     );
   } catch (error) {
     console.error(
-      "❌ Contentful fetchPostsByCategory ERROR:",
+      "fetchAllPosts:",
       error
     );
 
@@ -652,60 +985,135 @@ export async function fetchPostsByCategory(
   }
 }
 
-// ============================================================
-// Search posts
-// ============================================================
+/* =========================================================
+   CONTENTFUL IS THE CMS
+   =========================================================
 
-export async function searchPosts(
-  searchTerm: string
-): Promise<BlogPost[]> {
-  const posts =
-    await fetchPublishedPosts();
+   Blog creation, editing, deletion,
+   publishing and image uploading are
+   now done directly inside Contentful.
 
-  const term =
-    searchTerm.trim().toLowerCase();
+   The website uses the Content Delivery API
+   only for reading published content.
 
-  if (!term) {
-    return posts;
+   ========================================================= */
+
+/* =========================================================
+   OPTIONAL LEGACY GUARDS
+   ========================================================= */
+
+export async function createPost(
+  _post: Omit<
+    BlogPost,
+    "id" |
+    "created_at" |
+    "updated_at"
+  >
+): Promise<BlogPost> {
+  throw new Error(
+    "Create the blog post directly in Contentful."
+  );
+}
+
+export async function updatePost(
+  _id: string,
+  _updates: Partial<BlogPost>
+): Promise<BlogPost> {
+  throw new Error(
+    "Update the blog post directly in Contentful."
+  );
+}
+
+export async function deletePost(
+  _id: string
+): Promise<void> {
+  throw new Error(
+    "Delete the blog post directly in Contentful."
+  );
+}
+
+export async function publishPost(
+  _id: string
+): Promise<BlogPost> {
+  throw new Error(
+    "Publish the blog post directly in Contentful."
+  );
+}
+
+export async function unpublishPost(
+  _id: string
+): Promise<BlogPost> {
+  throw new Error(
+    "Unpublish the blog post directly in Contentful."
+  );
+}
+
+export async function uploadBlogImage(
+  _file: File
+): Promise<string> {
+  throw new Error(
+    "Upload the image as a Featured Image asset in Contentful."
+  );
+}
+
+/* =========================================================
+   CHECK SLUG AVAILABILITY
+   ========================================================= */
+
+export async function isSlugAvailable(
+  slug: string,
+  excludeId?: string
+): Promise<boolean> {
+  try {
+    const cleanSlug =
+      slugify(slug);
+
+    if (!cleanSlug) {
+      return false;
+    }
+
+    const query =
+      new URLSearchParams({
+        content_type:
+          CONTENTFUL_CONTENT_TYPE,
+
+        "fields.slug":
+          cleanSlug,
+
+        limit: "10",
+      });
+
+    const response =
+      await contentfulFetch(
+        query.toString()
+      );
+
+    const matches =
+      response.items || [];
+
+    if (!excludeId) {
+      return (
+        matches.length === 0
+      );
+    }
+
+    return !matches.some(
+      (entry) =>
+        entry.sys.id ===
+        excludeId
+    );
+  } catch (error) {
+    console.error(
+      "isSlugAvailable:",
+      error
+    );
+
+    /*
+     * Don't incorrectly block the
+     * editor if the availability
+     * check itself fails.
+     */
+
+    return true;
   }
-
-  return posts.filter((post) => {
-    const searchableText = [
-      post.title,
-      post.excerpt,
-      post.author,
-      post.category,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    return searchableText.includes(term);
-  });
-}
-
-// ============================================================
-// Compatibility helpers
-// ============================================================
-
-// These functions intentionally do not create/update/delete
-// Contentful entries from the frontend.
-// Blogs should be created and published directly in Contentful.
-
-export async function createPost(): Promise<never> {
-  throw new Error(
-    "Creating blog posts from the website is disabled. Please create and publish posts in Contentful."
-  );
-}
-
-export async function updatePost(): Promise<never> {
-  throw new Error(
-    "Updating blog posts from the website is disabled. Please edit and publish posts in Contentful."
-  );
-}
-
-export async function deletePost(): Promise<never> {
-  throw new Error(
-    "Deleting blog posts from the website is disabled. Please manage posts in Contentful."
-  );
 }
