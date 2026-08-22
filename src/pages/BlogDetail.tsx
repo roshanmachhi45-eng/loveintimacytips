@@ -1,10 +1,21 @@
 
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+
+import {
+  Link,
+  useParams,
+} from 'react-router-dom';
+
 import {
   ArrowLeft,
   BookOpen,
   Calendar,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Loader2,
   User,
@@ -22,11 +33,23 @@ import {
 import { BRAND } from '../lib/brand';
 
 /* =========================================================
+   TYPES
+   ========================================================= */
+
+interface TocItem {
+  id: string;
+  text: string;
+  level: 2 | 3;
+}
+
+/* =========================================================
    CONSTANTS
    ========================================================= */
 
 const DEFAULT_BLOG_IMAGE =
   '/images/blogs/default.webp';
+
+const TOC_SCROLL_OFFSET = 100;
 
 /* =========================================================
    DATE
@@ -45,11 +68,14 @@ function formatDate(
     return '';
   }
 
-  return date.toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  return date.toLocaleDateString(
+    'en-US',
+    {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    }
+  );
 }
 
 /* =========================================================
@@ -105,7 +131,10 @@ function resolveBlogImage(
     value.startsWith('images/') ||
     value.startsWith('./images/')
   ) {
-    return `/${value.replace(/^\.?\//, '')}`;
+    return `/${value.replace(
+      /^\.?\//,
+      ''
+    )}`;
   }
 
   /*
@@ -128,10 +157,11 @@ function getLocalImageFallback(
   try {
     const url = new URL(src);
 
-    const filename = url.pathname
-      .split('/')
-      .filter(Boolean)
-      .pop();
+    const filename =
+      url.pathname
+        .split('/')
+        .filter(Boolean)
+        .pop();
 
     if (
       filename &&
@@ -145,10 +175,11 @@ function getLocalImageFallback(
     // Not an absolute URL.
   }
 
-  const filename = src
-    .split('/')
-    .filter(Boolean)
-    .pop();
+  const filename =
+    src
+      .split('/')
+      .filter(Boolean)
+      .pop();
 
   if (
     filename &&
@@ -163,15 +194,246 @@ function getLocalImageFallback(
 }
 
 /* =========================================================
+   TOC HELPERS
+   ========================================================= */
+
+/**
+ * Creates a safe slug from heading text.
+ *
+ * This is mainly a fallback for older Contentful
+ * HTML that may not already contain an id.
+ */
+function slugifyHeading(
+  text: string
+): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Extracts H2 and H3 headings from the
+ * rendered Contentful HTML.
+ *
+ * blogApi.ts already creates heading IDs.
+ * This function uses those IDs whenever
+ * they are available.
+ */
+function extractTocItems(
+  html: string
+): TocItem[] {
+  if (!html) {
+    return [];
+  }
+
+  const parser =
+    new DOMParser();
+
+  const document =
+    parser.parseFromString(
+      html,
+      'text/html'
+    );
+
+  const headings =
+    Array.from(
+      document.querySelectorAll(
+        'h2, h3'
+      )
+    );
+
+  const usedIds =
+    new Set<string>();
+
+  return headings
+    .map((heading) => {
+      const text =
+        heading.textContent
+          ?.trim() || '';
+
+      if (!text) {
+        return null;
+      }
+
+      let id =
+        heading.getAttribute('id') ||
+        slugifyHeading(text);
+
+      if (!id) {
+        id = 'section';
+      }
+
+      /*
+       * Protect against duplicate IDs.
+       */
+      const originalId =
+        id;
+
+      let counter = 2;
+
+      while (
+        usedIds.has(id)
+      ) {
+        id =
+          `${originalId}-${counter}`;
+
+        counter += 1;
+      }
+
+      usedIds.add(id);
+
+      return {
+        id,
+        text,
+        level:
+          heading.tagName.toLowerCase() ===
+          'h3'
+            ? 3
+            : 2,
+      };
+    })
+    .filter(
+      (
+        item
+      ): item is TocItem =>
+        item !== null
+    );
+}
+
+/**
+ * Ensures every H2/H3 in the actual DOM
+ * has the same ID that the TOC uses.
+ *
+ * This also supports older articles that
+ * were created before automatic IDs were added.
+ */
+function ensureHeadingIds(
+  container: HTMLElement
+): TocItem[] {
+  const headings =
+    Array.from(
+      container.querySelectorAll(
+        'h2, h3'
+      )
+    );
+
+  const usedIds =
+    new Set<string>();
+
+  const items: TocItem[] = [];
+
+  headings.forEach(
+    (heading) => {
+      const text =
+        heading.textContent
+          ?.trim() || '';
+
+      if (!text) {
+        return;
+      }
+
+      let id =
+        heading.getAttribute('id') ||
+        slugifyHeading(text);
+
+      if (!id) {
+        id = 'section';
+      }
+
+      const baseId = id;
+
+      let counter = 2;
+
+      while (
+        usedIds.has(id)
+      ) {
+        id =
+          `${baseId}-${counter}`;
+
+        counter += 1;
+      }
+
+      usedIds.add(id);
+
+      heading.setAttribute(
+        'id',
+        id
+      );
+
+      items.push({
+        id,
+        text,
+        level:
+          heading.tagName.toLowerCase() ===
+          'h3'
+            ? 3
+            : 2,
+      });
+    }
+  );
+
+  return items;
+}
+
+/* =========================================================
+   SMOOTH SCROLL
+   ========================================================= */
+
+function scrollToHeading(
+  id: string
+): void {
+  const element =
+    document.getElementById(id);
+
+  if (!element) {
+    return;
+  }
+
+  const elementTop =
+    element.getBoundingClientRect()
+      .top;
+
+  const absoluteTop =
+    window.scrollY +
+    elementTop -
+    TOC_SCROLL_OFFSET;
+
+  window.scrollTo({
+    top: Math.max(
+      0,
+      absoluteTop
+    ),
+    behavior: 'smooth',
+  });
+
+  /*
+   * Update URL hash without causing
+   * the browser's default jump.
+   */
+  window.history.replaceState(
+    null,
+    '',
+    `#${encodeURIComponent(id)}`
+  );
+}
+
+/* =========================================================
    BLOG DETAIL
    ========================================================= */
 
 export default function BlogDetail() {
   const { slug } =
-    useParams<{ slug: string }>();
+    useParams<{
+      slug: string;
+    }>();
 
   const [post, setPost] =
-    useState<BlogPost | null>(null);
+    useState<BlogPost | null>(
+      null
+    );
 
   const [related, setRelated] =
     useState<BlogPost[]>([]);
@@ -183,13 +445,34 @@ export default function BlogDetail() {
     useState('');
 
   const [imageSrc, setImageSrc] =
-    useState(DEFAULT_BLOG_IMAGE);
+    useState(
+      DEFAULT_BLOG_IMAGE
+    );
 
   const [imageLoaded, setImageLoaded] =
     useState(false);
 
-  const [imageFallbackTried, setImageFallbackTried] =
-    useState(false);
+  const [
+    imageFallbackTried,
+    setImageFallbackTried,
+  ] = useState(false);
+
+  const [
+    tocItems,
+    setTocItems,
+  ] = useState<TocItem[]>([]);
+
+  const [
+    tocOpen,
+    setTocOpen,
+  ] = useState(false);
+
+  const [
+    activeTocId,
+    setActiveTocId,
+  ] = useState<string | null>(
+    null
+  );
 
   /* =======================================================
      LOAD ARTICLE
@@ -201,7 +484,9 @@ export default function BlogDetail() {
     async function loadArticle() {
       if (!slug) {
         setLoading(false);
-        setError('Article not found.');
+        setError(
+          'Article not found.'
+        );
         return;
       }
 
@@ -209,13 +494,18 @@ export default function BlogDetail() {
       setError('');
       setPost(null);
       setRelated([]);
+      setTocItems([]);
+      setActiveTocId(null);
 
       try {
         /*
-         * Contentful is now the only source of articles.
+         * Contentful is now the only
+         * source of articles.
          */
         const data =
-          await fetchPostBySlug(slug);
+          await fetchPostBySlug(
+            slug
+          );
 
         if (cancelled) {
           return;
@@ -228,8 +518,8 @@ export default function BlogDetail() {
           setPost(data);
 
           /*
-           * Related articles also come only
-           * from Contentful.
+           * Related articles also come
+           * only from Contentful.
            */
           try {
             const relatedData =
@@ -246,7 +536,9 @@ export default function BlogDetail() {
             setRelated(
               relatedData || []
             );
-          } catch (relatedError) {
+          } catch (
+            relatedError
+          ) {
             console.error(
               'Failed to load related Contentful posts:',
               relatedError
@@ -263,11 +555,15 @@ export default function BlogDetail() {
         /*
          * No Contentful article found.
          *
-         * We intentionally DO NOT fall back
-         * to the old 6 Bolt AI articles.
+         * We intentionally DO NOT
+         * fall back to old articles.
          */
-        setError('Article not found.');
-      } catch (requestError) {
+        setError(
+          'Article not found.'
+        );
+      } catch (
+        requestError
+      ) {
         console.error(
           'Failed to load Contentful article:',
           requestError
@@ -319,143 +615,319 @@ export default function BlogDetail() {
   }, [post]);
 
   /* =======================================================
+     BUILD TOC FROM ARTICLE DOM
+     ======================================================= */
+
+  useEffect(() => {
+    if (!post) {
+      setTocItems([]);
+      return;
+    }
+
+    /*
+     * Wait until the HTML content has
+     * been inserted into the DOM.
+     */
+    const timer =
+      window.setTimeout(() => {
+        const container =
+          document.getElementById(
+            'blog-article-content'
+          );
+
+        if (!container) {
+          setTocItems([]);
+          return;
+        }
+
+        const items =
+          ensureHeadingIds(
+            container
+          );
+
+        setTocItems(items);
+
+        /*
+         * If the URL already contains
+         * a hash, scroll to it after
+         * the article is ready.
+         */
+        const hash =
+          window.location.hash.replace(
+            /^#/,
+            ''
+          );
+
+        if (
+          hash &&
+          items.some(
+            (item) =>
+              item.id ===
+              decodeURIComponent(
+                hash
+              )
+          )
+        ) {
+          window.setTimeout(() => {
+            scrollToHeading(
+              decodeURIComponent(
+                hash
+              )
+            );
+          }, 100);
+        }
+      }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [post]);
+
+  /* =======================================================
+     ACTIVE TOC HEADING
+     ======================================================= */
+
+  useEffect(() => {
+    if (
+      tocItems.length === 0
+    ) {
+      return;
+    }
+
+    const headingElements =
+      tocItems
+        .map((item) => ({
+          item,
+          element:
+            document.getElementById(
+              item.id
+            ),
+        }))
+        .filter(
+          (
+            entry
+          ): entry is {
+            item: TocItem;
+            element: HTMLElement;
+          } =>
+            Boolean(
+              entry.element
+            )
+        );
+
+    if (
+      headingElements.length === 0
+    ) {
+      return;
+    }
+
+    const updateActiveHeading =
+      () => {
+        const currentPosition =
+          window.scrollY +
+          TOC_SCROLL_OFFSET +
+          20;
+
+        let currentId =
+          headingElements[0].item.id;
+
+        headingElements.forEach(
+          ({
+            item,
+            element,
+          }) => {
+            if (
+              element.offsetTop <=
+              currentPosition
+            ) {
+              currentId =
+                item.id;
+            }
+          }
+        );
+
+        setActiveTocId(
+          currentId
+        );
+      };
+
+    updateActiveHeading();
+
+    window.addEventListener(
+      'scroll',
+      updateActiveHeading,
+      {
+        passive: true,
+      }
+    );
+
+    return () => {
+      window.removeEventListener(
+        'scroll',
+        updateActiveHeading
+      );
+    };
+  }, [tocItems]);
+
+  /* =======================================================
      IMAGE ERROR HANDLING
      ======================================================= */
 
-  const handleImageError = () => {
-    /*
-     * First attempt:
-     * Convert external image URL or filename
-     * to a local /images/blogs filename.
-     */
-    if (
-      !imageFallbackTried &&
-      imageSrc !== DEFAULT_BLOG_IMAGE
-    ) {
-      const localFallback =
-        getLocalImageFallback(
-          post?.image_url
+  const handleImageError =
+    () => {
+      /*
+       * First attempt:
+       * Convert external image URL
+       * or filename to local image.
+       */
+      if (
+        !imageFallbackTried &&
+        imageSrc !==
+          DEFAULT_BLOG_IMAGE
+      ) {
+        const localFallback =
+          getLocalImageFallback(
+            post?.image_url
+          );
+
+        if (
+          localFallback !==
+            imageSrc &&
+          localFallback !==
+            DEFAULT_BLOG_IMAGE
+        ) {
+          setImageFallbackTried(
+            true
+          );
+
+          setImageLoaded(false);
+          setImageSrc(
+            localFallback
+          );
+
+          return;
+        }
+      }
+
+      /*
+       * Final fallback.
+       */
+      if (
+        imageSrc !==
+        DEFAULT_BLOG_IMAGE
+      ) {
+        setImageFallbackTried(
+          true
         );
 
-      if (
-        localFallback !== imageSrc &&
-        localFallback !== DEFAULT_BLOG_IMAGE
-      ) {
-        setImageFallbackTried(true);
         setImageLoaded(false);
-        setImageSrc(localFallback);
-        return;
-      }
-    }
 
-    /*
-     * Final fallback.
-     */
-    if (
-      imageSrc !== DEFAULT_BLOG_IMAGE
-    ) {
-      setImageFallbackTried(true);
-      setImageLoaded(false);
-      setImageSrc(
-        DEFAULT_BLOG_IMAGE
-      );
-    }
-  };
+        setImageSrc(
+          DEFAULT_BLOG_IMAGE
+        );
+      }
+    };
 
   /* =======================================================
      SEO IMAGE
      ======================================================= */
 
-  const seoImage = useMemo(() => {
-    return resolveBlogImage(
-      post?.image_url
-    );
-  }, [post]);
+  const seoImage =
+    useMemo(() => {
+      return resolveBlogImage(
+        post?.image_url
+      );
+    }, [post]);
 
   /* =======================================================
      CANONICAL URL
      ======================================================= */
 
-  const canonicalUrl = useMemo(() => {
-    if (!post) {
-      return `${BRAND.domain}/blog/${slug || ''}`;
-    }
+  const canonicalUrl =
+    useMemo(() => {
+      if (!post) {
+        return `${BRAND.domain}/blog/${
+          slug || ''
+        }`;
+      }
 
-    return `${BRAND.domain}/blog/${post.slug}`;
-  }, [post, slug]);
+      return `${BRAND.domain}/blog/${post.slug}`;
+    }, [post, slug]);
 
   /* =======================================================
      STRUCTURED DATA
      ======================================================= */
 
-  const structuredData = useMemo(() => {
-    if (!post) {
-      return null;
-    }
+  const structuredData =
+    useMemo(() => {
+      if (!post) {
+        return null;
+      }
 
-    return {
-      '@context': 'https://schema.org',
-      '@type': 'Article',
+      return {
+        '@context':
+          'https://schema.org',
 
-      headline:
-        post.meta_title ||
-        post.title,
+        '@type': 'Article',
 
-      description:
-        post.meta_description ||
-        post.excerpt,
+        headline:
+          post.meta_title ||
+          post.title,
 
-      image: [
-        seoImage,
-      ],
+        description:
+          post.meta_description ||
+          post.excerpt,
 
-      author: {
-        '@type': 'Person',
+        image: [
+          seoImage,
+        ],
 
-        name:
-          post.author ||
-          'Loveons Editorial',
-      },
+        author: {
+          '@type': 'Person',
+          name:
+            post.author ||
+            'Loveons Editorial',
+        },
 
-      publisher: {
-        '@type': 'Organization',
+        publisher: {
+          '@type':
+            'Organization',
 
-        name: BRAND.name,
+          name: BRAND.name,
 
-        url: BRAND.domain,
-      },
+          url: BRAND.domain,
+        },
 
-      datePublished:
-        post.published_at ||
-        post.created_at,
+        datePublished:
+          post.published_at ||
+          post.created_at,
 
-      dateModified:
-        post.updated_at ||
-        post.published_at ||
-        post.created_at,
+        dateModified:
+          post.updated_at ||
+          post.published_at ||
+          post.created_at,
 
-      mainEntityOfPage: {
-        '@type': 'WebPage',
+        mainEntityOfPage: {
+          '@type': 'WebPage',
+          '@id': canonicalUrl,
+        },
 
-        '@id': canonicalUrl,
-      },
+        url: canonicalUrl,
 
-      url: canonicalUrl,
+        articleSection:
+          post.category,
 
-      articleSection:
-        post.category,
-
-      keywords:
-        post.tags &&
-        post.tags.length > 0
-          ? post.tags.join(', ')
-          : undefined,
-    };
-  }, [
-    post,
-    seoImage,
-    canonicalUrl,
-  ]);
+        keywords:
+          post.tags &&
+          post.tags.length > 0
+            ? post.tags.join(', ')
+            : undefined,
+      };
+    }, [
+      post,
+      seoImage,
+      canonicalUrl,
+    ]);
 
   /* =======================================================
      LOADING
@@ -499,7 +971,7 @@ export default function BlogDetail() {
     <>
       {/* ===================================================
           SEO
-      =================================================== */}
+          =================================================== */}
 
       <Seo
         title={
@@ -516,7 +988,7 @@ export default function BlogDetail() {
 
       {/* ===================================================
           ARTICLE STRUCTURED DATA
-      =================================================== */}
+          =================================================== */}
 
       {structuredData && (
         <script
@@ -532,14 +1004,14 @@ export default function BlogDetail() {
 
       {/* ===================================================
           PAGE
-      =================================================== */}
+          =================================================== */}
 
       <div className="min-h-screen pb-12 pt-14">
         <div className="mx-auto max-w-2xl px-4">
 
           {/* =================================================
               BACK TO HOME
-          ================================================= */}
+              ================================================= */}
 
           <Link
             to="/"
@@ -563,7 +1035,7 @@ export default function BlogDetail() {
 
             {/* ===============================================
                 FEATURED IMAGE
-            =============================================== */}
+                =============================================== */}
 
             <div
               className="
@@ -599,7 +1071,9 @@ export default function BlogDetail() {
                 loading="eager"
                 decoding="async"
                 onLoad={() => {
-                  setImageLoaded(true);
+                  setImageLoaded(
+                    true
+                  );
                 }}
                 onError={
                   handleImageError
@@ -646,7 +1120,7 @@ export default function BlogDetail() {
 
             {/* ===============================================
                 TITLE
-            =============================================== */}
+                =============================================== */}
 
             <h1
               className="
@@ -663,7 +1137,7 @@ export default function BlogDetail() {
 
             {/* ===============================================
                 EXCERPT
-            =============================================== */}
+                =============================================== */}
 
             {post.excerpt && (
               <p
@@ -680,7 +1154,7 @@ export default function BlogDetail() {
 
             {/* ===============================================
                 META
-            =============================================== */}
+                =============================================== */}
 
             <div
               className="
@@ -720,34 +1194,170 @@ export default function BlogDetail() {
             </div>
 
             {/* ===============================================
+                TABLE OF CONTENTS
+                =============================================== */}
+
+            {tocItems.length > 0 && (
+              <aside
+                aria-label="Table of Contents"
+                className="
+                  sticky
+                  top-16
+                  z-30
+                  mb-8
+                  rounded-2xl
+                  border
+                  border-rose-100
+                  bg-white/95
+                  shadow-sm
+                  backdrop-blur
+                "
+              >
+                {/* MOBILE / MAIN TOC HEADER */}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTocOpen(
+                      (current) =>
+                        !current
+                    );
+                  }}
+                  aria-expanded={
+                    tocOpen
+                  }
+                  className="
+                    flex
+                    w-full
+                    items-center
+                    justify-between
+                    gap-3
+                    px-4
+                    py-3.5
+                    text-left
+                  "
+                >
+                  <span className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-rose-500" />
+
+                    <span className="font-display text-sm font-bold text-gray-800">
+                      Table of Contents
+                    </span>
+                  </span>
+
+                  {tocOpen ? (
+                    <ChevronUp className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
+
+                {/* TOC ITEMS */}
+
+                <div
+                  className={`
+                    overflow-hidden
+                    transition-all
+                    duration-200
+                    ${
+                      tocOpen
+                        ? 'max-h-[70vh] opacity-100'
+                        : 'max-h-0 opacity-0'
+                    }
+                  `}
+                >
+                  <nav
+                    className="
+                      max-h-[60vh]
+                      overflow-y-auto
+                      border-t
+                      border-rose-50
+                      px-3
+                      py-3
+                    "
+                  >
+                    <ol className="space-y-1">
+                      {tocItems.map(
+                        (item) => (
+                          <li
+                            key={item.id}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                scrollToHeading(
+                                  item.id
+                                );
+
+                                setActiveTocId(
+                                  item.id
+                                );
+
+                                /*
+                                 * Close TOC after
+                                 * selecting on mobile.
+                                 */
+                                setTocOpen(
+                                  false
+                                );
+                              }}
+                              className={`
+                                w-full
+                                rounded-lg
+                                px-3
+                                py-2
+                                text-left
+                                text-sm
+                                leading-5
+                                transition
+                                ${
+                                  item.level ===
+                                  3
+                                    ? 'pl-7 text-xs'
+                                    : 'pl-3'
+                                }
+                                ${
+                                  activeTocId ===
+                                  item.id
+                                    ? 'bg-rose-50 font-semibold text-rose-600'
+                                    : 'text-gray-500 hover:bg-rose-50/70 hover:text-rose-600'
+                                }
+                              `}
+                            >
+                              {item.text}
+                            </button>
+                          </li>
+                        )
+                      )}
+                    </ol>
+                  </nav>
+                </div>
+              </aside>
+            )}
+
+            {/* ===============================================
                 ARTICLE CONTENT
-
-                Contentful Rich Text is converted into
-                safe HTML by blogApi.ts.
-
-                IMPORTANT:
-                We render the HTML directly here instead
-                of treating <p>, <h2>, <h3>, etc. as text.
-
-                This fixes the visible HTML tag problem.
-            =============================================== */}
+                =============================================== */}
 
             <div
               id="blog-article-content"
               data-tts-content="true"
               className="
                 article-content
+                scroll-mt-28
                 text-gray-600
 
                 [&_p]:mb-5
                 [&_p]:text-sm
                 [&_p]:leading-7
                 [&_p]:text-gray-600
+
                 sm:[&_p]:text-[15px]
                 sm:[&_p]:leading-8
 
                 [&_h1]:mb-4
                 [&_h1]:mt-8
+                [&_h1]:scroll-mt-28
                 [&_h1]:font-display
                 [&_h1]:text-2xl
                 [&_h1]:font-bold
@@ -756,6 +1366,7 @@ export default function BlogDetail() {
 
                 [&_h2]:mb-3
                 [&_h2]:mt-8
+                [&_h2]:scroll-mt-28
                 [&_h2]:font-display
                 [&_h2]:text-xl
                 [&_h2]:font-bold
@@ -764,6 +1375,7 @@ export default function BlogDetail() {
 
                 [&_h3]:mb-3
                 [&_h3]:mt-7
+                [&_h3]:scroll-mt-28
                 [&_h3]:font-display
                 [&_h3]:text-lg
                 [&_h3]:font-bold
@@ -772,6 +1384,7 @@ export default function BlogDetail() {
 
                 [&_h4]:mb-2
                 [&_h4]:mt-6
+                [&_h4]:scroll-mt-28
                 [&_h4]:font-display
                 [&_h4]:text-base
                 [&_h4]:font-bold
@@ -790,6 +1403,7 @@ export default function BlogDetail() {
                 [&_li]:text-sm
                 [&_li]:leading-7
                 [&_li]:text-gray-600
+
                 sm:[&_li]:text-[15px]
                 sm:[&_li]:leading-8
 
@@ -806,6 +1420,7 @@ export default function BlogDetail() {
                 [&_a]:decoration-rose-200
                 [&_a]:underline-offset-2
                 [&_a]:transition
+
                 [&_a:hover]:text-rose-600
 
                 [&_strong]:font-semibold
@@ -817,16 +1432,19 @@ export default function BlogDetail() {
                 [&_hr]:border-rose-100
               "
               dangerouslySetInnerHTML={{
-                __html: post.content || '',
+                __html:
+                  post.content ||
+                  '',
               }}
             />
 
             {/* ===============================================
                 TAGS
-            =============================================== */}
+                =============================================== */}
 
             {post.tags &&
-              post.tags.length > 0 && (
+              post.tags.length >
+                0 && (
                 <div
                   className="
                     mt-6
@@ -859,10 +1477,8 @@ export default function BlogDetail() {
 
           {/* =================================================
               RELATED ARTICLES
-
               ONLY CONTENTFUL ARTICLES ARE USED.
-              No DEFAULT_ARTICLES fallback.
-          ================================================= */}
+              ================================================= */}
 
           {related.length > 0 && (
             <section
@@ -906,7 +1522,9 @@ export default function BlogDetail() {
                 "
               >
                 {related.map(
-                  (relatedPost) => (
+                  (
+                    relatedPost
+                  ) => (
                     <BlogCard
                       key={
                         relatedPost.id
@@ -920,11 +1538,9 @@ export default function BlogDetail() {
               </div>
             </section>
           )}
-
         </div>
       </div>
     </>
   );
 }
-
 
