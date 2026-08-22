@@ -1,6 +1,7 @@
 
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
 } from 'react';
@@ -49,7 +50,7 @@ interface TocItem {
 const DEFAULT_BLOG_IMAGE =
   '/images/blogs/default.webp';
 
-const TOC_SCROLL_OFFSET = 100;
+const TOC_SCROLL_OFFSET = 110;
 
 /* =========================================================
    DATE
@@ -166,29 +167,25 @@ function getLocalImageFallback(
 }
 
 /* =========================================================
-   TOC HELPERS
+   TOC
 ========================================================= */
 
-function slugifyHeading(
-  text: string
-): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-/**
- * Builds the TOC from the SAME rendered article DOM
- * that the user actually sees.
+/*
+ * IMPORTANT:
  *
- * This is important:
- * TOC IDs and actual heading IDs are created
- * in the same function, so they can never disagree.
+ * blogApi.ts already creates the IDs for H1/H2/H3.
+ *
+ * Example:
+ *
+ * <h2 id="why-communication-matters">
+ *
+ * Therefore we DO NOT generate new IDs here.
+ *
+ * We simply read the IDs that already exist in
+ * the actual article DOM.
  */
-function buildTocFromArticle(
+
+function getTocFromArticle(
   container: HTMLElement
 ): TocItem[] {
   const headings =
@@ -198,57 +195,22 @@ function buildTocFromArticle(
       )
     );
 
-  const usedIds =
-    new Set<string>();
-
-  const items: TocItem[] = [];
-
-  headings.forEach(
-    (heading) => {
-      const text =
-        heading.textContent
-          ?.trim() || '';
-
-      if (!text) {
-        return;
-      }
-
-      let id =
+  return headings
+    .map((heading) => {
+      const id =
         heading.getAttribute(
           'id'
-        ) || slugifyHeading(text);
+        );
 
-      if (!id) {
-        id = 'section';
+      const text =
+        heading.textContent?.trim() ||
+        '';
+
+      if (!id || !text) {
+        return null;
       }
 
-      const baseId = id;
-
-      let counter = 2;
-
-      while (
-        usedIds.has(id)
-      ) {
-        id =
-          `${baseId}-${counter}`;
-
-        counter += 1;
-      }
-
-      usedIds.add(id);
-
-      heading.setAttribute(
-        'id',
-        id
-      );
-
-      /*
-       * Make browser anchor behavior predictable.
-       */
-      heading.style.scrollMarginTop =
-        `${TOC_SCROLL_OFFSET}px`;
-
-      items.push({
+      return {
         id,
         text,
         level:
@@ -256,39 +218,82 @@ function buildTocFromArticle(
           'h3'
             ? 3
             : 2,
-      });
-    }
-  );
-
-  return items;
+      };
+    })
+    .filter(
+      (
+        item
+      ): item is TocItem =>
+        item !== null
+    );
 }
 
 /* =========================================================
-   SCROLL TO HEADING
+   EXACT TOC SCROLL
 ========================================================= */
 
 function scrollToHeading(
   id: string
 ): void {
-  const element =
-    document.getElementById(id);
+  const article =
+    document.getElementById(
+      'blog-article-content'
+    );
 
-  if (!element) {
+  if (!article) {
     console.warn(
-      `TOC heading not found: ${id}`
+      'Blog article container not found.'
     );
 
     return;
   }
 
   /*
-   * Do NOT use the browser's native hash jump.
-   * Calculate the exact document position ourselves.
+   * IMPORTANT:
+   *
+   * Search ONLY inside the current article.
+   *
+   * This prevents another element somewhere else
+   * on the page from being selected accidentally.
+   */
+  const headings =
+    Array.from(
+      article.querySelectorAll(
+        'h2, h3'
+      )
+    );
+
+  const target =
+    headings.find(
+      (heading) =>
+        heading.getAttribute(
+          'id'
+        ) === id
+    ) as HTMLElement | undefined;
+
+  if (!target) {
+    console.warn(
+      'TOC heading not found:',
+      id
+    );
+
+    return;
+  }
+
+  /*
+   * Calculate the exact document position.
+   *
+   * We do NOT use:
+   * - URL hash
+   * - anchor href
+   * - scrollIntoView()
+   *
+   * This avoids the unwanted browser jump.
    */
   const rect =
-    element.getBoundingClientRect();
+    target.getBoundingClientRect();
 
-  const targetTop =
+  const absoluteTop =
     window.scrollY +
     rect.top -
     TOC_SCROLL_OFFSET;
@@ -296,20 +301,38 @@ function scrollToHeading(
   window.scrollTo({
     top: Math.max(
       0,
-      targetTop
+      absoluteTop
     ),
+    left: 0,
     behavior: 'smooth',
   });
+}
 
+/* =========================================================
+   FORCE PAGE TOP
+========================================================= */
+
+function forcePageTop(): void {
   /*
-   * Update URL without making the browser
-   * jump a second time.
+   * Disable browser restoration temporarily.
    */
-  window.history.replaceState(
-    null,
-    '',
-    `#${encodeURIComponent(id)}`
-  );
+  try {
+    if (
+      'scrollRestoration' in
+      window.history
+    ) {
+      window.history.scrollRestoration =
+        'manual';
+    }
+  } catch {
+    // Ignore unsupported browsers.
+  }
+
+  window.scrollTo({
+    top: 0,
+    left: 0,
+    behavior: 'auto',
+  });
 }
 
 /* =========================================================
@@ -355,11 +378,7 @@ export default function BlogDetail() {
   ] = useState<TocItem[]>([]);
 
   /*
-   * IMPORTANT:
    * TOC is OPEN by default.
-   *
-   * This fixes the previous problem where
-   * the TOC completely disappeared.
    */
   const [
     tocOpen,
@@ -372,6 +391,57 @@ export default function BlogDetail() {
   ] = useState<string | null>(
     null
   );
+
+  /* =======================================================
+     RESET SCROLL WHEN SLUG CHANGES
+  ======================================================= */
+
+  useLayoutEffect(() => {
+    /*
+     * Remove any old hash immediately.
+     *
+     * We intentionally do NOT create hashes when
+     * clicking the TOC.
+     */
+    if (
+      window.location.hash
+    ) {
+      window.history.replaceState(
+        null,
+        '',
+        window.location.pathname +
+          window.location.search
+      );
+    }
+
+    forcePageTop();
+
+    /*
+     * React Router/browser restoration can happen
+     * after the first layout pass.
+     *
+     * Therefore force the page to the top again
+     * on the next frames.
+     */
+    const frame1 =
+      window.requestAnimationFrame(
+        () => {
+          forcePageTop();
+
+          window.requestAnimationFrame(
+            () => {
+              forcePageTop();
+            }
+          );
+        }
+      );
+
+    return () => {
+      window.cancelAnimationFrame(
+        frame1
+      );
+    };
+  }, [slug]);
 
   /* =======================================================
      LOAD ARTICLE
@@ -392,29 +462,17 @@ export default function BlogDetail() {
 
       setLoading(true);
       setError('');
+
       setPost(null);
       setRelated([]);
       setTocItems([]);
       setActiveTocId(null);
 
       /*
-       * Remove any old hash BEFORE the new article
-       * is rendered.
-       *
-       * This prevents a previous #heading hash from
-       * making the browser jump to an unexpected
-       * position when another blog is opened.
+       * New article always starts with
+       * TOC open.
        */
-      if (
-        window.location.hash
-      ) {
-        window.history.replaceState(
-          null,
-          '',
-          window.location.pathname +
-            window.location.search
-        );
-      }
+      setTocOpen(true);
 
       try {
         const data =
@@ -426,41 +484,44 @@ export default function BlogDetail() {
           return;
         }
 
-        if (data) {
-          setPost(data);
-
-          try {
-            const relatedData =
-              await fetchRelatedPosts(
-                data.category,
-                data.slug,
-                3
-              );
-
-            if (!cancelled) {
-              setRelated(
-                relatedData || []
-              );
-            }
-          } catch (
-            relatedError
-          ) {
-            console.error(
-              'Failed to load related Contentful posts:',
-              relatedError
-            );
-
-            if (!cancelled) {
-              setRelated([]);
-            }
-          }
+        if (!data) {
+          setError(
+            'Article not found.'
+          );
 
           return;
         }
 
-        setError(
-          'Article not found.'
-        );
+        setPost(data);
+
+        /*
+         * Related articles.
+         */
+        try {
+          const relatedData =
+            await fetchRelatedPosts(
+              data.category,
+              data.slug,
+              3
+            );
+
+          if (!cancelled) {
+            setRelated(
+              relatedData || []
+            );
+          }
+        } catch (
+          relatedError
+        ) {
+          console.error(
+            'Failed to load related Contentful posts:',
+            relatedError
+          );
+
+          if (!cancelled) {
+            setRelated([]);
+          }
+        }
       } catch (
         requestError
       ) {
@@ -524,30 +585,29 @@ export default function BlogDetail() {
       return;
     }
 
-    /*
-     * The article HTML is inserted by React first.
-     * After that, find the actual article container
-     * and build IDs + TOC from the same DOM.
-     */
+    let cancelled = false;
+
     let attempts = 0;
+
     let timer: number | undefined;
 
     const setupToc = () => {
+      if (cancelled) {
+        return;
+      }
+
       const container =
         document.getElementById(
           'blog-article-content'
         );
 
       /*
-       * React may not have inserted the article
-       * during the first frame.
-       *
-       * Retry a few times instead of failing silently.
+       * The article may not have been mounted yet.
        */
       if (!container) {
         attempts += 1;
 
-        if (attempts < 20) {
+        if (attempts < 30) {
           timer =
             window.setTimeout(
               setupToc,
@@ -559,21 +619,18 @@ export default function BlogDetail() {
       }
 
       const items =
-        buildTocFromArticle(
+        getTocFromArticle(
           container
         );
 
+      if (cancelled) {
+        return;
+      }
+
       setTocItems(items);
 
-      /*
-       * Always start the TOC open when a new
-       * article is loaded.
-       */
       setTocOpen(true);
 
-      /*
-       * Set first heading active.
-       */
       if (
         items.length > 0
       ) {
@@ -581,12 +638,31 @@ export default function BlogDetail() {
           items[0].id
         );
       }
+
+      /*
+       * VERY IMPORTANT:
+       *
+       * After article HTML is mounted,
+       * force the page back to the top.
+       *
+       * This prevents the browser from restoring
+       * the old scroll position at the end of
+       * the previous blog.
+       */
+      forcePageTop();
+
+      /*
+       * One more frame after layout.
+       */
+      window.requestAnimationFrame(
+        () => {
+          if (!cancelled) {
+            forcePageTop();
+          }
+        }
+      );
     };
 
-    /*
-     * Start after paint so dangerouslySetInnerHTML
-     * content is definitely available.
-     */
     timer =
       window.setTimeout(
         setupToc,
@@ -594,6 +670,8 @@ export default function BlogDetail() {
       );
 
     return () => {
+      cancelled = true;
+
       if (
         timer !== undefined
       ) {
@@ -617,25 +695,78 @@ export default function BlogDetail() {
 
     const updateActiveHeading =
       () => {
-        let currentId =
-          tocItems[0].id;
+        const article =
+          document.getElementById(
+            'blog-article-content'
+          );
+
+        if (!article) {
+          return;
+        }
+
+        const headingElements =
+          tocItems
+            .map((item) => {
+              const element =
+                Array.from(
+                  article.querySelectorAll(
+                    'h2, h3'
+                  )
+                ).find(
+                  (heading) =>
+                    heading.getAttribute(
+                      'id'
+                    ) === item.id
+                ) as
+                  | HTMLElement
+                  | undefined;
+
+              return {
+                item,
+                element,
+              };
+            })
+            .filter(
+              (
+                entry
+              ): entry is {
+                item: TocItem;
+                element: HTMLElement;
+              } =>
+                Boolean(
+                  entry.element
+                )
+            );
+
+        if (
+          headingElements.length ===
+          0
+        ) {
+          return;
+        }
 
         const currentPosition =
           window.scrollY +
           TOC_SCROLL_OFFSET +
-          20;
+          30;
 
-        tocItems.forEach(
-          (item) => {
-            const element =
-              document.getElementById(
-                item.id
-              );
+        let currentId =
+          headingElements[0]
+            .item.id;
+
+        headingElements.forEach(
+          ({
+            item,
+            element,
+          }) => {
+            const top =
+              element.getBoundingClientRect()
+                .top +
+              window.scrollY;
 
             if (
-              element &&
-              element.offsetTop <=
-                currentPosition
+              top <=
+              currentPosition
             ) {
               currentId =
                 item.id;
@@ -899,7 +1030,7 @@ export default function BlogDetail() {
         <div className="mx-auto max-w-2xl px-4">
 
           {/* =================================================
-              BACK
+              BACK TO HOME
           ================================================= */}
 
           <Link
@@ -917,13 +1048,14 @@ export default function BlogDetail() {
             "
           >
             <ArrowLeft className="h-4 w-4" />
+
             Back to Home
           </Link>
 
           <article>
 
             {/* =================================================
-                IMAGE
+                FEATURED IMAGE
             ================================================= */}
 
             <div
@@ -1088,16 +1220,12 @@ export default function BlogDetail() {
               <aside
                 aria-label="Table of Contents"
                 className="
-                  sticky
-                  top-16
-                  z-30
                   mb-8
                   rounded-2xl
                   border
                   border-rose-100
-                  bg-white/95
+                  bg-white
                   shadow-sm
-                  backdrop-blur
                 "
               >
                 <button
@@ -1137,19 +1265,9 @@ export default function BlogDetail() {
                   )}
                 </button>
 
-                {/*
-                 * IMPORTANT:
-                 * The content is rendered normally when
-                 * tocOpen=true.
-                 *
-                 * It is no longer permanently hidden
-                 * on initial page load.
-                 */}
                 {tocOpen && (
                   <nav
                     className="
-                      max-h-[60vh]
-                      overflow-y-auto
                       border-t
                       border-rose-50
                       px-3
@@ -1166,30 +1284,23 @@ export default function BlogDetail() {
                           >
                             <button
                               type="button"
+                              /*
+                               * VERY IMPORTANT:
+                               *
+                               * No href.
+                               * No #hash.
+                               * No router navigation.
+                               *
+                               * It only scrolls to the
+                               * matching H2/H3.
+                               */
                               onClick={() => {
                                 setActiveTocId(
                                   item.id
                                 );
 
-                                /*
-                                 * Scroll first while the TOC
-                                 * still has its current layout.
-                                 */
                                 scrollToHeading(
                                   item.id
-                                );
-
-                                /*
-                                 * Close after starting the
-                                 * smooth scroll.
-                                 */
-                                window.setTimeout(
-                                  () => {
-                                    setTocOpen(
-                                      false
-                                    );
-                                  },
-                                  150
                                 );
                               }}
                               className={`
@@ -1198,14 +1309,13 @@ export default function BlogDetail() {
                                 px-3
                                 py-2
                                 text-left
-                                text-sm
                                 leading-5
                                 transition
                                 ${
                                   item.level ===
                                   3
                                     ? 'pl-7 text-xs'
-                                    : 'pl-3'
+                                    : 'pl-3 text-sm'
                                 }
                                 ${
                                   activeTocId ===
@@ -1235,7 +1345,6 @@ export default function BlogDetail() {
               data-tts-content="true"
               className="
                 article-content
-                scroll-mt-28
                 text-gray-600
 
                 [&_p]:mb-5
@@ -1310,7 +1419,6 @@ export default function BlogDetail() {
                 [&_a]:underline
                 [&_a]:decoration-rose-200
                 [&_a]:underline-offset-2
-                [&_a]:transition
 
                 [&_a:hover]:text-rose-600
 
