@@ -2,6 +2,7 @@
 /* =========================================================
    LOVEONS BLOG API
    Contentful-powered version
+   With automatic TOC heading IDs
    ========================================================= */
 
 export interface BlogPost {
@@ -24,23 +25,24 @@ export interface BlogPost {
   updated_at: string;
 }
 
-export const FALLBACK_IMAGE = '/images/blogs/default.webp';
+export const FALLBACK_IMAGE =
+  '/images/blogs/default.webp';
 
 /* =========================================================
    CONTENTFUL CONFIG
    ========================================================= */
 
 const CONTENTFUL_SPACE_ID =
-  import.meta.env.VITE_CONTENTFUL_SPACE_ID;
+  process.env.CONTENTFUL_SPACE_ID;
 
 const CONTENTFUL_ACCESS_TOKEN =
-  import.meta.env.VITE_CONTENTFUL_ACCESS_TOKEN;
+  process.env.CONTENTFUL_ACCESS_TOKEN;
 
 const CONTENTFUL_ENVIRONMENT =
-  import.meta.env.VITE_CONTENTFUL_ENVIRONMENT || 'master';
+  process.env.CONTENTFUL_ENVIRONMENT || 'master';
 
 const CONTENTFUL_CONTENT_TYPE =
-  import.meta.env.VITE_CONTENTFUL_CONTENT_TYPE || 'blogPost';
+  process.env.CONTENTFUL_CONTENT_TYPE || 'blogPost';
 
 /* =========================================================
    CONTENTFUL TYPES
@@ -91,6 +93,7 @@ interface ContentfulEntry {
     slug?: string;
     category?: string;
     excerpt?: string;
+
     content?: ContentfulRichTextNode;
 
     featuredImage?: {
@@ -118,13 +121,27 @@ interface ContentfulResponse {
    LOCAL BLOG IMAGE MAP
    ========================================================= */
 
-const LOCAL_BLOG_IMAGES: Record<string, string> = {
-  communication: '/images/blogs/communication.webp',
-  conflict: '/images/blogs/conflict.webp',
-  'date-ideas': '/images/blogs/date-ideas.webp',
-  'relationship-tips': '/images/blogs/relationship-tips.webp',
-  relationship: '/images/blogs/relationship.webp',
-  trust: '/images/blogs/trust.webp',
+const LOCAL_BLOG_IMAGES: Record<
+  string,
+  string
+> = {
+  communication:
+    '/images/blogs/communication.webp',
+
+  conflict:
+    '/images/blogs/conflict.webp',
+
+  'date-ideas':
+    '/images/blogs/date-ideas.webp',
+
+  'relationship-tips':
+    '/images/blogs/relationship-tips.webp',
+
+  relationship:
+    '/images/blogs/relationship.webp',
+
+  trust:
+    '/images/blogs/trust.webp',
 };
 
 /* =========================================================
@@ -134,13 +151,13 @@ const LOCAL_BLOG_IMAGES: Record<string, string> = {
 function validateContentfulConfig(): void {
   if (!CONTENTFUL_SPACE_ID) {
     throw new Error(
-      'Missing VITE_CONTENTFUL_SPACE_ID environment variable.'
+      'Missing CONTENTFUL_SPACE_ID environment variable.'
     );
   }
 
   if (!CONTENTFUL_ACCESS_TOKEN) {
     throw new Error(
-      'Missing VITE_CONTENTFUL_ACCESS_TOKEN environment variable.'
+      'Missing CONTENTFUL_ACCESS_TOKEN environment variable.'
     );
   }
 }
@@ -171,18 +188,21 @@ function getContentfulUrl(
 async function contentfulFetch(
   query = ''
 ): Promise<ContentfulResponse> {
-  const url = getContentfulUrl(query);
+  const url =
+    getContentfulUrl(query);
 
   const response = await fetch(url, {
     headers: {
       Authorization:
         `Bearer ${CONTENTFUL_ACCESS_TOKEN}`,
     },
+
     cache: 'no-store',
   });
 
   if (!response.ok) {
-    const message = await response.text();
+    const message =
+      await response.text();
 
     throw new Error(
       `Contentful API error ${response.status}: ${message}`
@@ -193,11 +213,74 @@ async function contentfulFetch(
 }
 
 /* =========================================================
+   HTML HELPERS
+   ========================================================= */
+
+function escapeHtml(
+  value: string
+): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function escapeHtmlAttribute(
+  value: string
+): string {
+  return escapeHtml(value);
+}
+
+/* =========================================================
+   SLUGIFY
+   ========================================================= */
+
+export function slugify(
+  text: string
+): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/* =========================================================
+   CREATE UNIQUE HEADING ID
+   ========================================================= */
+
+function createHeadingId(
+  text: string,
+  usedIds: Set<string>
+): string {
+  const base =
+    slugify(text) ||
+    'section';
+
+  let id = base;
+  let counter = 2;
+
+  while (usedIds.has(id)) {
+    id = `${base}-${counter}`;
+    counter += 1;
+  }
+
+  usedIds.add(id);
+
+  return id;
+}
+
+/* =========================================================
    RICH TEXT -> PLAIN TEXT
    ========================================================= */
 
 function richTextToPlainText(
-  node: ContentfulRichTextNode | undefined
+  node:
+    | ContentfulRichTextNode
+    | undefined
 ): string {
   if (!node) {
     return '';
@@ -208,28 +291,42 @@ function richTextToPlainText(
   }
 
   return (node.content || [])
-    .map((child) => richTextToPlainText(child))
+    .map((child) =>
+      richTextToPlainText(child)
+    )
     .join(' ');
 }
 
 /* =========================================================
-   RICH TEXT -> SIMPLE HTML
+   RICH TEXT -> HTML
+   WITH AUTOMATIC HEADING IDS
    ========================================================= */
 
 function richTextToHtml(
-  node: ContentfulRichTextNode | undefined
+  node:
+    | ContentfulRichTextNode
+    | undefined,
+  usedHeadingIds: Set<string>
 ): string {
   if (!node) {
     return '';
   }
 
   if (node.nodeType === 'text') {
-    return escapeHtml(node.value || '');
+    return escapeHtml(
+      node.value || ''
+    );
   }
 
-  const children = (node.content || [])
-    .map((child) => richTextToHtml(child))
-    .join('');
+  const children =
+    (node.content || [])
+      .map((child) =>
+        richTextToHtml(
+          child,
+          usedHeadingIds
+        )
+      )
+      .join('');
 
   switch (node.nodeType) {
     case 'document':
@@ -238,23 +335,83 @@ function richTextToHtml(
     case 'paragraph':
       return `<p>${children}</p>`;
 
-    case 'heading-1':
-      return `<h1>${children}</h1>`;
+    case 'heading-1': {
+      const headingText =
+        richTextToPlainText(node).trim();
 
-    case 'heading-2':
-      return `<h2>${children}</h2>`;
+      const id =
+        createHeadingId(
+          headingText,
+          usedHeadingIds
+        );
 
-    case 'heading-3':
-      return `<h3>${children}</h3>`;
+      return `<h1 id="${escapeHtmlAttribute(id)}">${children}</h1>`;
+    }
 
-    case 'heading-4':
-      return `<h4>${children}</h4>`;
+    case 'heading-2': {
+      const headingText =
+        richTextToPlainText(node).trim();
 
-    case 'heading-5':
-      return `<h5>${children}</h5>`;
+      const id =
+        createHeadingId(
+          headingText,
+          usedHeadingIds
+        );
 
-    case 'heading-6':
-      return `<h6>${children}</h6>`;
+      return `<h2 id="${escapeHtmlAttribute(id)}">${children}</h2>`;
+    }
+
+    case 'heading-3': {
+      const headingText =
+        richTextToPlainText(node).trim();
+
+      const id =
+        createHeadingId(
+          headingText,
+          usedHeadingIds
+        );
+
+      return `<h3 id="${escapeHtmlAttribute(id)}">${children}</h3>`;
+    }
+
+    case 'heading-4': {
+      const headingText =
+        richTextToPlainText(node).trim();
+
+      const id =
+        createHeadingId(
+          headingText,
+          usedHeadingIds
+        );
+
+      return `<h4 id="${escapeHtmlAttribute(id)}">${children}</h4>`;
+    }
+
+    case 'heading-5': {
+      const headingText =
+        richTextToPlainText(node).trim();
+
+      const id =
+        createHeadingId(
+          headingText,
+          usedHeadingIds
+        );
+
+      return `<h5 id="${escapeHtmlAttribute(id)}">${children}</h5>`;
+    }
+
+    case 'heading-6': {
+      const headingText =
+        richTextToPlainText(node).trim();
+
+      const id =
+        createHeadingId(
+          headingText,
+          usedHeadingIds
+        );
+
+      return `<h6 id="${escapeHtmlAttribute(id)}">${children}</h6>`;
+    }
 
     case 'blockquote':
       return `<blockquote>${children}</blockquote>`;
@@ -270,7 +427,8 @@ function richTextToHtml(
 
     case 'hyperlink': {
       const uri =
-        typeof node.data?.uri === 'string'
+        typeof node.data?.uri ===
+        'string'
           ? node.data.uri
           : '#';
 
@@ -289,46 +447,32 @@ function richTextToHtml(
 }
 
 /* =========================================================
-   HTML HELPERS
-   ========================================================= */
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-function escapeHtmlAttribute(value: string): string {
-  return escapeHtml(value);
-}
-
-/* =========================================================
    READING TIME
    ========================================================= */
 
 export function estimateReadingTime(
   content: string
 ): string {
-  const cleanContent = content
-    .replace(/<[^>]*>/g, ' ')
-    .trim();
+  const cleanContent =
+    content
+      .replace(/<[^>]*>/g, ' ')
+      .trim();
 
   if (!cleanContent) {
     return '1 min read';
   }
 
-  const words = cleanContent
-    .split(/\s+/)
-    .filter(Boolean)
-    .length;
+  const words =
+    cleanContent
+      .split(/\s+/)
+      .filter(Boolean)
+      .length;
 
-  const minutes = Math.max(
-    1,
-    Math.ceil(words / 200)
-  );
+  const minutes =
+    Math.max(
+      1,
+      Math.ceil(words / 200)
+    );
 
   return `${minutes} min read`;
 }
@@ -345,7 +489,8 @@ function getAssetUrl(
   alt: string | null;
 } {
   const imageId =
-    post.fields.featuredImage?.sys?.id;
+    post.fields.featuredImage
+      ?.sys?.id;
 
   if (!imageId) {
     return {
@@ -354,11 +499,14 @@ function getAssetUrl(
     };
   }
 
-  const asset = (
-    response.includes?.Asset || []
-  ).find(
-    (item) => item.sys?.id === imageId
-  );
+  const asset =
+    (
+      response.includes?.Asset ||
+      []
+    ).find(
+      (item) =>
+        item.sys?.id === imageId
+    );
 
   const rawUrl =
     asset?.fields?.file?.url;
@@ -366,6 +514,7 @@ function getAssetUrl(
   if (!rawUrl) {
     return {
       url: null,
+
       alt:
         asset?.fields?.description ||
         asset?.fields?.title ||
@@ -377,11 +526,12 @@ function getAssetUrl(
     rawUrl.startsWith('//')
       ? `https:${rawUrl}`
       : rawUrl.startsWith('http')
-        ? rawUrl
-        : `https://${rawUrl}`;
+      ? rawUrl
+      : `https://${rawUrl}`;
 
   return {
     url: fullUrl,
+
     alt:
       asset?.fields?.description ||
       asset?.fields?.title ||
@@ -401,14 +551,18 @@ function resolveBlogImage(
 
   if (
     rawImage &&
-    rawImage.startsWith('/images/blogs/')
+    rawImage.startsWith(
+      '/images/blogs/'
+    )
   ) {
     return rawImage;
   }
 
   if (
     rawImage &&
-    /^https?:\/\//i.test(rawImage)
+    /^https?:\/\//i.test(
+      rawImage
+    )
   ) {
     return rawImage;
   }
@@ -427,11 +581,12 @@ function resolveBlogImage(
 
     if (filename) {
       const localFile =
-        Object.values(LOCAL_BLOG_IMAGES).find(
-          (path) =>
-            path
-              .toLowerCase()
-              .endsWith(filename)
+        Object.values(
+          LOCAL_BLOG_IMAGES
+        ).find((path) =>
+          path
+            .toLowerCase()
+            .endsWith(filename)
         );
 
       if (localFile) {
@@ -450,16 +605,26 @@ function resolveBlogImage(
     .toLowerCase();
 
   if (
-    searchText.includes('communication') ||
-    searchText.includes('communicate')
+    searchText.includes(
+      'communication'
+    ) ||
+    searchText.includes(
+      'communicate'
+    )
   ) {
     return LOCAL_BLOG_IMAGES.communication;
   }
 
   if (
-    searchText.includes('conflict') ||
-    searchText.includes('argument') ||
-    searchText.includes('fighting')
+    searchText.includes(
+      'conflict'
+    ) ||
+    searchText.includes(
+      'argument'
+    ) ||
+    searchText.includes(
+      'fighting'
+    )
   ) {
     return LOCAL_BLOG_IMAGES.conflict;
   }
@@ -468,26 +633,40 @@ function resolveBlogImage(
     searchText.includes('date') ||
     searchText.includes('dating')
   ) {
-    return LOCAL_BLOG_IMAGES['date-ideas'];
+    return LOCAL_BLOG_IMAGES[
+      'date-ideas'
+    ];
   }
 
   if (
     searchText.includes('trust') ||
-    searchText.includes('commitment')
+    searchText.includes(
+      'commitment'
+    )
   ) {
     return LOCAL_BLOG_IMAGES.trust;
   }
 
   if (
-    searchText.includes('relationship tip') ||
-    searchText.includes('relationship advice') ||
-    searchText.includes('healthy relationship')
+    searchText.includes(
+      'relationship tip'
+    ) ||
+    searchText.includes(
+      'relationship advice'
+    ) ||
+    searchText.includes(
+      'healthy relationship'
+    )
   ) {
-    return LOCAL_BLOG_IMAGES['relationship-tips'];
+    return LOCAL_BLOG_IMAGES[
+      'relationship-tips'
+    ];
   }
 
   if (
-    searchText.includes('relationship')
+    searchText.includes(
+      'relationship'
+    )
   ) {
     return LOCAL_BLOG_IMAGES.relationship;
   }
@@ -503,16 +682,42 @@ function normalizeContentfulPost(
   entry: ContentfulEntry,
   response: ContentfulResponse
 ): BlogPost {
-  const fields = entry.fields || {};
+  const fields =
+    entry.fields || {};
+
+  /*
+   * Every blog gets its own heading ID set.
+   *
+   * Example:
+   * "Why Communication Matters"
+   * →
+   * "why-communication-matters"
+   *
+   * Duplicate headings are automatically
+   * converted to:
+   * heading
+   * heading-2
+   * heading-3
+   */
+  const usedHeadingIds =
+    new Set<string>();
 
   const contentHtml =
-    richTextToHtml(fields.content);
+    richTextToHtml(
+      fields.content,
+      usedHeadingIds
+    );
 
   const contentPlainText =
-    richTextToPlainText(fields.content);
+    richTextToPlainText(
+      fields.content
+    );
 
   const image =
-    getAssetUrl(entry, response);
+    getAssetUrl(
+      entry,
+      response
+    );
 
   const publishedAt =
     fields.publishedDate ||
@@ -528,8 +733,8 @@ function normalizeContentfulPost(
     slug:
       slugify(
         fields.slug ||
-        fields.title ||
-        ''
+          fields.title ||
+          ''
       ),
 
     category:
@@ -553,7 +758,7 @@ function normalizeContentfulPost(
     published:
       Boolean(
         entry.sys.publishedAt ||
-        fields.publishedDate
+          fields.publishedDate
       ),
 
     published_at:
@@ -570,7 +775,8 @@ function normalizeContentfulPost(
       fields.seoTitle || null,
 
     meta_description:
-      fields.seoDescription || null,
+      fields.seoDescription ||
+      null,
 
     created_at:
       entry.sys.createdAt ||
@@ -614,11 +820,13 @@ export async function fetchPublishedPosts():
         query.toString()
       );
 
-    return (response.items || [])
+    return (
+      response.items || []
+    )
       .filter((entry) =>
         Boolean(
           entry.sys.publishedAt ||
-          entry.fields.publishedDate
+            entry.fields.publishedDate
         )
       )
       .map((entry) =>
@@ -667,13 +875,14 @@ export async function fetchPostBySlug(
       );
 
     const entry =
-      (response.items || [])
-        .find((item) =>
-          Boolean(
-            item.sys.publishedAt ||
+      (
+        response.items || []
+      ).find((item) =>
+        Boolean(
+          item.sys.publishedAt ||
             item.fields.publishedDate
-          )
-        );
+        )
+      );
 
     if (!entry) {
       return null;
@@ -711,9 +920,9 @@ export async function fetchRelatedPosts(
         (post) =>
           post.category
             .toLowerCase() ===
-          category.toLowerCase() &&
+            category.toLowerCase() &&
           post.slug !==
-          slugify(excludeSlug)
+            slugify(excludeSlug)
       )
       .slice(0, limit);
   } catch (error) {
@@ -751,13 +960,14 @@ export async function fetchAllPosts():
         query.toString()
       );
 
-    return (response.items || [])
-      .map((entry) =>
-        normalizeContentfulPost(
-          entry,
-          response
-        )
-      );
+    return (
+      response.items || []
+    ).map((entry) =>
+      normalizeContentfulPost(
+        entry,
+        response
+      )
+    );
   } catch (error) {
     console.error(
       'fetchAllPosts:',
@@ -769,15 +979,19 @@ export async function fetchAllPosts():
 }
 
 /* =========================================================
-   CREATE POST
+   CONTENTFUL IS THE CMS
    =========================================================
 
-   Contentful Content Delivery API is READ-ONLY.
-   Creating/updating/deleting Contentful entries requires
-   the Content Management API and a server-side CMA token.
+   Blog creation, editing, deletion,
+   publishing and image uploading are
+   now done directly inside Contentful.
 
-   Therefore these functions intentionally throw a clear
-   message instead of attempting an unsafe client-side write.
+   The website uses the Content Delivery API
+   only for reading published content.
+   ========================================================= */
+
+/* =========================================================
+   OPTIONAL LEGACY GUARDS
    ========================================================= */
 
 export async function createPost(
@@ -787,87 +1001,49 @@ export async function createPost(
   >
 ): Promise<BlogPost> {
   throw new Error(
-    'createPost is not available through the Contentful Delivery API. Create the blog post directly in Contentful.'
+    'Create the blog post directly in Contentful.'
   );
 }
-
-/* =========================================================
-   UPDATE POST
-   ========================================================= */
 
 export async function updatePost(
   _id: string,
   _updates: Partial<BlogPost>
 ): Promise<BlogPost> {
   throw new Error(
-    'updatePost is not available through the Contentful Delivery API. Update the blog post directly in Contentful.'
+    'Update the blog post directly in Contentful.'
   );
 }
-
-/* =========================================================
-   DELETE POST
-   ========================================================= */
 
 export async function deletePost(
   _id: string
 ): Promise<void> {
   throw new Error(
-    'deletePost is not available through the Contentful Delivery API. Delete the blog post directly in Contentful.'
+    'Delete the blog post directly in Contentful.'
   );
 }
-
-/* =========================================================
-   PUBLISH POST
-   ========================================================= */
 
 export async function publishPost(
   _id: string
 ): Promise<BlogPost> {
   throw new Error(
-    'publishPost is not available through the Contentful Delivery API. Publish the blog post directly in Contentful.'
+    'Publish the blog post directly in Contentful.'
   );
 }
-
-/* =========================================================
-   UNPUBLISH POST
-   ========================================================= */
 
 export async function unpublishPost(
   _id: string
 ): Promise<BlogPost> {
   throw new Error(
-    'unpublishPost is not available through the Contentful Delivery API. Unpublish the blog post directly in Contentful.'
+    'Unpublish the blog post directly in Contentful.'
   );
 }
-
-/* =========================================================
-   UPLOAD BLOG IMAGE
-   =========================================================
-
-   Images should now be uploaded through Contentful Assets.
-   ========================================================= */
 
 export async function uploadBlogImage(
   _file: File
 ): Promise<string> {
   throw new Error(
-    'uploadBlogImage is not available through the Contentful Delivery API. Upload the image as a Featured Image asset in Contentful.'
+    'Upload the image as a Featured Image asset in Contentful.'
   );
-}
-
-/* =========================================================
-   SLUGIFY
-   ========================================================= */
-
-export function slugify(
-  text: string
-): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
 }
 
 /* =========================================================
@@ -906,12 +1082,15 @@ export async function isSlugAvailable(
       response.items || [];
 
     if (!excludeId) {
-      return matches.length === 0;
+      return (
+        matches.length === 0
+      );
     }
 
     return !matches.some(
       (entry) =>
-        entry.sys.id === excludeId
+        entry.sys.id ===
+        excludeId
     );
   } catch (error) {
     console.error(
@@ -920,8 +1099,9 @@ export async function isSlugAvailable(
     );
 
     /*
-     * Don't incorrectly block the editor
-     * if the availability check itself fails.
+     * Don't incorrectly block the
+     * editor if the availability
+     * check itself fails.
      */
     return true;
   }
