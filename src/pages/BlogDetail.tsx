@@ -25,6 +25,7 @@ import {
 import Seo from '../components/Seo';
 import BlogCard from '../components/BlogCard';
 import BlogTTS from '../components/BlogTTS';
+import BlogShare from '../components/BlogShare';
 
 import {
     fetchPostBySlug,
@@ -1222,6 +1223,11 @@ export default function BlogDetail() {
                                 </span>
                             )}
                         </div>
+
+                       {/* =================================================
+                       SHARE ARTICLE 
+                        ================================================= */}
+                        <BlogShare title={post.title} />
 
                         {/* =================================================
                             TABLE OF CONTENTS
