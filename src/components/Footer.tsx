@@ -57,18 +57,6 @@ export default function Footer() {
             ))}
           </nav>
 
-          {/* Disclaimer Box */}
-          <div className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-100 bg-amber-50 p-4">
-            <Shield className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
-
-            <p className="text-xs leading-relaxed text-amber-700 sm:text-sm">
-              <span className="font-semibold">Disclaimer:</span>{' '}
-              This app is for educational purposes only and is not a
-              substitute for professional medical or relationship advice.
-              Always consult qualified professionals for personal concerns.
-            </p>
-          </div>
-
           {/* Contact Email */}
           <div className="flex justify-center">
             <a
