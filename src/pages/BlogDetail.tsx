@@ -24,6 +24,7 @@ import {
 
 import Seo from '../components/Seo';
 import BlogCard from '../components/BlogCard';
+import BlogTTS from '../components/BlogTTS';
 
 import {
   fetchPostBySlug,
@@ -32,6 +33,7 @@ import {
 } from '../lib/blogApi';
 
 import { BRAND } from '../lib/brand';
+
 
 /* =========================================================
    TYPES
@@ -43,6 +45,7 @@ interface TocItem {
   level: 2 | 3;
 }
 
+
 /* =========================================================
    CONSTANTS
 ========================================================= */
@@ -51,6 +54,7 @@ const DEFAULT_BLOG_IMAGE =
   '/images/blogs/default.webp';
 
 const TOC_SCROLL_OFFSET = 110;
+
 
 /* =========================================================
    DATE
@@ -78,6 +82,7 @@ function formatDate(
     }
   );
 }
+
 
 /* =========================================================
    IMAGE HELPERS
@@ -119,6 +124,7 @@ function resolveBlogImage(
 
   return `/images/blogs/${value}`;
 }
+
 
 function getLocalImageFallback(
   src: string | null | undefined
@@ -166,24 +172,10 @@ function getLocalImageFallback(
   return DEFAULT_BLOG_IMAGE;
 }
 
+
 /* =========================================================
    TOC
 ========================================================= */
-
-/*
- * IMPORTANT:
- *
- * blogApi.ts already creates the IDs for H1/H2/H3.
- *
- * Example:
- *
- * <h2 id="why-communication-matters">
- *
- * Therefore we DO NOT generate new IDs here.
- *
- * We simply read the IDs that already exist in
- * the actual article DOM.
- */
 
 function getTocFromArticle(
   container: HTMLElement
@@ -198,9 +190,7 @@ function getTocFromArticle(
   return headings
     .map((heading) => {
       const id =
-        heading.getAttribute(
-          'id'
-        );
+        heading.getAttribute('id');
 
       const text =
         heading.textContent?.trim() ||
@@ -228,6 +218,7 @@ function getTocFromArticle(
     );
 }
 
+
 /* =========================================================
    EXACT TOC SCROLL
 ========================================================= */
@@ -248,14 +239,6 @@ function scrollToHeading(
     return;
   }
 
-  /*
-   * IMPORTANT:
-   *
-   * Search ONLY inside the current article.
-   *
-   * This prevents another element somewhere else
-   * on the page from being selected accidentally.
-   */
   const headings =
     Array.from(
       article.querySelectorAll(
@@ -266,9 +249,7 @@ function scrollToHeading(
   const target =
     headings.find(
       (heading) =>
-        heading.getAttribute(
-          'id'
-        ) === id
+        heading.getAttribute('id') === id
     ) as HTMLElement | undefined;
 
   if (!target) {
@@ -280,16 +261,6 @@ function scrollToHeading(
     return;
   }
 
-  /*
-   * Calculate the exact document position.
-   *
-   * We do NOT use:
-   * - URL hash
-   * - anchor href
-   * - scrollIntoView()
-   *
-   * This avoids the unwanted browser jump.
-   */
   const rect =
     target.getBoundingClientRect();
 
@@ -308,14 +279,12 @@ function scrollToHeading(
   });
 }
 
+
 /* =========================================================
    FORCE PAGE TOP
 ========================================================= */
 
 function forcePageTop(): void {
-  /*
-   * Disable browser restoration temporarily.
-   */
   try {
     if (
       'scrollRestoration' in
@@ -334,6 +303,7 @@ function forcePageTop(): void {
     behavior: 'auto',
   });
 }
+
 
 /* =========================================================
    BLOG DETAIL
@@ -377,9 +347,6 @@ export default function BlogDetail() {
     setTocItems,
   ] = useState<TocItem[]>([]);
 
-  /*
-   * TOC is OPEN by default.
-   */
   const [
     tocOpen,
     setTocOpen,
@@ -392,20 +359,13 @@ export default function BlogDetail() {
     null
   );
 
+
   /* =======================================================
      RESET SCROLL WHEN SLUG CHANGES
   ======================================================= */
 
   useLayoutEffect(() => {
-    /*
-     * Remove any old hash immediately.
-     *
-     * We intentionally do NOT create hashes when
-     * clicking the TOC.
-     */
-    if (
-      window.location.hash
-    ) {
+    if (window.location.hash) {
       window.history.replaceState(
         null,
         '',
@@ -416,13 +376,6 @@ export default function BlogDetail() {
 
     forcePageTop();
 
-    /*
-     * React Router/browser restoration can happen
-     * after the first layout pass.
-     *
-     * Therefore force the page to the top again
-     * on the next frames.
-     */
     const frame1 =
       window.requestAnimationFrame(
         () => {
@@ -443,6 +396,7 @@ export default function BlogDetail() {
     };
   }, [slug]);
 
+
   /* =======================================================
      LOAD ARTICLE
   ======================================================= */
@@ -453,6 +407,7 @@ export default function BlogDetail() {
     async function loadArticle() {
       if (!slug) {
         setLoading(false);
+
         setError(
           'Article not found.'
         );
@@ -462,16 +417,10 @@ export default function BlogDetail() {
 
       setLoading(true);
       setError('');
-
       setPost(null);
       setRelated([]);
       setTocItems([]);
       setActiveTocId(null);
-
-      /*
-       * New article always starts with
-       * TOC open.
-       */
       setTocOpen(true);
 
       try {
@@ -494,9 +443,6 @@ export default function BlogDetail() {
 
         setPost(data);
 
-        /*
-         * Related articles.
-         */
         try {
           const relatedData =
             await fetchRelatedPosts(
@@ -549,6 +495,7 @@ export default function BlogDetail() {
     };
   }, [slug]);
 
+
   /* =======================================================
      PREPARE IMAGE
   ======================================================= */
@@ -575,6 +522,7 @@ export default function BlogDetail() {
     setImageFallbackTried(false);
   }, [post]);
 
+
   /* =======================================================
      BUILD TOC
   ======================================================= */
@@ -582,13 +530,12 @@ export default function BlogDetail() {
   useEffect(() => {
     if (!post) {
       setTocItems([]);
+
       return;
     }
 
     let cancelled = false;
-
     let attempts = 0;
-
     let timer: number | undefined;
 
     const setupToc = () => {
@@ -601,9 +548,6 @@ export default function BlogDetail() {
           'blog-article-content'
         );
 
-      /*
-       * The article may not have been mounted yet.
-       */
       if (!container) {
         attempts += 1;
 
@@ -628,32 +572,16 @@ export default function BlogDetail() {
       }
 
       setTocItems(items);
-
       setTocOpen(true);
 
-      if (
-        items.length > 0
-      ) {
+      if (items.length > 0) {
         setActiveTocId(
           items[0].id
         );
       }
 
-      /*
-       * VERY IMPORTANT:
-       *
-       * After article HTML is mounted,
-       * force the page back to the top.
-       *
-       * This prevents the browser from restoring
-       * the old scroll position at the end of
-       * the previous blog.
-       */
       forcePageTop();
 
-      /*
-       * One more frame after layout.
-       */
       window.requestAnimationFrame(
         () => {
           if (!cancelled) {
@@ -681,6 +609,7 @@ export default function BlogDetail() {
       }
     };
   }, [post]);
+
 
   /* =======================================================
      ACTIVE TOC HEADING
@@ -760,7 +689,8 @@ export default function BlogDetail() {
             element,
           }) => {
             const top =
-              element.getBoundingClientRect()
+              element
+                .getBoundingClientRect()
                 .top +
               window.scrollY;
 
@@ -796,6 +726,7 @@ export default function BlogDetail() {
       );
     };
   }, [tocItems]);
+
 
   /* =======================================================
      IMAGE ERROR
@@ -849,6 +780,7 @@ export default function BlogDetail() {
       }
     };
 
+
   /* =======================================================
      SEO IMAGE
   ======================================================= */
@@ -859,6 +791,7 @@ export default function BlogDetail() {
         post?.image_url
       );
     }, [post]);
+
 
   /* =======================================================
      CANONICAL URL
@@ -874,6 +807,7 @@ export default function BlogDetail() {
 
       return `${BRAND.domain}/blog/${post.slug}`;
     }, [post, slug]);
+
 
   /* =======================================================
      STRUCTURED DATA
@@ -950,9 +884,7 @@ export default function BlogDetail() {
         keywords:
           post.tags &&
           post.tags.length > 0
-            ? post.tags.join(
-                ', '
-              )
+            ? post.tags.join(', ')
             : undefined,
       };
     }, [
@@ -960,6 +892,7 @@ export default function BlogDetail() {
       seoImage,
       canonicalUrl,
     ]);
+
 
   /* =======================================================
      LOADING
@@ -972,6 +905,7 @@ export default function BlogDetail() {
       </div>
     );
   }
+
 
   /* =======================================================
      ERROR
@@ -994,6 +928,7 @@ export default function BlogDetail() {
       </div>
     );
   }
+
 
   /* =======================================================
      PAGE
@@ -1051,6 +986,7 @@ export default function BlogDetail() {
 
             Back to Home
           </Link>
+
 
           <article>
 
@@ -1137,6 +1073,7 @@ export default function BlogDetail() {
               )}
             </div>
 
+
             {/* =================================================
                 TITLE
             ================================================= */}
@@ -1154,6 +1091,7 @@ export default function BlogDetail() {
               {post.title}
             </h1>
 
+
             {/* =================================================
                 EXCERPT
             ================================================= */}
@@ -1170,6 +1108,7 @@ export default function BlogDetail() {
                 {post.excerpt}
               </p>
             )}
+
 
             {/* =================================================
                 META
@@ -1211,6 +1150,7 @@ export default function BlogDetail() {
                 </span>
               )}
             </div>
+
 
             {/* =================================================
                 TABLE OF CONTENTS
@@ -1284,16 +1224,6 @@ export default function BlogDetail() {
                           >
                             <button
                               type="button"
-                              /*
-                               * VERY IMPORTANT:
-                               *
-                               * No href.
-                               * No #hash.
-                               * No router navigation.
-                               *
-                               * It only scrolls to the
-                               * matching H2/H3.
-                               */
                               onClick={() => {
                                 setActiveTocId(
                                   item.id
@@ -1335,6 +1265,16 @@ export default function BlogDetail() {
                 )}
               </aside>
             )}
+
+
+            {/* =================================================
+                TEXT TO SPEECH
+            ================================================= */}
+
+            <BlogTTS
+              contentId="blog-article-content"
+            />
+
 
             {/* =================================================
                 ARTICLE CONTENT
@@ -1419,7 +1359,6 @@ export default function BlogDetail() {
                 [&_a]:underline
                 [&_a]:decoration-rose-200
                 [&_a]:underline-offset-2
-
                 [&_a:hover]:text-rose-600
 
                 [&_strong]:font-semibold
@@ -1436,6 +1375,7 @@ export default function BlogDetail() {
                   '',
               }}
             />
+
 
             {/* =================================================
                 TAGS
@@ -1472,8 +1412,8 @@ export default function BlogDetail() {
                   )}
                 </div>
               )}
-
           </article>
+
 
           {/* =================================================
               RELATED ARTICLES
@@ -1521,9 +1461,7 @@ export default function BlogDetail() {
                 "
               >
                 {related.map(
-                  (
-                    relatedPost
-                  ) => (
+                  (relatedPost) => (
                     <BlogCard
                       key={
                         relatedPost.id
@@ -1537,9 +1475,9 @@ export default function BlogDetail() {
               </div>
             </section>
           )}
-
         </div>
       </div>
     </>
   );
 }
+
