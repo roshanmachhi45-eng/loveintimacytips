@@ -1,184 +1,157 @@
 
-"use client";
-
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Pause, Play, Square, Volume2 } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import {
+  Pause,
+  Play,
+  Square,
+  Volume2,
+} from 'lucide-react';
 
 interface BlogTTSProps {
   contentId?: string;
 }
 
+/*
+ * =========================================================
+ * SETTINGS
+ * =========================================================
+ */
+
+const DEFAULT_CONTENT_ID = 'blog-article-content';
+
+/*
+ * Fixed reading speed.
+ *
+ * User ko manual speed control nahi diya gaya.
+ * 0.92 browser ki normal voice se thoda comfortable
+ * aur natural reading speed deta hai.
+ */
+const SPEECH_RATE = 0.92;
+const SPEECH_PITCH = 1;
+const SPEECH_VOLUME = 1;
+
+/*
+ * Mobile browsers mein bahut lambi SpeechSynthesisUtterance
+ * kabhi-kabhi pause/resume ke baad stuck ho jati hai.
+ *
+ * Isliye article ko small chunks mein read karenge.
+ */
+const MAX_CHUNK_LENGTH = 220;
+
+/*
+ * Android/browser mein kabhi-kabhi speech boundary event
+ * late aata hai. Isliye current position ko safely track
+ * karne ke liye ye values use hongi.
+ */
 interface SpeechChunk {
   text: string;
 }
 
 /*
- * BlogTTS
- *
- * This component reads ONLY the blog article content.
- *
- * IMPORTANT:
- * BlogDetails.tsx ke actual article content container par:
- *
- * id="blog-article-content"
- *
- * hona chahiye.
- *
- * Example:
- *
- * <article id="blog-article-content">
- * ...
- * </article>
+ * =========================================================
+ * TEXT CLEANING
+ * =========================================================
  */
-
-/* --------------------------------------------------
-   DEFAULT SETTINGS
--------------------------------------------------- */
-
-const DEFAULT_CONTENT_ID = "blog-article-content";
-
-/*
- * User ko speed control nahi diya jayega.
- * 0.9 ek comfortable reading speed hai.
- */
-const SPEECH_RATE = 0.9;
-
-/*
- * Normal natural pitch.
- */
-const SPEECH_PITCH = 1;
-
-/*
- * Full volume.
- */
-const SPEECH_VOLUME = 1;
-
-/*
- * Chunks bahut bade hone par Android/mobile browsers
- * SpeechSynthesis ko problem ho sakti hai.
- */
-const MAX_CHUNK_LENGTH = 220;
-
-
-/* --------------------------------------------------
-   TEXT CLEANING
--------------------------------------------------- */
 
 function cleanText(text: string): string {
   return text
-    .replace(/\u00a0/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/\s+/g, ' ')
+    .replace(/\u00a0/g, ' ')
     .trim();
 }
 
-
-/* --------------------------------------------------
-   CREATE SPEECH CHUNKS
--------------------------------------------------- */
+/*
+ * =========================================================
+ * CREATE SPEECH CHUNKS
+ * =========================================================
+ */
 
 function createSpeechChunks(article: HTMLElement): SpeechChunk[] {
   /*
-   * Article ki copy banate hain taaki original website
-   * ke content ko modify na karein.
+   * Article ka clone banaya ja raha hai.
+   *
+   * Original website DOM ko touch nahi karna.
    */
   const clone = article.cloneNode(true) as HTMLElement;
 
   /*
-   * In elements ko TTS nahi padhega.
-   *
-   * TOC
-   * TTS controls
-   * navigation
-   * footer
-   * buttons
-   * scripts/styles
+   * TTS ko in elements ko kabhi nahi padhna chahiye.
    */
-  const elementsToRemove = clone.querySelectorAll(
-    [
-      "[data-blog-tts]",
-      "[data-toc]",
-      ".table-of-contents",
-      ".toc",
-      "nav",
-      "footer",
-      "script",
-      "style",
-      "button",
-      "noscript",
-    ].join(",")
-  );
-
-  elementsToRemove.forEach((element) => {
-    element.remove();
-  });
+  clone
+    .querySelectorAll(
+      'script, style, button, nav, aside, form, input, textarea, select'
+    )
+    .forEach((element) => {
+      element.remove();
+    });
 
   /*
-   * Sirf article ka text nikaalo.
+   * Article ke andar se actual readable text.
    */
-  const articleText = cleanText(clone.textContent || "");
+  const rawText = clone.innerText || clone.textContent || '';
+  const text = cleanText(rawText);
 
-  if (!articleText) {
+  if (!text) {
     return [];
   }
 
   /*
-   * Pehle sentence boundaries par split karne ki koshish.
+   * Pehle sentences ke around split karne ki koshish.
+   * Isse voice zyada natural lagegi.
    */
-  const sentences = articleText.match(
-    /[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g
-  );
-
-  if (!sentences) {
-    return [{ text: articleText }];
-  }
+  const sentences =
+    text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
 
   const chunks: SpeechChunk[] = [];
+  let current = '';
 
-  let currentChunk = "";
+  for (const sentence of sentences) {
+    const cleanSentence = cleanText(sentence);
 
-  for (const rawSentence of sentences) {
-    const sentence = cleanText(rawSentence);
-
-    if (!sentence) {
+    if (!cleanSentence) {
       continue;
     }
 
     /*
-     * Agar current chunk + sentence limit ke andar hai,
-     * to same chunk me add karo.
+     * Agar current chunk mein sentence add karne se
+     * maximum length cross nahi hoti, to same chunk mein rakho.
      */
     if (
-      currentChunk.length > 0 &&
-      currentChunk.length + sentence.length + 1 <= MAX_CHUNK_LENGTH
+      current.length > 0 &&
+      current.length + cleanSentence.length + 1 <=
+        MAX_CHUNK_LENGTH
     ) {
-      currentChunk += ` ${sentence}`;
+      current = `${current} ${cleanSentence}`;
       continue;
     }
 
     /*
-     * Current chunk available hai to save karo.
+     * Current chunk save karo.
      */
-    if (currentChunk.length > 0) {
+    if (current) {
       chunks.push({
-        text: currentChunk,
+        text: current,
       });
-
-      currentChunk = "";
     }
 
     /*
-     * Agar ek single sentence hi bahut bada hai,
-     * to usko words ke basis par todna padega.
+     * Bahut bada sentence ho to usko words ke basis par
+     * smaller chunks mein tod do.
      */
-    if (sentence.length > MAX_CHUNK_LENGTH) {
-      const words = sentence.split(/\s+/);
-
-      let wordChunk = "";
+    if (cleanSentence.length > MAX_CHUNK_LENGTH) {
+      const words = cleanSentence.split(/\s+/);
+      let wordChunk = '';
 
       for (const word of words) {
         if (
-          wordChunk.length > 0 &&
-          wordChunk.length + word.length + 1 > MAX_CHUNK_LENGTH
+          wordChunk &&
+          wordChunk.length + word.length + 1 >
+            MAX_CHUNK_LENGTH
         ) {
           chunks.push({
             text: wordChunk,
@@ -186,592 +159,683 @@ function createSpeechChunks(article: HTMLElement): SpeechChunk[] {
 
           wordChunk = word;
         } else {
-          wordChunk =
-            wordChunk.length > 0
-              ? `${wordChunk} ${word}`
-              : word;
+          wordChunk = wordChunk
+            ? `${wordChunk} ${word}`
+            : word;
         }
       }
 
-      if (wordChunk.length > 0) {
-        currentChunk = wordChunk;
-      }
+      current = wordChunk;
     } else {
-      currentChunk = sentence;
+      current = cleanSentence;
     }
   }
 
-  /*
-   * Last chunk save karo.
-   */
-  if (currentChunk.length > 0) {
+  if (current) {
     chunks.push({
-      text: currentChunk,
+      text: current,
     });
   }
 
   return chunks;
 }
 
-
-/* --------------------------------------------------
-   COMPONENT
--------------------------------------------------- */
+/*
+ * =========================================================
+ * COMPONENT
+ * =========================================================
+ */
 
 export default function BlogTTS({
   contentId = DEFAULT_CONTENT_ID,
 }: BlogTTSProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
+  const [isSupported, setIsSupported] = useState(true);
 
+  /*
+   * Speech chunks.
+   */
   const chunksRef = useRef<SpeechChunk[]>([]);
+
+  /*
+   * Current chunk index.
+   */
   const currentChunkRef = useRef(0);
 
   /*
-   * Yeh ref batata hai ki user ne manually stop kiya hai.
+   * Current character position inside current chunk.
+   *
+   * speechSynthesis.pause() par depend nahi karenge.
+   * Pause par utterance cancel karke isi position se
+   * dobara start karenge.
    */
-  const stoppedRef = useRef(false);
+  const currentCharRef = useRef(0);
 
   /*
-   * Yeh ref batata hai ki component unmount ho raha hai.
+   * Current utterance.
+   */
+  const utteranceRef =
+    useRef<SpeechSynthesisUtterance | null>(null);
+
+  /*
+   * User ne intentionally speech cancel ki ya nahi.
+   */
+  const cancellingRef = useRef(false);
+
+  /*
+   * Resume operation already scheduled hai ya nahi.
+   */
+  const startingRef = useRef(false);
+
+  /*
+   * Component mounted hai ya nahi.
    */
   const mountedRef = useRef(true);
 
-  /* ------------------------------------------------
-     STOP SPEECH
-  ------------------------------------------------ */
+  /*
+   * =======================================================
+   * BROWSER SUPPORT
+   * =======================================================
+   */
 
-  const stopSpeech = useCallback(() => {
-    stoppedRef.current = true;
+  useEffect(() => {
+    mountedRef.current = true;
 
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
+    if (
+      typeof window === 'undefined' ||
+      !('speechSynthesis' in window) ||
+      typeof SpeechSynthesisUtterance === 'undefined'
+    ) {
+      setIsSupported(false);
     }
 
-    if (!mountedRef.current) {
-      return;
-    }
+    return () => {
+      mountedRef.current = false;
 
-    setIsPlaying(false);
-    setIsPaused(false);
-    setIsFinished(false);
+      cancellingRef.current = true;
 
-    currentChunkRef.current = 0;
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+
+      utteranceRef.current = null;
+    };
   }, []);
 
+  /*
+   * =======================================================
+   * GET VOICE
+   * =======================================================
+   */
 
-  /* ------------------------------------------------
-     SPEAK CURRENT CHUNK
-  ------------------------------------------------ */
-
-  const speakCurrentChunk = useCallback(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    if (!("speechSynthesis" in window)) {
-      return;
-    }
-
-    if (stoppedRef.current) {
-      return;
-    }
-
-    const chunks = chunksRef.current;
-
-    /*
-     * Article complete.
-     */
-    if (currentChunkRef.current >= chunks.length) {
-      window.speechSynthesis.cancel();
-
-      if (mountedRef.current) {
-        setIsPlaying(false);
-        setIsPaused(false);
-        setIsFinished(true);
+  const getPreferredVoice =
+    useCallback((): SpeechSynthesisVoice | null => {
+      if (
+        typeof window === 'undefined' ||
+        !('speechSynthesis' in window)
+      ) {
+        return null;
       }
 
-      return;
-    }
+      const voices =
+        window.speechSynthesis.getVoices();
 
-    const currentChunk =
-      chunks[currentChunkRef.current];
+      if (!voices.length) {
+        return null;
+      }
 
-    if (!currentChunk?.text) {
-      currentChunkRef.current += 1;
-      speakCurrentChunk();
-      return;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(
-      currentChunk.text
-    );
-
-    /*
-     * Fixed natural reading settings.
-     */
-    utterance.rate = SPEECH_RATE;
-    utterance.pitch = SPEECH_PITCH;
-    utterance.volume = SPEECH_VOLUME;
-
-    /*
-     * Browser ki available English voice choose karne ki
-     * koshish.
-     *
-     * Android/Chrome me available voice browser/device
-     * par depend karegi.
-     */
-    const voices = window.speechSynthesis.getVoices();
-
-    if (voices.length > 0) {
-      const preferredVoice =
-        voices.find(
-          (voice) =>
-            voice.lang.toLowerCase() === "en-us"
-        ) ||
-        voices.find(
-          (voice) =>
-            voice.lang.toLowerCase() === "en-gb"
-        ) ||
-        voices.find(
-          (voice) =>
-            voice.lang.toLowerCase().startsWith("en")
+      /*
+       * English voice ko preference.
+       */
+      const englishVoice =
+        voices.find((voice) =>
+          /^en[-_]/i.test(voice.lang)
         );
 
-      if (preferredVoice) {
-        utterance.voice = preferredVoice;
-      }
-    }
-
-    /*
-     * Current chunk complete hone ke baad next chunk.
-     */
-    utterance.onend = () => {
-      if (!mountedRef.current) {
-        return;
-      }
-
-      if (stoppedRef.current) {
-        return;
-      }
-
-      currentChunkRef.current += 1;
-
-      /*
-       * Next chunk ko thoda asynchronously start karna
-       * mobile browsers ke liye zyada reliable hota hai.
-       */
-      window.setTimeout(() => {
-        if (!stoppedRef.current) {
-          speakCurrentChunk();
-        }
-      }, 30);
-    };
-
-    /*
-     * Speech error.
-     */
-    utterance.onerror = (event) => {
-      if (!mountedRef.current) {
-        return;
+      if (englishVoice) {
+        return englishVoice;
       }
 
       /*
-       * "interrupted" normally tab aa sakta hai jab
-       * speech cancel/pause hua ho.
+       * Agar English voice available nahi hai,
+       * browser ki default voice.
        */
-      if (
-        event.error === "interrupted" ||
-        event.error === "canceled"
-      ) {
+      return (
+        voices.find((voice) => voice.default) ||
+        voices[0] ||
+        null
+      );
+    }, []);
+
+  /*
+   * =======================================================
+   * LOAD ARTICLE
+   * =======================================================
+   */
+
+  const loadArticleChunks =
+    useCallback((): boolean => {
+      const article =
+        document.getElementById(contentId);
+
+      if (!article) {
+        console.warn(
+          'Blog TTS article container not found:',
+          contentId
+        );
+
+        return false;
+      }
+
+      const chunks =
+        createSpeechChunks(article);
+
+      if (!chunks.length) {
+        console.warn(
+          'Blog TTS: no readable article text found.'
+        );
+
+        return false;
+      }
+
+      chunksRef.current = chunks;
+      currentChunkRef.current = 0;
+      currentCharRef.current = 0;
+
+      return true;
+    }, [contentId]);
+
+  /*
+   * =======================================================
+   * FINISH SPEECH
+   * =======================================================
+   */
+
+  const finishSpeech =
+    useCallback(() => {
+      if (!mountedRef.current) {
         return;
       }
 
       setIsPlaying(false);
       setIsPaused(false);
-    };
 
-    /*
-     * Speech start.
-     */
-    utterance.onstart = () => {
-      if (!mountedRef.current) {
+      currentChunkRef.current = 0;
+      currentCharRef.current = 0;
+
+      utteranceRef.current = null;
+    }, []);
+
+  /*
+   * =======================================================
+   * SPEAK CURRENT CHUNK
+   * =======================================================
+   */
+
+  const speakCurrentChunk =
+    useCallback(() => {
+      if (
+        typeof window === 'undefined' ||
+        !('speechSynthesis' in window) ||
+        typeof SpeechSynthesisUtterance ===
+          'undefined'
+      ) {
         return;
       }
 
-      setIsPlaying(true);
-      setIsPaused(false);
-    };
-
-    window.speechSynthesis.speak(utterance);
-  }, []);
-
-
-  /* ------------------------------------------------
-     PLAY / RESUME
-  ------------------------------------------------ */
-
-  const handlePlay = useCallback(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    if (!("speechSynthesis" in window)) {
-      return;
-    }
-
-    /*
-     * Agar speech paused hai to resume karo.
-     */
-    if (isPaused) {
-      stoppedRef.current = false;
-
-      window.speechSynthesis.resume();
-
-      setIsPlaying(true);
-      setIsPaused(false);
-
-      return;
-    }
-
-    /*
-     * Agar article pehle complete ho chuka hai,
-     * Play dabane par beginning se start karo.
-     */
-    if (isFinished) {
-      currentChunkRef.current = 0;
-      setIsFinished(false);
-    }
-
-    /*
-     * Article element find karo.
-     */
-    const article = document.getElementById(contentId);
-
-    if (!article) {
-      console.error(
-        `BlogTTS: Article element "#${contentId}" nahi mila.`
-      );
-
-      return;
-    }
-
-    /*
-     * First time article content read karo.
-     */
-    if (chunksRef.current.length === 0) {
-      const chunks = createSpeechChunks(article);
-
-      if (chunks.length === 0) {
-        console.error(
-          "BlogTTS: Article me readable text nahi mila."
-        );
-
+      if (startingRef.current) {
         return;
       }
 
-      chunksRef.current = chunks;
-      currentChunkRef.current = 0;
-    }
-
-    /*
-     * Agar speech engine already kuch bol raha hai,
-     * pehle cancel karo.
-     */
-    window.speechSynthesis.cancel();
-
-    stoppedRef.current = false;
-
-    setIsPlaying(true);
-    setIsPaused(false);
-    setIsFinished(false);
-
-    /*
-     * Mobile browser me cancel ke turant baad speak kabhi-kabhi
-     * ignore ho sakta hai, isliye small delay.
-     */
-    window.setTimeout(() => {
-      if (!stoppedRef.current) {
-        speakCurrentChunk();
-      }
-    }, 50);
-  }, [
-    contentId,
-    isFinished,
-    isPaused,
-    speakCurrentChunk,
-  ]);
-
-
-  /* ------------------------------------------------
-     PAUSE
-  ------------------------------------------------ */
-
-  const handlePause = useCallback(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    if (!("speechSynthesis" in window)) {
-      return;
-    }
-
-    window.speechSynthesis.pause();
-
-    setIsPlaying(false);
-    setIsPaused(true);
-  }, []);
-
-
-  /* ------------------------------------------------
-     CLEANUP
-  ------------------------------------------------ */
-
-  useEffect(() => {
-    mountedRef.current = true;
-
-    /*
-     * Voices load hone ke baad browser ki voice list
-     * available ho sakti hai.
-     */
-    const handleVoicesChanged = () => {
-      window.speechSynthesis.getVoices();
-    };
-
-    if (
-      typeof window !== "undefined" &&
-      "speechSynthesis" in window
-    ) {
-      window.speechSynthesis.addEventListener(
-        "voiceschanged",
-        handleVoicesChanged
-      );
-    }
-
-    return () => {
-      mountedRef.current = false;
-      stoppedRef.current = true;
+      const chunks = chunksRef.current;
+      const chunkIndex =
+        currentChunkRef.current;
 
       if (
-        typeof window !== "undefined" &&
-        "speechSynthesis" in window
+        chunkIndex < 0 ||
+        chunkIndex >= chunks.length
       ) {
+        finishSpeech();
+        return;
+      }
+
+      startingRef.current = true;
+
+      /*
+       * Previous speech ko completely clear karo.
+       */
+      window.speechSynthesis.cancel();
+
+      const fullText =
+        chunks[chunkIndex].text;
+
+      const startPosition =
+        Math.max(
+          0,
+          Math.min(
+            currentCharRef.current,
+            fullText.length
+          )
+        );
+
+      const remainingText =
+        fullText.slice(startPosition).trim();
+
+      /*
+       * Agar current chunk ka text finish ho chuka hai,
+       * next chunk par chale jao.
+       */
+      if (!remainingText) {
+        currentChunkRef.current += 1;
+        currentCharRef.current = 0;
+        startingRef.current = false;
+
+        window.setTimeout(() => {
+          speakCurrentChunk();
+        }, 30);
+
+        return;
+      }
+
+      const utterance =
+        new SpeechSynthesisUtterance(
+          remainingText
+        );
+
+      utterance.rate = SPEECH_RATE;
+      utterance.pitch = SPEECH_PITCH;
+      utterance.volume = SPEECH_VOLUME;
+
+      const voice =
+        getPreferredVoice();
+
+      if (voice) {
+        utterance.voice = voice;
+      }
+
+      /*
+       * Boundary event se exact reading position track karte hain.
+       *
+       * Android/mobile browser mein ye event perfect
+       * na bhi aaye, tab bhi current chunk ka position
+       * safely preserve rahega.
+       */
+      utterance.onboundary = (event) => {
+        if (
+          event.name === 'word' ||
+          event.name === 'sentence'
+        ) {
+          currentCharRef.current =
+            startPosition +
+            Math.max(
+              0,
+              event.charIndex || 0
+            );
+        }
+      };
+
+      utterance.onstart = () => {
+        startingRef.current = false;
+
+        if (!mountedRef.current) {
+          return;
+        }
+
+        setIsPlaying(true);
+        setIsPaused(false);
+      };
+
+      utterance.onend = () => {
+        startingRef.current = false;
+
+        /*
+         * Agar ye intentional cancel tha,
+         * to next chunk automatically mat chalao.
+         */
+        if (cancellingRef.current) {
+          cancellingRef.current = false;
+          return;
+        }
+
+        /*
+         * Current chunk complete.
+         */
+        currentChunkRef.current += 1;
+        currentCharRef.current = 0;
+
+        if (
+          currentChunkRef.current >=
+          chunksRef.current.length
+        ) {
+          finishSpeech();
+          return;
+        }
+
+        /*
+         * Next chunk.
+         */
+        window.setTimeout(() => {
+          speakCurrentChunk();
+        }, 30);
+      };
+
+      utterance.onerror = (event) => {
+        startingRef.current = false;
+
+        /*
+         * Intentional cancel ko error mat samjho.
+         */
+        if (
+          cancellingRef.current &&
+          event.error === 'canceled'
+        ) {
+          cancellingRef.current = false;
+          return;
+        }
+
+        console.warn(
+          'Blog TTS speech error:',
+          event.error
+        );
+
+        if (mountedRef.current) {
+          setIsPlaying(false);
+          setIsPaused(false);
+        }
+      };
+
+      utteranceRef.current = utterance;
+
+      /*
+       * New speech start.
+       */
+      window.speechSynthesis.speak(
+        utterance
+      );
+    }, [
+      finishSpeech,
+      getPreferredVoice,
+    ]);
+
+  /*
+   * =======================================================
+   * PLAY / RESUME
+   * =======================================================
+   */
+
+  const handlePlay =
+    useCallback(() => {
+      if (!isSupported) {
+        return;
+      }
+
+      /*
+       * First play.
+       */
+      if (!chunksRef.current.length) {
+        const loaded =
+          loadArticleChunks();
+
+        if (!loaded) {
+          return;
+        }
+      }
+
+      /*
+       * Resume.
+       *
+       * IMPORTANT:
+       * Browser pause/resume use nahi kar rahe.
+       * Current character position se fresh utterance
+       * create hoti hai.
+       */
+      cancellingRef.current = false;
+
+      setIsPaused(false);
+      setIsPlaying(true);
+
+      speakCurrentChunk();
+    }, [
+      isSupported,
+      loadArticleChunks,
+      speakCurrentChunk,
+    ]);
+
+  /*
+   * =======================================================
+   * PAUSE
+   * =======================================================
+   */
+
+  const handlePause =
+    useCallback(() => {
+      if (
+        typeof window === 'undefined' ||
+        !('speechSynthesis' in window)
+      ) {
+        return;
+      }
+
+      /*
+       * Current utterance ko cancel karenge.
+       *
+       * speechSynthesis.pause() ki jagah cancel use
+       * karne se Android ke stuck-resume issue se bachenge.
+       *
+       * Current character position already onboundary
+       * se save ho chuki hai.
+       */
+      cancellingRef.current = true;
+
+      window.speechSynthesis.cancel();
+
+      startingRef.current = false;
+
+      setIsPlaying(false);
+      setIsPaused(true);
+    }, []);
+
+  /*
+   * =======================================================
+   * STOP
+   * =======================================================
+   */
+
+  const handleStop =
+    useCallback(() => {
+      if (
+        typeof window !== 'undefined' &&
+        'speechSynthesis' in window
+      ) {
+        cancellingRef.current = true;
         window.speechSynthesis.cancel();
       }
 
-      if (
-        typeof window !== "undefined" &&
-        "speechSynthesis" in window
-      ) {
-        window.speechSynthesis.removeEventListener(
-          "voiceschanged",
-          handleVoicesChanged
-        );
-      }
-    };
-  }, []);
+      startingRef.current = false;
 
+      currentChunkRef.current = 0;
+      currentCharRef.current = 0;
 
-  /* ------------------------------------------------
-     RESET WHEN BLOG CHANGES
-  ------------------------------------------------ */
+      setIsPlaying(false);
+      setIsPaused(false);
+
+      utteranceRef.current = null;
+    }, []);
+
+  /*
+   * =======================================================
+   * RESET WHEN BLOG CHANGES
+   * =======================================================
+   */
 
   useEffect(() => {
     /*
-     * Naya blog open hone par previous speech data clear.
+     * Blog slug change hone par old speech ko completely stop.
      */
-    chunksRef.current = [];
-    currentChunkRef.current = 0;
+    handleStop();
+  }, [contentId, handleStop]);
 
-    stoppedRef.current = true;
+  /*
+   * =======================================================
+   * UI
+   * =======================================================
+   */
 
-    if (
-      typeof window !== "undefined" &&
-      "speechSynthesis" in window
-    ) {
-      window.speechSynthesis.cancel();
-    }
-
-    setIsPlaying(false);
-    setIsPaused(false);
-    setIsFinished(false);
-  }, [contentId]);
-
-
-  /* ------------------------------------------------
-     UI
-  ------------------------------------------------ */
+  if (!isSupported) {
+    return null;
+  }
 
   return (
     <div
-      data-blog-tts
-      className="my-6 w-full"
+      className="
+        mb-5
+        flex
+        w-fit
+        max-w-full
+        items-center
+        gap-2
+        rounded-2xl
+        bg-rose-500
+        px-3
+        py-2
+        shadow-sm
+      "
+      aria-label="Listen to this article"
     >
-      <div
+      {/* SOUND ICON */}
+      <Volume2
+        className="
+          h-4
+          w-4
+          shrink-0
+          text-white
+        "
+        aria-hidden="true"
+      />
+
+      {/* TITLE / STATUS */}
+      <div className="min-w-0 pr-1">
+        <p
+          className="
+            whitespace-nowrap
+            text-xs
+            font-semibold
+            leading-4
+            text-white
+          "
+        >
+          Listen to this article
+        </p>
+
+        <p
+          className="
+            text-[10px]
+            leading-3
+            text-white/80
+          "
+        >
+          {isPlaying
+            ? 'Playing'
+            : isPaused
+              ? 'Paused'
+              : 'Ready'}
+        </p>
+      </div>
+
+      {/* PLAY / PAUSE */}
+      {isPlaying ? (
+        <button
+          type="button"
+          onClick={handlePause}
+          aria-label="Pause article"
+          title="Pause"
+          className="
+            flex
+            h-8
+            w-8
+            shrink-0
+            items-center
+            justify-center
+            rounded-full
+            bg-white
+            text-rose-600
+            shadow-sm
+            transition
+            hover:bg-rose-50
+            active:scale-95
+          "
+        >
+          <Pause
+            className="h-4 w-4"
+            fill="currentColor"
+          />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={handlePlay}
+          aria-label={
+            isPaused
+              ? 'Resume article'
+              : 'Play article'
+          }
+          title={
+            isPaused
+              ? 'Resume'
+              : 'Play'
+          }
+          className="
+            flex
+            h-8
+            w-8
+            shrink-0
+            items-center
+            justify-center
+            rounded-full
+            bg-white
+            text-rose-600
+            shadow-sm
+            transition
+            hover:bg-rose-50
+            active:scale-95
+          "
+        >
+          <Play
+            className="ml-0.5 h-4 w-4"
+            fill="currentColor"
+          />
+        </button>
+      )}
+
+      {/* STOP */}
+      <button
+        type="button"
+        onClick={handleStop}
+        aria-label="Stop article"
+        title="Stop"
         className="
           flex
+          h-7
+          w-7
+          shrink-0
           items-center
-          justify-between
-          gap-4
-          rounded-2xl
-          border
-          border-gray-200
-          bg-white
-          px-4
-          py-3
-          shadow-sm
-          dark:border-gray-700
-          dark:bg-gray-900
+          justify-center
+          rounded-full
+          text-white/90
+          transition
+          hover:bg-white/10
+          hover:text-white
+          active:scale-95
         "
       >
-        {/* LEFT SIDE */}
-        <div className="flex min-w-0 items-center gap-3">
-          <div
-            className="
-              flex
-              h-10
-              w-10
-              shrink-0
-              items-center
-              justify-center
-              rounded-full
-              bg-gray-100
-              dark:bg-gray-800
-            "
-          >
-            <Volume2
-              size={20}
-              strokeWidth={2}
-              className="text-gray-700 dark:text-gray-200"
-            />
-          </div>
-
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-              Listen to this article
-            </p>
-
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {isFinished
-                ? "Article finished"
-                : isPaused
-                ? "Paused"
-                : isPlaying
-                ? "Reading article..."
-                : "Listen at a comfortable speed"}
-            </p>
-          </div>
-        </div>
-
-
-        {/* RIGHT SIDE BUTTONS */}
-        <div className="flex shrink-0 items-center gap-2">
-
-          {/* PLAY / RESUME */}
-          {!isPlaying && (
-            <button
-              type="button"
-              onClick={handlePlay}
-              aria-label={
-                isPaused
-                  ? "Resume article"
-                  : "Play article"
-              }
-              className="
-                flex
-                h-10
-                w-10
-                items-center
-                justify-center
-                rounded-full
-                bg-black
-                text-white
-                transition
-                hover:scale-105
-                hover:bg-gray-800
-                active:scale-95
-                dark:bg-white
-                dark:text-black
-                dark:hover:bg-gray-200
-              "
-            >
-              <Play
-                size={18}
-                fill="currentColor"
-                strokeWidth={2}
-              />
-            </button>
-          )}
-
-          {/* PAUSE */}
-          {isPlaying && (
-            <button
-              type="button"
-              onClick={handlePause}
-              aria-label="Pause article"
-              className="
-                flex
-                h-10
-                w-10
-                items-center
-                justify-center
-                rounded-full
-                bg-black
-                text-white
-                transition
-                hover:scale-105
-                hover:bg-gray-800
-                active:scale-95
-                dark:bg-white
-                dark:text-black
-                dark:hover:bg-gray-200
-              "
-            >
-              <Pause
-                size={18}
-                fill="currentColor"
-                strokeWidth={2}
-              />
-            </button>
-          )}
-
-          {/* STOP */}
-          {(isPlaying || isPaused) && (
-            <button
-              type="button"
-              onClick={stopSpeech}
-              aria-label="Stop article"
-              className="
-                flex
-                h-10
-                w-10
-                items-center
-                justify-center
-                rounded-full
-                border
-                border-gray-300
-                bg-white
-                text-gray-700
-                transition
-                hover:scale-105
-                hover:bg-gray-100
-                active:scale-95
-                dark:border-gray-600
-                dark:bg-gray-900
-                dark:text-gray-200
-                dark:hover:bg-gray-800
-              "
-            >
-              <Square
-                size={15}
-                fill="currentColor"
-                strokeWidth={2}
-              />
-            </button>
-          )}
-        </div>
-      </div>
+        <Square
+          className="h-3.5 w-3.5"
+          fill="currentColor"
+        />
+      </button>
     </div>
   );
 }
+
+      
