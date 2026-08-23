@@ -26,6 +26,7 @@ import Seo from '../components/Seo';
 import BlogCard from '../components/BlogCard';
 import BlogTTS from '../components/BlogTTS';
 import BlogShare from '../components/BlogShare';
+import BlogComments from "../components/BlogComments";
 
 import {
     fetchPostBySlug,
@@ -1503,6 +1504,11 @@ export default function BlogDetail() {
                                 </div>
                             )}
                     </article>
+           
+                   {/* =================================================
+                   COMMENTS
+                   ================================================= */}
+                   <BlogComments articleSlug={post.slug} />
 
                     {/* =================================================
                         RELATED ARTICLES
