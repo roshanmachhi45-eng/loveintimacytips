@@ -71,11 +71,9 @@ export async function submitComment(
       comment,
       approved: false,
     })
-    .select(
-      "id, article_slug, name, comment, created_at, approved"
+          "id, article_slug, name, comment, created_at, approved"
     )
-    .single();
-
+    
   if (error) {
     console.error("Failed to submit comment:", error);
     throw error;
