@@ -10,74 +10,93 @@ export interface BlogComment {
   approved: boolean;
 }
 
-export interface SubmitCommentInput {
-  articleSlug: string;
-  name: string;
-  comment: string;
-}
-
+/**
+ * Fetch only approved comments for a blog article.
+ */
 export async function fetchComments(
   articleSlug: string
 ): Promise<BlogComment[]> {
+  const cleanSlug = articleSlug.trim();
+
+  if (!cleanSlug) {
+    return [];
+  }
+
   const { data, error } = await supabase
     .from("comments")
     .select(
       "id, article_slug, name, comment, created_at, approved"
     )
-    .eq("article_slug", articleSlug)
+    .eq("article_slug", cleanSlug)
     .eq("approved", true)
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Failed to fetch comments:", error);
-    throw error;
+    console.error("Error loading comments:", error);
+    throw new Error(
+      error.message || "Comments could not be loaded."
+    );
   }
 
-  return data ?? [];
+  return (data ?? []) as BlogComment[];
 }
 
-export async function submitComment(
-  input: SubmitCommentInput
-): Promise<BlogComment> {
-  const name = input.name.trim();
-  const comment = input.comment.trim();
-  const articleSlug = input.articleSlug.trim();
+/**
+ * Submit a new comment.
+ *
+ * Every new comment is saved as approved = false.
+ * It will appear publicly only after approval.
+ */
+export async function submitComment({
+  articleSlug,
+  name,
+  comment,
+}: {
+  articleSlug: string;
+  name: string;
+  comment: string;
+}): Promise<void> {
+  const cleanSlug = articleSlug.trim();
+  const cleanName = name.trim();
+  const cleanComment = comment.trim();
 
-  if (!articleSlug) {
-    throw new Error("Article slug is required.");
+  if (!cleanSlug) {
+    throw new Error("Article information is missing.");
   }
 
-  if (!name) {
-    throw new Error("Name is required.");
+  if (!cleanName) {
+    throw new Error("Please enter your name.");
   }
 
-  if (!comment) {
-    throw new Error("Comment is required.");
+  if (!cleanComment) {
+    throw new Error("Please write a comment.");
   }
 
-  if (name.length > 80) {
+  if (cleanName.length > 80) {
     throw new Error("Name must be 80 characters or less.");
   }
 
-  if (comment.length > 2000) {
-    throw new Error("Comment must be 2000 characters or less.");
+  if (cleanComment.length > 2000) {
+    throw new Error(
+      "Comment must be 2000 characters or less."
+    );
   }
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("comments")
     .insert({
-      article_slug: articleSlug,
-      name,
-      comment,
+      article_slug: cleanSlug,
+      name: cleanName,
+      comment: cleanComment,
       approved: false,
-    })
-          "id, article_slug, name, comment, created_at, approved"
-    )
-    
-  if (error) {
-    console.error("Failed to submit comment:", error);
-    throw error;
-  }
+    });
 
-  return data;
+  if (error) {
+    console.error("Error submitting comment:", error);
+
+    throw new Error(
+      error.message ||
+        "Something went wrong. Please try again."
+    );
+  }
 }
