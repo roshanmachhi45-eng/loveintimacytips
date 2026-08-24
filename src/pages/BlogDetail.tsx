@@ -1017,8 +1017,9 @@ export default function BlogDetail() {
                     post.excerpt
                 }
                 path={`/blog/${post.slug}`}
-                ogImage={seoImage}
-            />
+                ogImage={seoImage}    
+                type="article"
+              />
 
             {/* ===================================================
                 ARTICLE STRUCTURED DATA
