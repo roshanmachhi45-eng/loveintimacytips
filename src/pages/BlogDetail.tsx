@@ -1525,13 +1525,8 @@ export default function BlogDetail() {
                             
                                 dangerouslySetInnerHTML={{
                                    __html: addHeadingIds(post.content || ''),
-                             }}
-
-                                
-                                    
-                            
-                            }}
-                        />
+                            }}        
+                            />
 
                         {/* =================================================
                             TAGS
