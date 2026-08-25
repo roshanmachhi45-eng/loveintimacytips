@@ -340,6 +340,68 @@ function forcePageTop(): void {
    BLOG DETAIL
 ========================================================= */
 
+function addHeadingIds(html: string): string {
+    if (!html.trim()) {
+        return '';
+    }
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    const usedIds = new Set<string>();
+
+    doc.querySelectorAll('h1, h2, h3, h4').forEach((heading, index) => {
+        // Keep an ID if Contentful already provides one
+        if (heading.id) {
+            let existingId = heading.id.trim();
+
+            if (!usedIds.has(existingId)) {
+                heading.id = existingId;
+                usedIds.add(existingId);
+                return;
+            }
+
+            let duplicateNumber = 2;
+            let newId = `${existingId}-${duplicateNumber}`;
+
+            while (usedIds.has(newId)) {
+                duplicateNumber++;
+                newId = `${existingId}-${duplicateNumber}`;
+            }
+
+            heading.id = newId;
+            usedIds.add(newId);
+            return;
+        }
+
+        const headingText =
+            heading.textContent?.trim() ||
+            `section-${index + 1}`;
+
+        const baseId =
+            headingText
+                .toLowerCase()
+                .normalize('NFKD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '') ||
+            `section-${index + 1}`;
+
+        let id = baseId;
+        let duplicateNumber = 2;
+
+        while (usedIds.has(id)) {
+            id = `${baseId}-${duplicateNumber}`;
+            duplicateNumber++;
+        }
+
+        heading.id = id;
+        usedIds.add(id);
+    });
+
+    return doc.body.innerHTML;
+}
+
 export default function BlogDetail() {
     const { slug } =
         useParams<{
@@ -1460,10 +1522,14 @@ export default function BlogDetail() {
                                 [&_hr]:my-8
                                 [&_hr]:border-rose-100
                             "
-                            dangerouslySetInnerHTML={{
-                                __html:
-                                    post.content ||
-                                    '',
+                            
+                                dangerouslySetInnerHTML={{
+                                   __html: addHeadingIds(post.content || ''),
+                             }}
+
+                                
+                                    
+                            
                             }}
                         />
 
