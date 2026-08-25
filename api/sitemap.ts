@@ -1,5 +1,7 @@
 
-const SITE_URL = "https://loveons.com";
+const SITE_URL =
+  process.env.SITE_URL ||
+  "https://loveintimacytips-git-loveonsnew-roshanmachhi45-engs-projects.vercel.app";
 
 const CONTENTFUL_SPACE_ID =
   process.env.VITE_CONTENTFUL_SPACE_ID || "";
@@ -33,15 +35,13 @@ function getFieldValue<T>(
     typeof value === "object" &&
     !Array.isArray(value)
   ) {
-    const objectValue =
-      value as Record<string, T>;
+    const objectValue = value as Record<string, T>;
 
     if ("en-US" in objectValue) {
       return objectValue["en-US"];
     }
 
-    const firstKey =
-      Object.keys(objectValue)[0];
+    const firstKey = Object.keys(objectValue)[0];
 
     if (firstKey) {
       return objectValue[firstKey];
@@ -57,6 +57,7 @@ interface ContentfulEntry {
     publishedAt?: string;
     updatedAt?: string;
   };
+
   fields?: {
     title?: string | Record<string, string>;
     slug?: string | Record<string, string>;
@@ -76,6 +77,7 @@ export default async function handler(
       name: string,
       value: string
     ) => void;
+
     status: (code: number) => {
       send: (body: string) => void;
     };
@@ -118,6 +120,7 @@ export default async function handler(
         headers: {
           Authorization:
             `Bearer ${CONTENTFUL_ACCESS_TOKEN}`,
+
           Accept: "application/json",
         },
       });
@@ -182,26 +185,31 @@ export default async function handler(
         changefreq: "weekly",
         priority: "1.0",
       },
+
       {
         loc: `${SITE_URL}/about`,
         changefreq: "monthly",
         priority: "0.8",
       },
+
       {
         loc: `${SITE_URL}/contact`,
         changefreq: "monthly",
         priority: "0.6",
       },
+
       {
         loc: `${SITE_URL}/privacy-policy`,
         changefreq: "yearly",
         priority: "0.3",
       },
+
       {
         loc: `${SITE_URL}/disclaimer`,
         changefreq: "yearly",
         priority: "0.3",
       },
+
       {
         loc: `${SITE_URL}/terms`,
         changefreq: "yearly",
@@ -228,9 +236,7 @@ export default async function handler(
 
         const validLastmod =
           lastmod &&
-          !Number.isNaN(
-            lastmod.getTime()
-          )
+          !Number.isNaN(lastmod.getTime())
             ? lastmod.toISOString()
             : "";
 
@@ -239,21 +245,18 @@ export default async function handler(
     <loc>${escapeXml(
       `${SITE_URL}/blog/${item.slug}`
     )}</loc>${
-      validLastmod
-        ? `
+          validLastmod
+            ? `
     <lastmod>${validLastmod}</lastmod>`
-        : ""
-    }
+            : ""
+        }
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`;
       })
       .join("");
 
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${staticXml}
-${blogXml}
+    const xml = `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${staticXml}${blogXml}
 </urlset>`;
 
     response.setHeader(
