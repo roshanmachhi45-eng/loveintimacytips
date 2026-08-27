@@ -1,0 +1,420 @@
+
+.wrapper {
+  width: 100%;
+  padding: 48px 16px;
+  background: #fff;
+}
+
+.inner {
+  width: min(100%, 900px);
+  margin: 0 auto;
+}
+
+.header {
+  max-width: 680px;
+  margin: 0 auto 28px;
+  text-align: center;
+}
+
+.eyebrow {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: #d9468f;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.header h2 {
+  margin: 0;
+  color: #25202a;
+  font-size: clamp(28px, 5vw, 44px);
+  line-height: 1.12;
+}
+
+.header p {
+  margin: 12px auto 0;
+  max-width: 600px;
+  color: #77717b;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.formCard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 22px;
+  border: 1px solid #f1dce8;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 10px 35px rgba(214, 67, 139, 0.08);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.field label {
+  color: #342c35;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.field input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid #eadde5;
+  border-radius: 12px;
+  outline: none;
+  background: #fff;
+  color: #29232a;
+  font: inherit;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.field input:focus {
+  border-color: #e05299;
+  box-shadow: 0 0 0 3px rgba(224, 82, 153, 0.12);
+}
+
+.generateButton {
+  grid-column: 1 / -1;
+  min-height: 50px;
+  margin-top: 2px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #d9468f, #ec6cab);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  box-shadow: 0 9px 22px rgba(217, 70, 143, 0.2);
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.generateButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.generateButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.cardsArea {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 34px auto 18px;
+  min-height: 210px;
+}
+
+.tarotCard {
+  width: 116px;
+  height: 190px;
+  perspective: 700px;
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
+}
+
+.cardBack {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid #efcfe0;
+  border-radius: 17px;
+  background:
+    radial-gradient(circle at center, #fff 0, #fff7fb 35%, #fce7f2 100%);
+  color: #d9468f;
+  box-shadow: 0 10px 28px rgba(214, 67, 139, 0.1);
+  box-sizing: border-box;
+}
+
+.cardBack span {
+  font-size: 42px;
+  line-height: 1;
+}
+
+.cardBack small {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+}
+
+.shuffling {
+  animation: shuffleCard 0.42s ease-in-out infinite alternate;
+  animation-delay: var(--card-delay);
+}
+
+.hidden {
+  opacity: 0;
+  transform: scale(0.75);
+  pointer-events: none;
+}
+
+.selected {
+  transform: scale(1.05);
+}
+
+.loadingText {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 28px;
+  color: #d9468f;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.loadingText span {
+  animation: pulse 0.8s ease-in-out infinite alternate;
+}
+
+.results {
+  margin-top: 30px;
+}
+
+.selectedCard {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 26px;
+}
+
+.cardFront {
+  width: min(100%, 360px);
+  padding: 30px 24px;
+  border: 1px solid #efcfe0;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #fff, #fff7fb);
+  text-align: center;
+  box-shadow: 0 15px 40px rgba(214, 67, 139, 0.12);
+  box-sizing: border-box;
+  animation: revealCard 0.55s ease both;
+}
+
+.cardSymbol {
+  display: flex;
+  width: 66px;
+  height: 66px;
+  margin: 0 auto 15px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fde7f2;
+  color: #d9468f;
+  font-size: 32px;
+}
+
+.cardLabel {
+  color: #d9468f;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+}
+
+.cardFront h3 {
+  margin: 9px 0 12px;
+  color: #29232a;
+  font-size: 23px;
+}
+
+.cardFront p {
+  margin: 0;
+  color: #716a73;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.resultBlock {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 20px;
+  border: 1px solid #f0e0e8;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 6px 20px rgba(50, 30, 45, 0.04);
+  animation: resultIn 0.5s ease both;
+}
+
+.resultBlock:nth-child(3) {
+  animation-delay: 0.08s;
+}
+
+.resultBlock:nth-child(4) {
+  animation-delay: 0.16s;
+}
+
+.resultBlock span {
+  display: flex;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fde7f2;
+  color: #d9468f;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.resultBlock h3 {
+  margin: 0 0 7px;
+  color: #2d2730;
+  font-size: 17px;
+}
+
+.resultBlock p {
+  margin: 5px 0;
+  color: #716a73;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.resultBlock strong {
+  color: #d9468f;
+}
+
+.resetButton {
+  display: block;
+  margin: 22px auto 0;
+  padding: 10px 17px;
+  border: 1px solid #e9c9da;
+  border-radius: 10px;
+  background: #fff;
+  color: #d9468f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@keyframes shuffleCard {
+  from {
+    transform: translateY(-8px) rotate(-2deg);
+  }
+
+  to {
+    transform: translateY(8px) rotate(2deg);
+  }
+}
+
+@keyframes pulse {
+  from {
+    transform: scale(0.9);
+    opacity: 0.55;
+  }
+
+  to {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes revealCard {
+  from {
+    opacity: 0;
+    transform: rotateY(90deg) scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: rotateY(0) scale(1);
+  }
+}
+
+@keyframes resultIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 680px) {
+  .wrapper {
+    padding: 36px 14px;
+  }
+
+  .formCard {
+    grid-template-columns: 1fr;
+    padding: 17px;
+  }
+
+  .generateButton {
+    grid-column: auto;
+  }
+
+  .cardsArea {
+    gap: 7px;
+    min-height: 155px;
+  }
+
+  .tarotCard {
+    width: 64px;
+    height: 125px;
+  }
+
+  .cardBack {
+    border-radius: 12px;
+    gap: 7px;
+  }
+
+  .cardBack span {
+    font-size: 25px;
+  }
+
+  .cardBack small {
+    font-size: 6px;
+  }
+
+  .resultBlock {
+    padding: 16px;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 380px) {
+  .cardsArea {
+    gap: 5px;
+  }
+
+  .tarotCard {
+    width: 57px;
+    height: 112px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shuffling,
+  .loadingText span,
+  .cardFront,
+  .resultBlock {
+    animation: none;
+  }
+
+  .generateButton {
+    transition: none;
+  }
+}
