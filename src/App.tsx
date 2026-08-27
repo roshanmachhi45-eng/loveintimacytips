@@ -1,5 +1,6 @@
 
 import { Suspense, lazy } from 'react';
+
 import {
   Routes,
   Route,
@@ -9,39 +10,54 @@ import {
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
+
 const Home = lazy(
   () => import('./pages/Home')
 );
+
 
 const About = lazy(
   () => import('./pages/About')
 );
 
+
 const Contact = lazy(
   () => import('./pages/Contact')
 );
+
 
 const PrivacyPolicy = lazy(
   () => import('./pages/PrivacyPolicy')
 );
 
+
 const Disclaimer = lazy(
   () => import('./pages/Disclaimer')
 );
 
+
 const Terms = lazy(
   () => import('./pages/Terms')
 );
+
 
 // BLOG LISTING
 const Blog = lazy(
   () => import('./pages/Blog')
 );
 
+
 // BLOG ARTICLE
 const BlogDetail = lazy(
   () => import('./pages/BlogDetail')
 );
+
+
+// COSMIC TAROT
+const CosmicTarot = lazy(
+  () => import('./pages/CosmicTarot')
+);
+
 
 function PageLoader() {
   return (
@@ -61,20 +77,26 @@ function PageLoader() {
   );
 }
 
+
 export default function App() {
   return (
     <div className="min-h-screen pb-10">
+
       <Navbar />
 
       <main className="pt-20 px-4">
+
         <Suspense fallback={<PageLoader />}>
+
           <Routes>
 
             {/* HOME */}
+
             <Route
               path="/"
               element={<Home />}
             />
+
 
             {/* EXISTING PAGES */}
 
@@ -98,12 +120,22 @@ export default function App() {
               element={<Disclaimer />}
             />
 
+
             {/* TERMS & CONDITIONS */}
 
             <Route
               path="/terms"
               element={<Terms />}
             />
+
+
+            {/* COSMIC TAROT */}
+
+            <Route
+              path="/cosmic-tarot"
+              element={<CosmicTarot />}
+            />
+
 
             {/* =========================================
                 BLOG LISTING
@@ -117,12 +149,14 @@ export default function App() {
               element={<Blog />}
             />
 
+
             {/* BLOG ARTICLE */}
 
             <Route
               path="/blog/:slug"
               element={<BlogDetail />}
             />
+
 
             {/* SAFETY FALLBACK */}
 
@@ -137,10 +171,15 @@ export default function App() {
             />
 
           </Routes>
+
         </Suspense>
+
       </main>
 
+
       <Footer />
+
     </div>
   );
 }
+
