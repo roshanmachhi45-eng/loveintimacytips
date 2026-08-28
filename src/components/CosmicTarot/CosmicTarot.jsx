@@ -133,7 +133,9 @@ function createSeed(name, birthDate) {
 
 
 function getBirthMonth(birthDate) {
-  if (!birthDate) return 0;
+  if (!birthDate) {
+    return 0;
+  }
 
   const date = new Date(`${birthDate}T00:00:00`);
 
@@ -185,10 +187,8 @@ export default function CosmicTarot() {
       1
     );
 
-    const secretIndex = (
-      monthIndex +
-      seed
-    ) % LOVE_SECRETS.length;
+    const secretIndex =
+      (monthIndex + seed) % LOVE_SECRETS.length;
 
 
     window.setTimeout(() => {
@@ -211,10 +211,12 @@ export default function CosmicTarot() {
   }
 
 
-  async function shareReading() {
-    if (!result) return;
+  function getShareText() {
+    if (!result) {
+      return "";
+    }
 
-    const shareText = [
+    return [
       "🔮 My Loveons Cosmic Tarot Reading",
       "",
       `✨ ${result.card.name}`,
@@ -237,7 +239,15 @@ export default function CosmicTarot() {
       "Discover your own cosmic reading:",
       "https://loveons.com/cosmic-tarot",
     ].join("\n");
+  }
 
+
+  async function shareReading() {
+    if (!result) {
+      return;
+    }
+
+    const shareText = getShareText();
 
     if (
       navigator.share &&
@@ -260,11 +270,8 @@ export default function CosmicTarot() {
       return;
     }
 
-
     try {
-      await navigator.clipboard.writeText(
-        shareText
-      );
+      await navigator.clipboard.writeText(shareText);
 
       window.alert(
         "Your cosmic reading has been copied. You can now paste it into any app."
@@ -274,6 +281,59 @@ export default function CosmicTarot() {
         "Sharing is not available on this device."
       );
     }
+  }
+
+
+  function shareWhatsApp() {
+    if (!result) {
+      return;
+    }
+
+    const text = encodeURIComponent(getShareText());
+
+    window.open(
+      `https://wa.me/?text=${text}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
+
+  function shareFacebook() {
+    if (!result) {
+      return;
+    }
+
+    const url = encodeURIComponent(
+      "https://loveons.com/cosmic-tarot"
+    );
+
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
+
+  function shareX() {
+    if (!result) {
+      return;
+    }
+
+    const text = encodeURIComponent(
+      `🔮 ${result.card.name} — Discover your cosmic love reading on Loveons.`
+    );
+
+    const url = encodeURIComponent(
+      "https://loveons.com/cosmic-tarot"
+    );
+
+    window.open(
+      `https://x.com/intent/post?text=${text}&url=${url}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
   }
 
 
@@ -324,15 +384,21 @@ export default function CosmicTarot() {
                 Your Birth Date
               </label>
 
-              <input
-                id="cosmic-birth-date"
-                type="date"
-                value={birthDate}
-                onChange={(event) =>
-                  setBirthDate(event.target.value)
-                }
-                disabled={isShuffling}
-              />
+              <div className={styles.dateInputWrap}>
+                <input
+                  id="cosmic-birth-date"
+                  type="date"
+                  value={birthDate}
+                  onChange={(event) =>
+                    setBirthDate(event.target.value)
+                  }
+                  disabled={isShuffling}
+                />
+              </div>
+
+              <small className={styles.fieldHint}>
+                Select your date from the calendar or enter it manually.
+              </small>
             </div>
 
 
@@ -427,21 +493,21 @@ export default function CosmicTarot() {
 
               <div className={styles.cardReveal}>
 
-                <div className={styles.cardRevealGlow}>
-                  ✦
+                <div className={styles.cardRevealStars}>
+                  ✦ · ✧ · ✦
                 </div>
 
                 <span className={styles.cardLabel}>
                   YOUR COSMIC CARD
                 </span>
 
-                <h3>
-                  {result.card.name}
-                </h3>
-
                 <div className={styles.revealSymbol}>
                   {result.card.symbol}
                 </div>
+
+                <h3>
+                  {result.card.name}
+                </h3>
 
                 <p>
                   {result.card.reading}
@@ -465,13 +531,13 @@ export default function CosmicTarot() {
                 </p>
 
                 <p>
-                  Your cosmic card suggests that
-                  your romantic journey is entering
-                  a chapter where emotional awareness
-                  can become one of your greatest
-                  strengths. Pay attention to the small
-                  moments that make you feel understood,
-                  respected, and naturally comfortable.
+                  Your cosmic card suggests that your
+                  romantic journey is entering a chapter
+                  where emotional awareness can become
+                  one of your greatest strengths. Pay
+                  attention to the small moments that make
+                  you feel understood, respected, and
+                  naturally comfortable.
                 </p>
               </div>
             </article>
@@ -528,9 +594,9 @@ export default function CosmicTarot() {
                 </p>
 
                 <p>
-                  What matters most is the feeling
-                  behind the encounter: look for someone
-                  whose presence makes conversation feel
+                  What matters most is the feeling behind
+                  the encounter: look for someone whose
+                  presence makes conversation feel
                   effortless and whose actions create a
                   sense of mutual curiosity, comfort, and
                   respect.
@@ -539,16 +605,69 @@ export default function CosmicTarot() {
             </article>
 
 
+            <div className={styles.shareSection}>
+
+              <h3>
+                Share Your Cosmic Reading
+              </h3>
+
+              <p>
+                Let someone special discover your cosmic
+                message too.
+              </p>
+
+
+              <div className={styles.shareButtons}>
+
+                <button
+                  type="button"
+                  className={`${styles.socialButton} ${styles.whatsappButton}`}
+                  onClick={shareWhatsApp}
+                  aria-label="Share on WhatsApp"
+                >
+                  <span>☘</span>
+                  WhatsApp
+                </button>
+
+
+                <button
+                  type="button"
+                  className={`${styles.socialButton} ${styles.facebookButton}`}
+                  onClick={shareFacebook}
+                  aria-label="Share on Facebook"
+                >
+                  <span>f</span>
+                  Facebook
+                </button>
+
+
+                <button
+                  type="button"
+                  className={`${styles.socialButton} ${styles.xButton}`}
+                  onClick={shareX}
+                  aria-label="Share on X"
+                >
+                  <span>𝕏</span>
+                  X
+                </button>
+
+
+                <button
+                  type="button"
+                  className={`${styles.socialButton} ${styles.nativeShareButton}`}
+                  onClick={shareReading}
+                  aria-label="Share using available apps"
+                >
+                  <span>↗</span>
+                  More Apps
+                </button>
+
+              </div>
+
+            </div>
+
+
             <div className={styles.resultActions}>
-
-              <button
-                type="button"
-                className={styles.shareButton}
-                onClick={shareReading}
-              >
-                ↗ Share My Cosmic Reading
-              </button>
-
 
               <button
                 type="button"
@@ -573,3 +692,4 @@ export default function CosmicTarot() {
     </section>
   );
 }
+
