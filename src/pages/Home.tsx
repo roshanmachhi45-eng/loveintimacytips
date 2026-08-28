@@ -1,62 +1,381 @@
+import { useEffect, useState } from 'react';
 import {
   ArrowRight,
+  Calculator,
   Heart,
   Sparkles,
+  X,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
+import InputCard from '../components/InputCard';
+import ResultsDisplay from '../components/ResultsDisplay';
 import BlogSection from '../components/BlogSection';
+import CosmicTarot from '../components/CosmicTarot';
 import Seo from '../components/Seo';
+
+import {
+  generateRecommendations,
+  type RecommendationResult,
+} from '../lib/recommendations';
+
+interface Person {
+  name: string;
+  gender: string;
+  avatar: string;
+  age: string;
+  height: string;
+}
+
+const initialPerson: Person = {
+  name: '',
+  gender: '',
+  avatar: '',
+  age: '',
+  height: '',
+};
 
 const HERO_IMAGE = '/images/loveons-hero.webp';
 
+type ActiveTool = 'love-calculator' | 'cosmic-tarot' | null;
+
 export default function Home() {
-  const navigate = useNavigate();
+  const [person1, setPerson1] = useState<Person>({
+    ...initialPerson,
+  });
+
+  const [person2, setPerson2] = useState<Person>({
+    ...initialPerson,
+  });
+
+  const [experience, setExperience] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const [result, setResult] =
+    useState<RecommendationResult | null>(null);
+
+  const [validationError, setValidationError] =
+    useState('');
+
+  /*
+   * IMPORTANT:
+   * Home page initially shows ONLY the cards.
+   *
+   * Clicking a card changes activeTool and then
+   * the corresponding tool is rendered below.
+   */
+
+  const [activeTool, setActiveTool] =
+    useState<ActiveTool>(null);
+
+  // =====================================================
+  // NAVBAR → LOVE CALCULATOR
+  // =====================================================
+
+  useEffect(() => {
+    const handleOpenCalculator = () => {
+      setActiveTool('love-calculator');
+      setResult(null);
+      setValidationError('');
+
+      window.setTimeout(() => {
+        document
+          .getElementById('calculator')
+          ?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+      }, 50);
+    };
+
+    window.addEventListener(
+      'loveons:open-calculator',
+      handleOpenCalculator
+    );
+
+    return () => {
+      window.removeEventListener(
+        'loveons:open-calculator',
+        handleOpenCalculator
+      );
+    };
+  }, []);
+
+  // =====================================================
+  // UPDATE PERSON 1
+  // =====================================================
+
+  const updatePerson1 = (
+    field: string,
+    value: string
+  ) => {
+    setValidationError('');
+
+    setPerson1((prev) => ({
+      ...prev,
+      [field]: value,
+      ...(field === 'gender'
+        ? { avatar: '' }
+        : {}),
+    }));
+  };
+
+  // =====================================================
+  // UPDATE PERSON 2
+  // =====================================================
+
+  const updatePerson2 = (
+    field: string,
+    value: string
+  ) => {
+    setValidationError('');
+
+    setPerson2((prev) => ({
+      ...prev,
+      [field]: value,
+      ...(field === 'gender'
+        ? { avatar: '' }
+        : {}),
+    }));
+  };
+
+  // =====================================================
+  // LOVE CALCULATOR
+  // =====================================================
+
+  const handleGenerate = () => {
+    setValidationError('');
+
+    const person1Name = person1.name.trim();
+    const person2Name = person2.name.trim();
+
+    const person1Age = Number(person1.age);
+    const person2Age = Number(person2.age);
+
+    if (!person1Name) {
+      setValidationError(
+        'Please enter your name.'
+      );
+      return;
+    }
+
+    if (!person1.gender) {
+      setValidationError(
+        'Please select your gender.'
+      );
+      return;
+    }
+
+    if (!person1.age) {
+      setValidationError(
+        'Please enter your age.'
+      );
+      return;
+    }
+
+    if (
+      !Number.isInteger(person1Age) ||
+      person1Age < 18 ||
+      person1Age > 99
+    ) {
+      setValidationError(
+        'Your age must be between 18 and 99.'
+      );
+      return;
+    }
+
+    if (!person2Name) {
+      setValidationError(
+        "Please enter your partner's name."
+      );
+      return;
+    }
+
+    if (!person2.gender) {
+      setValidationError(
+        "Please select your partner's gender."
+      );
+      return;
+    }
+
+    if (!person2.age) {
+      setValidationError(
+        "Please enter your partner's age."
+      );
+      return;
+    }
+
+    if (
+      !Number.isInteger(person2Age) ||
+      person2Age < 18 ||
+      person2Age > 99
+    ) {
+      setValidationError(
+        "Your partner's age must be between 18 and 99."
+      );
+      return;
+    }
+
+    if (!experience) {
+      setValidationError(
+        'Please select your experience level.'
+      );
+      return;
+    }
+
+    setLoading(true);
+    setResult(null);
+
+    window.setTimeout(() => {
+      const data = {
+        p1Gender: person1.gender,
+        p1Avatar: person1.avatar,
+
+        p1Age: person1.age
+          ? parseInt(person1.age, 10)
+          : null,
+
+        p2Gender: person2.gender,
+        p2Avatar: person2.avatar,
+
+        p2Age: person2.age
+          ? parseInt(person2.age, 10)
+          : null,
+
+        experience,
+      };
+
+      const recommendation =
+        generateRecommendations(data);
+
+      setResult(recommendation);
+      setLoading(false);
+
+      window.setTimeout(() => {
+        document
+          .getElementById('results')
+          ?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+      }, 100);
+    }, 1400);
+  };
+
+  // =====================================================
+  // RESET LOVE CALCULATOR
+  // =====================================================
+
+  const handleReset = () => {
+    setResult(null);
+    setValidationError('');
+
+    setPerson1({
+      ...initialPerson,
+    });
+
+    setPerson2({
+      ...initialPerson,
+    });
+
+    setExperience('');
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  };
 
   // =====================================================
   // OPEN LOVE CALCULATOR
   // =====================================================
 
   const openLoveCalculator = () => {
-    navigate('/love-calculator');
+    setActiveTool('love-calculator');
+
+    setResult(null);
+    setValidationError('');
+
+    window.setTimeout(() => {
+      document
+        .getElementById('calculator')
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+    }, 50);
   };
 
   // =====================================================
   // OPEN COSMIC LOVE TAROT
   // =====================================================
 
-  const openCosmicLoveTarot = () => {
-    navigate('/cosmic-tarot');
+  const openCosmicTarot = () => {
+    setActiveTool('cosmic-tarot');
+
+    setResult(null);
+    setValidationError('');
+
+    window.setTimeout(() => {
+      document
+        .getElementById('cosmic-tarot')
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+    }, 50);
   };
 
   // =====================================================
-  // BLOG
+  // CLOSE LOVE CALCULATOR
   // =====================================================
 
-  const scrollToBlog = () => {
-    document
-      .getElementById('blog')
-      ?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
+  const closeCalculator = () => {
+    if (loading) return;
+
+    setActiveTool(null);
+    setResult(null);
+    setValidationError('');
+
+    window.setTimeout(() => {
+      document
+        .getElementById('tools')
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+    }, 50);
+  };
+
+  // =====================================================
+  // CLOSE COSMIC LOVE TAROT
+  // =====================================================
+
+  const closeCosmicTarot = () => {
+    setActiveTool(null);
+
+    window.setTimeout(() => {
+      document
+        .getElementById('tools')
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+    }, 50);
   };
 
   return (
     <>
       <Seo
         title="Loveons — Your Personal Relationship Guide"
-        description="Discover your compatibility, relationship insights, and cosmic love readings with Loveons."
+        description="Discover your compatibility score and get personalized relationship tips, couple activities, and wellness guidance tailored to you and your partner."
         path="/"
       />
 
-      {/* =================================================
-          HERO SECTION
-      ================================================= */}
+      {/* =====================================================
+          HERO
+      ===================================================== */}
 
       <section className="relative overflow-hidden px-4 pb-10 pt-6 sm:px-6 sm:pb-14 sm:pt-8 lg:px-8 lg:pb-16">
-
-        {/* Background Glow */}
 
         <div
           aria-hidden="true"
@@ -66,7 +385,7 @@ export default function Home() {
 
           <div className="absolute right-[-160px] top-0 h-96 w-96 rounded-full bg-purple-200/30 blur-3xl" />
 
-          <div className="absolute bottom-0 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-blue-100/30 blur-3xl" />
+          <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-rose-100/40 blur-3xl" />
         </div>
 
         <div className="mx-auto max-w-7xl">
@@ -75,23 +394,17 @@ export default function Home() {
 
             <div className="grid items-stretch lg:grid-cols-2">
 
-              {/* =================================================
-                  HERO CONTENT
-              ================================================= */}
+              {/* HERO TEXT */}
 
               <div className="flex flex-col justify-center px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16 xl:px-16">
 
-                {/* Small Label */}
-
-                <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-pink-100 bg-white/80 px-3.5 py-2 text-xs font-semibold text-pink-500 shadow-sm">
+                <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-rose-100 bg-white/80 px-3.5 py-2 text-xs font-semibold text-rose-500 shadow-sm">
 
                   <Sparkles className="h-3.5 w-3.5" />
 
                   Better relationships start here
 
                 </div>
-
-                {/* Main Heading */}
 
                 <h1 className="max-w-xl text-4xl font-bold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.6rem] xl:text-[4rem]">
 
@@ -101,65 +414,59 @@ export default function Home() {
 
                   relationships with
 
-                  <span className="mt-1 block bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+                  <span className="mt-1 block bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">
                     love & understanding
                   </span>
 
                 </h1>
 
-                {/* Description */}
-
                 <p className="mt-5 max-w-xl text-base leading-7 text-slate-500 sm:text-lg">
                   Discover personalized relationship guidance,
-                  meaningful love insights, and cosmic readings
-                  designed to help you understand your connection.
+                  meaningful insights, and simple tools designed
+                  to help you and your partner grow closer.
                 </p>
-
-                {/* Hero Buttons */}
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
 
-                  {/* Love Calculator */}
+                  {/* HERO LOVE BUTTON */}
 
                   <button
                     type="button"
                     onClick={openLoveCalculator}
-                    className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-pink-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
+                    className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-rose-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-rose-200"
                   >
 
                     <Heart className="h-4 w-4 fill-white" />
 
-                    Love Calculator
+                    Explore Your Connection
 
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
 
                   </button>
 
-                  {/* Cosmic Love Tarot */}
+                  {/* HERO TAROT BUTTON */}
 
                   <button
                     type="button"
-                    onClick={openCosmicLoveTarot}
-                    className="group inline-flex items-center justify-center gap-2 rounded-2xl border border-purple-200 bg-purple-50 px-6 py-3.5 text-sm font-bold text-purple-600 transition-all duration-300 hover:-translate-y-0.5 hover:bg-purple-100"
+                    onClick={openCosmicTarot}
+                    className="group inline-flex items-center justify-center gap-2 rounded-2xl border border-purple-200 bg-purple-50 px-6 py-3.5 text-sm font-semibold text-purple-600 shadow-sm transition-all duration-300 hover:border-purple-300 hover:bg-purple-100"
                   >
 
                     <Sparkles className="h-4 w-4" />
 
                     Cosmic Love Tarot
 
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
 
                   </button>
 
                 </div>
 
-                {/* Features */}
-
                 <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-slate-400 sm:text-sm">
 
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-pink-400" />
-                    Love insights
+                    <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
+                    Personalized guidance
                   </span>
 
                   <span className="inline-flex items-center gap-1.5">
@@ -168,17 +475,15 @@ export default function Home() {
                   </span>
 
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
-                    Simple & private
+                    <span className="h-1.5 w-1.5 rounded-full bg-pink-400" />
+                    Made for couples
                   </span>
 
                 </div>
 
               </div>
 
-              {/* =================================================
-                  HERO IMAGE
-              ================================================= */}
+              {/* HERO IMAGE */}
 
               <div className="relative min-h-[330px] overflow-hidden sm:min-h-[440px] lg:min-h-[600px]">
 
@@ -203,23 +508,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* =================================================
-          TOOLS CARDS
-          ONLY CARDS ARE DISPLAYED HERE
-      ================================================= */}
+      {/* =====================================================
+          TOOLS
+          ONLY CARDS ARE SHOWN WHEN activeTool === null
+      ===================================================== */}
 
       <section
         id="tools"
-        className="relative scroll-mt-24 px-4 pb-14 pt-4 sm:px-6 lg:px-8"
+        className="relative scroll-mt-24 px-4 pb-12 pt-4 sm:px-6 lg:px-8"
       >
 
-        <div className="mx-auto max-w-5xl">
+        <div className="mx-auto max-w-4xl">
 
-          {/* Section Heading */}
+          <div className="mb-6 text-center">
 
-          <div className="mb-8 text-center">
-
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-pink-100 bg-white px-3.5 py-2 text-xs font-semibold text-pink-500 shadow-sm">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-rose-100 bg-white/80 px-3 py-1.5 text-xs font-semibold text-rose-500 shadow-sm">
 
               <Sparkles className="h-3.5 w-3.5" />
 
@@ -227,22 +530,22 @@ export default function Home() {
 
             </div>
 
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              Explore our relationship tools
+            <h2 className="font-display text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              Simple tools for your relationship
             </h2>
 
             <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">
-              Choose a tool below to discover personalized
-              love and cosmic insights.
+              Explore tools designed to help you understand
+              and strengthen your connection.
             </p>
 
           </div>
 
           {/* =================================================
-              TOOL CARDS
+              ONLY TWO CARDS
           ================================================= */}
 
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
             {/* =================================================
                 LOVE CALCULATOR CARD
@@ -252,60 +555,49 @@ export default function Home() {
               type="button"
               onClick={openLoveCalculator}
               aria-label="Open Love Calculator"
-              className="group relative overflow-hidden rounded-[2rem] border border-pink-100 bg-white p-6 text-left shadow-[0_15px_50px_rgba(236,72,153,0.10)] transition-all duration-300 hover:-translate-y-1 hover:border-pink-200 hover:shadow-[0_22px_60px_rgba(236,72,153,0.16)] focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 sm:p-7"
+              className="group relative overflow-hidden rounded-[1.75rem] border border-rose-100 bg-white/85 p-5 text-left shadow-[0_12px_40px_rgba(236,72,153,0.08)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-rose-200 hover:shadow-[0_20px_50px_rgba(236,72,153,0.14)] focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2 sm:p-6"
             >
-
-              {/* Pink Glow */}
 
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-pink-200/40 blur-3xl transition-transform duration-500 group-hover:scale-125"
+                className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-pink-200/40 blur-3xl transition-transform duration-500 group-hover:scale-125"
               />
 
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-rose-100/40 blur-3xl"
+                className="pointer-events-none absolute -bottom-10 -left-10 h-28 w-28 rounded-full bg-rose-100/40 blur-3xl"
               />
 
               <div className="relative">
 
-                {/* Icon + Badge */}
+                <div className="mb-5 flex items-start justify-between">
 
-                <div className="flex items-start justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-200">
 
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-200">
-
-                    <Heart className="h-7 w-7 fill-white" />
+                    <Heart className="h-6 w-6 fill-white" />
 
                   </div>
 
-                  <span className="rounded-full border border-pink-100 bg-pink-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-pink-500">
-                    Love
+                  <span className="rounded-full border border-rose-100 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-500">
+                    Available
                   </span>
 
                 </div>
 
-                {/* Title */}
-
-                <h3 className="mt-6 text-xl font-bold text-slate-900">
+                <h3 className="font-display text-lg font-bold text-slate-900 sm:text-xl">
                   Love Calculator
                 </h3>
 
-                {/* Description */}
-
-                <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
-                  Discover your connection and explore
-                  personalized relationship insights for
-                  you and your partner.
+                <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                  Explore your connection and discover
+                  personalized relationship insights.
                 </p>
 
-                {/* CTA */}
+                <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-rose-500 transition-colors group-hover:text-rose-600">
 
-                <div className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-pink-500">
+                  Try Love Calculator
 
-                  Open Love Calculator
-
-                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
 
                 </div>
 
@@ -319,61 +611,51 @@ export default function Home() {
 
             <button
               type="button"
-              onClick={openCosmicLoveTarot}
+              onClick={openCosmicTarot}
               aria-label="Open Cosmic Love Tarot"
-              className="group relative overflow-hidden rounded-[2rem] border border-purple-100 bg-white p-6 text-left shadow-[0_15px_50px_rgba(139,92,246,0.10)] transition-all duration-300 hover:-translate-y-1 hover:border-purple-200 hover:shadow-[0_22px_60px_rgba(139,92,246,0.16)] focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 sm:p-7"
+              className="group relative overflow-hidden rounded-[1.75rem] border border-purple-100 bg-white/85 p-5 text-left shadow-[0_12px_40px_rgba(139,92,246,0.08)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-purple-200 hover:shadow-[0_20px_50px_rgba(139,92,246,0.14)] focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 sm:p-6"
             >
-
-              {/* Purple Glow */}
 
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-purple-200/40 blur-3xl transition-transform duration-500 group-hover:scale-125"
+                className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-purple-200/40 blur-3xl transition-transform duration-500 group-hover:scale-125"
               />
 
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-pink-100/40 blur-3xl"
+                className="pointer-events-none absolute -bottom-12 -left-8 h-28 w-28 rounded-full bg-pink-200/30 blur-3xl transition-transform duration-500 group-hover:scale-125"
               />
 
               <div className="relative">
 
-                {/* Icon + Badge */}
+                <div className="mb-5 flex items-start justify-between">
 
-                <div className="flex items-start justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 via-violet-500 to-pink-500 text-white shadow-lg shadow-purple-200">
 
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 via-violet-500 to-pink-500 text-white shadow-lg shadow-purple-200">
-
-                    <Sparkles className="h-7 w-7" />
+                    <Sparkles className="h-6 w-6" />
 
                   </div>
 
-                  <span className="rounded-full border border-purple-100 bg-purple-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-purple-500">
-                    Tarot
+                  <span className="rounded-full border border-purple-100 bg-purple-50 px-2.5 py-1 text-[11px] font-semibold text-purple-500">
+                    Daily Reading
                   </span>
 
                 </div>
 
-                {/* Title */}
-
-                <h3 className="mt-6 text-xl font-bold text-slate-900">
+                <h3 className="font-display text-lg font-bold text-slate-900 sm:text-xl">
                   Cosmic Love Tarot
                 </h3>
 
-                {/* Description */}
-
-                <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
+                <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
                   Discover your daily cosmic love reading,
                   tarot message, and romantic energy.
                 </p>
 
-                {/* CTA */}
+                <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-purple-500 transition-colors group-hover:text-purple-600">
 
-                <div className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-purple-500">
+                  Try Cosmic Love Tarot
 
-                  Open Cosmic Love Tarot
-
-                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
 
                 </div>
 
@@ -385,13 +667,201 @@ export default function Home() {
         </div>
       </section>
 
-      {/* =================================================
-          BLOG SECTION
-      ================================================= */}
+      {/* =====================================================
+          LOVE CALCULATOR
+          HIDDEN UNTIL CARD IS CLICKED
+      ===================================================== */}
 
-      <section id="blog">
-        <BlogSection />
-      </section>
+      {activeTool === 'love-calculator' && (
+        <section
+          id="calculator"
+          className="scroll-mt-24 px-4 pb-10 sm:px-6 lg:px-8"
+        >
+
+          <div className="mx-auto max-w-md">
+
+            <div className="mb-4 flex items-center justify-between">
+
+              <div>
+
+                <div className="flex items-center gap-2">
+
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50">
+
+                    <Calculator className="h-4 w-4 text-rose-500" />
+
+                  </div>
+
+                  <h2 className="font-display text-xl font-bold text-slate-900">
+                    Love Calculator
+                  </h2>
+
+                </div>
+
+                <p className="mt-1 pl-11 text-xs text-slate-400">
+                  Enter your details to explore your connection.
+                </p>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={closeCalculator}
+                disabled={loading}
+                aria-label="Close Love Calculator"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition-all hover:border-rose-200 hover:bg-rose-50 hover:text-rose-500 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+
+                <X className="h-4 w-4" />
+
+              </button>
+
+            </div>
+
+            <InputCard
+              person1={person1}
+              person2={person2}
+              experience={experience}
+              onChangePerson1={updatePerson1}
+              onChangePerson2={updatePerson2}
+              onChangeExperience={(value) => {
+                setExperience(value);
+                setValidationError('');
+              }}
+              onGenerate={handleGenerate}
+              loading={loading}
+              validationError={validationError}
+            />
+
+          </div>
+
+        </section>
+      )}
+
+      {/* =====================================================
+          LOVE CALCULATOR RESULTS
+      ===================================================== */}
+
+      {activeTool === 'love-calculator' &&
+        (loading || result) && (
+          <section
+            id="results"
+            className="scroll-mt-24 px-4 pb-10 sm:px-6 lg:px-8"
+          >
+
+            <div className="mx-auto mt-2 max-w-md">
+
+              {loading && (
+                <div className="fade-in rounded-3xl border border-rose-100 bg-white p-10 text-center shadow-xl shadow-rose-100">
+
+                  <div className="relative mb-4 inline-flex">
+
+                    <span className="absolute inline-flex h-16 w-16 animate-ping rounded-full bg-rose-300 opacity-30" />
+
+                    <span className="relative inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-purple-500">
+
+                      <Heart className="h-7 w-7 fill-white text-white" />
+
+                    </span>
+
+                  </div>
+
+                  <p className="mb-1 text-lg font-bold text-gray-700">
+                    Analyzing your connection...
+                  </p>
+
+                  <p className="text-sm text-gray-400">
+                    Crafting personalized recommendations
+                  </p>
+
+                </div>
+              )}
+
+              {result && (
+                <ResultsDisplay
+                  result={result}
+                  onReset={() => {
+                    handleReset();
+                    setActiveTool(null);
+                  }}
+                />
+              )}
+
+            </div>
+
+          </section>
+        )}
+
+      {/* =====================================================
+          COSMIC LOVE TAROT
+          HIDDEN UNTIL CARD IS CLICKED
+      ===================================================== */}
+
+      {activeTool === 'cosmic-tarot' && (
+        <section
+          id="cosmic-tarot"
+          className="scroll-mt-24 px-4 pb-12 sm:px-6 lg:px-8"
+        >
+
+          <div className="mx-auto max-w-4xl">
+
+            <div className="mb-4 flex items-center justify-between">
+
+              <div>
+
+                <div className="flex items-center gap-2">
+
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50">
+
+                    <Sparkles className="h-4 w-4 text-purple-500" />
+
+                  </div>
+
+                  <h2 className="font-display text-xl font-bold text-slate-900 sm:text-2xl">
+                    Cosmic Love Tarot
+                  </h2>
+
+                </div>
+
+                <p className="mt-1 pl-11 text-xs text-slate-400 sm:text-sm">
+                  Discover today&apos;s Cosmic Love Tarot reading.
+                </p>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={closeCosmicTarot}
+                aria-label="Close Cosmic Love Tarot"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition-all hover:border-purple-200 hover:bg-purple-50 hover:text-purple-500"
+              >
+
+                <X className="h-4 w-4" />
+
+              </button>
+
+            </div>
+
+            <CosmicTarot />
+
+          </div>
+
+        </section>
+      )}
+
+      {/* =====================================================
+          BLOG
+          ONLY WHEN NO TOOL IS OPEN
+      ===================================================== */}
+
+      {!result &&
+        !loading &&
+        activeTool === null && (
+          <section id="blog">
+            <BlogSection />
+          </section>
+        )}
+
     </>
   );
-                }
+    }
