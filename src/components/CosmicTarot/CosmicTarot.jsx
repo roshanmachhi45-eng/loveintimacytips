@@ -1,6 +1,5 @@
 
 import { useMemo, useState } from "react";
-
 import styles from "./CosmicTarot.module.css";
 
 const TAROT_CARDS = [
@@ -109,8 +108,28 @@ const PARTNER_PROFILES = [
   },
 ];
 
-function createSeed(name, birthDate, readingDay) {
-  const value = `${name.trim().toLowerCase()}|${birthDate}|${readingDay}`;
+function getTodayKey() {
+  const today = new Date();
+
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatTodayDate() {
+  const today = new Date();
+
+  return new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(today);
+}
+
+function createSeed(name, birthDate, todayKey) {
+  const value = `${name.trim().toLowerCase()}|${birthDate}|${todayKey}`;
 
   let hash = 2166136261;
 
@@ -123,23 +142,12 @@ function createSeed(name, birthDate, readingDay) {
 }
 
 function seededIndex(seed, length, offset = 0) {
-  const value =
-    Math.imul(
-      seed ^ Math.imul(offset + 1, 0x45d9f3b),
-      0x45d9f3b
-    ) >>> 0;
+  const mixed = Math.imul(
+    seed ^ Math.imul(offset + 1, 0x45d9f3b),
+    0x45d9f3b
+  );
 
-  return value % length;
-}
-
-function getTodayKey() {
-  const now = new Date();
-
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
+  return (mixed >>> 0) % length;
 }
 
 function getBirthMonth(birthDate) {
@@ -173,17 +181,6 @@ function formatBirthDate(day, month, year) {
   )}`;
 }
 
-function formatReadableDate(day, month, year) {
-  if (!day || !month || !year) {
-    return "";
-  }
-
-  return `${String(day).padStart(2, "0")}/${String(month).padStart(
-    2,
-    "0"
-  )}/${year}`;
-}
-
 function WhatsAppIcon() {
   return (
     <svg
@@ -214,6 +211,21 @@ function FacebookIcon() {
   );
 }
 
+function XIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className={styles.shareIcon}
+    >
+      <path
+        fill="currentColor"
+        d="M18.9 2H22l-6.77 7.74L23.2 22h-6.24l-4.89-6.4L6.47 22H3.36l7.24-8.28L2.8 2h6.4l4.42 5.84L18.9 2Zm-1.1 17.9h1.73L8.28 3.98H6.43L17.8 19.9Z"
+      />
+    </svg>
+  );
+}
+
 function TelegramIcon() {
   return (
     <svg
@@ -223,7 +235,7 @@ function TelegramIcon() {
     >
       <path
         fill="currentColor"
-        d="M21.8 3.16 2.95 10.43c-1.29.52-1.28 1.23.24 1.55l4.83 1.5 1.85 5.63c.23.64.12.9.78.9.51 0 .74-.23 1.03-.51l2.5-2.43 5.2 3.84c.96.53 1.66.26 1.9-.89l3.4-16.02c.36-1.41-.54-2.05-1.4-1.64Zm-2.35 3.58-7.52 6.74-.29 4.07-1.35-4.13-4.04-1.26 13.2-5.42Z"
+        d="M21.8 3.16 2.95 10.43c-1.29.52-1.28 1.23-.24 1.55l4.83 1.5 1.85 5.63c.23.64.12.9.78.9.51 0 .74-.23 1.03-.51l2.5-2.43 5.2 3.84c.96.53 1.66.26 1.9-.89l3.4-16.02c.36-1.41-.54-2.05-1.4-1.64Zm-2.35 3.58-7.52 6.74-.29 4.07-1.35-4.13-4.04-1.26 13.2-5.42Z"
       />
     </svg>
   );
@@ -259,21 +271,6 @@ function MoreShareIcon() {
   );
 }
 
-function XIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className={styles.shareIcon}
-    >
-      <path
-        fill="currentColor"
-        d="M18.9 2H22l-6.77 7.74L23.2 22h-6.24l-4.89-6.4L6.47 22H3.36l7.24-8.28L2.8 2h6.4l4.42 5.84L18.9 2Zm-1.1 17.9h1.73L8.28 3.98H6.43L17.8 19.9Z"
-      />
-    </svg>
-  );
-}
-
 export default function CosmicTarot() {
   const [name, setName] = useState("");
   const [day, setDay] = useState("");
@@ -286,13 +283,11 @@ export default function CosmicTarot() {
   const [hasReading, setHasReading] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const todayKey = useMemo(() => getTodayKey(), []);
+  const todayDisplay = useMemo(() => formatTodayDate(), []);
+
   const birthDate = useMemo(
     () => formatBirthDate(day, month, year),
-    [day, month, year]
-  );
-
-  const readableBirthDate = useMemo(
-    () => formatReadableDate(day, month, year),
     [day, month, year]
   );
 
@@ -335,7 +330,6 @@ export default function CosmicTarot() {
       return;
     }
 
-    const todayKey = getTodayKey();
     const seed = createSeed(name, birthDate, todayKey);
 
     const cardIndex = seededIndex(seed, TAROT_CARDS.length, 0);
@@ -353,7 +347,6 @@ export default function CosmicTarot() {
 
     setIsShuffling(true);
     setResult(null);
-    setCopied(false);
 
     window.setTimeout(() => {
       setResult({
@@ -361,7 +354,8 @@ export default function CosmicTarot() {
         secret,
         profile,
         seed,
-        readingDay: todayKey,
+        readingDate: todayDisplay,
+        todayKey,
       });
 
       setIsShuffling(false);
@@ -370,7 +364,7 @@ export default function CosmicTarot() {
       window.setTimeout(() => {
         setIsFlipping(false);
         setHasReading(true);
-      }, 950);
+      }, 1100);
     }, 2200);
   }
 
@@ -394,7 +388,7 @@ export default function CosmicTarot() {
 
     return `${name.trim()}'s Cosmic Love Reading
 
-Your Cosmic Love Reading for Today
+Today's Cosmic Tarot · ${result.readingDate}
 
 Cosmic Card: ${result.card.name}
 
@@ -408,9 +402,9 @@ ${result.profile.personality}
 
 Zodiac energy: ${result.profile.match}
 
-This playful reading is for entertainment and self-reflection only. It is not a prediction, professional advice, or a guarantee about future relationships.
+This playful cosmic reading is for entertainment and self-reflection only. It is not a prediction, professional advice, or a guarantee about future relationships.
 
-Discover your own daily cosmic reading on Loveons.`;
+Discover your own reading on Loveons.`;
   }
 
   function getShareUrl() {
@@ -421,25 +415,23 @@ Discover your own daily cosmic reading on Loveons.`;
     return window.location.href;
   }
 
+  function openShareUrl(url) {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
   function shareWhatsApp() {
     const text = encodeURIComponent(
       `${getShareText()}\n\n${getShareUrl()}`
     );
 
-    window.open(
-      `https://wa.me/?text=${text}`,
-      "_blank",
-      "noopener,noreferrer"
-    );
+    openShareUrl(`https://wa.me/?text=${text}`);
   }
 
   function shareFacebook() {
     const url = encodeURIComponent(getShareUrl());
 
-    window.open(
-      `https://www.facebook.com/sharer/sharer.php?u=${url}`,
-      "_blank",
-      "noopener,noreferrer"
+    openShareUrl(
+      `https://www.facebook.com/sharer/sharer.php?u=${url}`
     );
   }
 
@@ -447,10 +439,8 @@ Discover your own daily cosmic reading on Loveons.`;
     const text = encodeURIComponent(getShareText());
     const url = encodeURIComponent(getShareUrl());
 
-    window.open(
-      `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
-      "_blank",
-      "noopener,noreferrer"
+    openShareUrl(
+      `https://twitter.com/intent/tweet?text=${text}&url=${url}`
     );
   }
 
@@ -458,10 +448,8 @@ Discover your own daily cosmic reading on Loveons.`;
     const text = encodeURIComponent(getShareText());
     const url = encodeURIComponent(getShareUrl());
 
-    window.open(
-      `https://t.me/share/url?url=${url}&text=${text}`,
-      "_blank",
-      "noopener,noreferrer"
+    openShareUrl(
+      `https://t.me/share/url?url=${url}&text=${text}`
     );
   }
 
@@ -517,8 +505,8 @@ Discover your own daily cosmic reading on Loveons.`;
           <h2>Discover Your Cosmic Love Destiny</h2>
 
           <p>
-            Enter your name and birth date to reveal a playful cosmic
-            love reading created especially for your journey.
+            Enter your name and birth date to reveal your
+            personalized cosmic love reading for today.
           </p>
         </div>
 
@@ -590,8 +578,11 @@ Discover your own daily cosmic reading on Loveons.`;
 
               {birthDate && (
                 <div className={styles.datePreview}>
-                  ✦ Your selected birth date:{" "}
-                  <strong>{readableBirthDate}</strong>
+                  ✦ Selected birth date:{" "}
+                  <strong>
+                    {String(day).padStart(2, "0")}/
+                    {String(month).padStart(2, "0")}/{year}
+                  </strong>
                 </div>
               )}
             </div>
@@ -609,6 +600,20 @@ Discover your own daily cosmic reading on Loveons.`;
           </div>
         )}
 
+        {hasReading && result && (
+          <div className={styles.todayBanner}>
+            <span>✦ TODAY'S COSMIC TAROT</span>
+
+            <strong>
+              Today's Cosmic Tarot · {result.readingDate}
+            </strong>
+
+            <small>
+              A personalized reading for {name.trim()}
+            </small>
+          </div>
+        )}
+
         <div
           className={[
             styles.cardsArea,
@@ -619,7 +624,7 @@ Discover your own daily cosmic reading on Loveons.`;
         >
           {TAROT_CARDS.map((card, index) => {
             const selected =
-              result?.card?.name === card.name && !isShuffling;
+              result?.card?.name === card.name;
 
             const hidden = result && !selected;
 
@@ -657,7 +662,9 @@ Discover your own daily cosmic reading on Loveons.`;
                   </div>
 
                   <div className={styles.cardFace}>
-                    <div className={styles.cardFaceStars}>✦</div>
+                    <div className={styles.cardFaceStars}>
+                      ✦
+                    </div>
 
                     <div className={styles.cardFaceSymbol}>
                       {card.symbol}
@@ -676,11 +683,13 @@ Discover your own daily cosmic reading on Loveons.`;
                     <div className={styles.cardFaceLine} />
 
                     <p>
-                      Your cosmic energy has revealed this card for
-                      your reading.
+                      Your cosmic energy has revealed this
+                      card for today's reading.
                     </p>
 
-                    <div className={styles.cardFaceStars}>✧</div>
+                    <div className={styles.cardFaceStars}>
+                      ✧
+                    </div>
                   </div>
                 </div>
               </div>
@@ -698,22 +707,19 @@ Discover your own daily cosmic reading on Loveons.`;
         {result && !isShuffling && (
           <div className={styles.results}>
             <div className={styles.resultIntro}>
-              <span>✨ YOUR COSMIC LOVE READING FOR TODAY</span>
+              <span>✨ TODAY'S COSMIC READING</span>
 
               <h3>
-                {name.trim()}, the stars have something special to
-                share...
+                {name.trim()}, the stars have something special
+                to share with you today...
               </h3>
 
               <p>
-                Your cosmic card has been revealed for today. Take a
-                moment, read slowly, and see which part of the message
-                speaks to your heart.
+                Your cosmic card has been revealed for{" "}
+                <strong>{result.readingDate}</strong>. Take a
+                moment, read slowly, and see which part of the
+                message speaks to your heart.
               </p>
-
-              <div className={styles.todayBadge}>
-                ✦ Today&apos;s Reading · {readableBirthDate}
-              </div>
             </div>
 
             <article className={styles.resultBlock}>
@@ -755,9 +761,9 @@ Discover your own daily cosmic reading on Loveons.`;
 
                 <p>
                   You may naturally cross paths around{" "}
-                  <strong>{result.profile.spot}</strong>. Stay open
-                  to unexpected conversations and small moments that
-                  feel surprisingly natural.
+                  <strong>{result.profile.spot}</strong>.
+                  Stay open to unexpected conversations and
+                  small moments that feel surprisingly natural.
                 </p>
               </div>
             </article>
@@ -767,8 +773,8 @@ Discover your own daily cosmic reading on Loveons.`;
                 <h3>Share Your Cosmic Reading</h3>
 
                 <p>
-                  Share today&apos;s result with someone special or
-                  save it for yourself.
+                  Share today's reading with someone special
+                  or save it for yourself.
                 </p>
               </div>
 
@@ -820,7 +826,9 @@ Discover your own daily cosmic reading on Loveons.`;
                   aria-label="Copy reading"
                 >
                   <CopyIcon />
-                  <span>{copied ? "Copied!" : "Copy"}</span>
+                  <span>
+                    {copied ? "Copied!" : "Copy"}
+                  </span>
                 </button>
 
                 <button
@@ -842,10 +850,6 @@ Discover your own daily cosmic reading on Loveons.`;
               </p>
             </div>
 
-            <div className={styles.tomorrowMessage}>
-              ✨ Come back tomorrow for a fresh cosmic love reading.
-            </div>
-
             <button
               type="button"
               className={styles.resetButton}
@@ -859,6 +863,3 @@ Discover your own daily cosmic reading on Loveons.`;
     </section>
   );
 }
-
-
-
