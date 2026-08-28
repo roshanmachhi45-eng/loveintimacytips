@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react';
+
 import {
   ArrowRight,
   Calculator,
@@ -11,6 +12,7 @@ import {
 import InputCard from '../components/InputCard';
 import ResultsDisplay from '../components/ResultsDisplay';
 import BlogSection from '../components/BlogSection';
+import CosmicTarot from '../components/CosmicTarot';
 import Seo from '../components/Seo';
 
 import {
@@ -36,6 +38,8 @@ const initialPerson: Person = {
 
 const HERO_IMAGE = '/images/loveons-hero.webp';
 
+type ActiveTool = 'love-calculator' | 'cosmic-tarot' | null;
+
 export default function Home() {
   const [person1, setPerson1] = useState<Person>({
     ...initialPerson,
@@ -46,6 +50,7 @@ export default function Home() {
   });
 
   const [experience, setExperience] = useState('');
+
   const [loading, setLoading] = useState(false);
 
   const [result, setResult] =
@@ -55,7 +60,7 @@ export default function Home() {
     useState('');
 
   const [activeTool, setActiveTool] =
-    useState<string | null>(null);
+    useState<ActiveTool>(null);
 
   /*
    * NAVBAR → HOME CALCULATOR CONNECTION
@@ -276,12 +281,40 @@ export default function Home() {
     }, 50);
   };
 
+  const openCosmicTarot = () => {
+    setActiveTool('cosmic-tarot');
+    setResult(null);
+    setValidationError('');
+
+    window.setTimeout(() => {
+      document
+        .getElementById('cosmic-tarot')
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+    }, 50);
+  };
+
   const closeCalculator = () => {
     if (loading) return;
 
     setActiveTool(null);
     setResult(null);
     setValidationError('');
+  };
+
+  const closeCosmicTarot = () => {
+    setActiveTool(null);
+
+    window.setTimeout(() => {
+      document
+        .getElementById('tools')
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+    }, 50);
   };
 
   return (
@@ -295,6 +328,7 @@ export default function Home() {
       {/* =====================================================
           HERO
       ===================================================== */}
+
       <section className="relative overflow-hidden px-4 pb-10 pt-6 sm:px-6 sm:pb-14 sm:pt-8 lg:px-8 lg:pb-16">
         <div
           aria-hidden="true"
@@ -403,6 +437,7 @@ export default function Home() {
       {/* =====================================================
           TOOLS
       ===================================================== */}
+
       <section
         id="tools"
         className="relative scroll-mt-24 px-4 pb-12 pt-4 sm:px-6 lg:px-8"
@@ -425,7 +460,13 @@ export default function Home() {
             </p>
           </div>
 
+          {/* TOOL CARDS */}
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+            {/* =================================================
+                LOVE CALCULATOR CARD
+            ================================================= */}
 
             <button
               type="button"
@@ -438,7 +479,9 @@ export default function Home() {
               />
 
               <div className="relative">
+
                 <div className="mb-5 flex items-start justify-between">
+
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-200">
                     <Heart className="h-6 w-6 fill-white" />
                   </div>
@@ -462,6 +505,57 @@ export default function Home() {
 
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </div>
+
+              </div>
+            </button>
+
+            {/* =================================================
+                COSMIC TAROT CARD
+            ================================================= */}
+
+            <button
+              type="button"
+              onClick={openCosmicTarot}
+              className="group relative overflow-hidden rounded-[1.75rem] border border-purple-100 bg-white/85 p-5 text-left shadow-[0_12px_40px_rgba(139,92,246,0.08)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-purple-200 hover:shadow-[0_20px_50px_rgba(139,92,246,0.14)] sm:p-6"
+            >
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-purple-200/40 blur-3xl transition-transform duration-500 group-hover:scale-125"
+              />
+
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -bottom-12 -left-8 h-28 w-28 rounded-full bg-pink-200/30 blur-3xl transition-transform duration-500 group-hover:scale-125"
+              />
+
+              <div className="relative">
+
+                <div className="mb-5 flex items-start justify-between">
+
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 via-violet-500 to-pink-500 text-white shadow-lg shadow-purple-200">
+                    <Sparkles className="h-6 w-6" />
+                  </div>
+
+                  <span className="rounded-full border border-purple-100 bg-purple-50 px-2.5 py-1 text-[11px] font-semibold text-purple-500">
+                    Daily Reading
+                  </span>
+                </div>
+
+                <h3 className="font-display text-lg font-bold text-slate-900 sm:text-xl">
+                  Cosmic Tarot
+                </h3>
+
+                <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                  Discover your daily cosmic love reading,
+                  tarot message, and romantic energy.
+                </p>
+
+                <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-purple-500 transition-colors group-hover:text-purple-600">
+                  Try Cosmic Tarot
+
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </div>
+
               </div>
             </button>
 
@@ -470,8 +564,9 @@ export default function Home() {
       </section>
 
       {/* =====================================================
-          CALCULATOR
+          LOVE CALCULATOR
       ===================================================== */}
+
       {activeTool === 'love-calculator' && (
         <section
           id="calculator"
@@ -480,8 +575,10 @@ export default function Home() {
           <div className="mx-auto max-w-md">
 
             <div className="mb-4 flex items-center justify-between">
+
               <div>
                 <div className="flex items-center gap-2">
+
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50">
                     <Calculator className="h-4 w-4 text-rose-500" />
                   </div>
@@ -489,6 +586,7 @@ export default function Home() {
                   <h2 className="font-display text-xl font-bold text-slate-900">
                     Love Calculator
                   </h2>
+
                 </div>
 
                 <p className="mt-1 pl-11 text-xs text-slate-400">
@@ -505,6 +603,7 @@ export default function Home() {
               >
                 <X className="h-4 w-4" />
               </button>
+
             </div>
 
             <InputCard
@@ -521,13 +620,15 @@ export default function Home() {
               loading={loading}
               validationError={validationError}
             />
+
           </div>
         </section>
       )}
 
       {/* =====================================================
-          RESULTS
+          LOVE CALCULATOR RESULTS
       ===================================================== */}
+
       {activeTool === 'love-calculator' &&
         (loading || result) && (
           <section
@@ -538,12 +639,15 @@ export default function Home() {
 
               {loading && (
                 <div className="fade-in rounded-3xl border border-rose-100 bg-white p-10 text-center shadow-xl shadow-rose-100">
+
                   <div className="relative mb-4 inline-flex">
+
                     <span className="absolute inline-flex h-16 w-16 animate-ping rounded-full bg-rose-300 opacity-30" />
 
                     <span className="relative inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-purple-500">
                       <Heart className="h-7 w-7 fill-white text-white" />
                     </span>
+
                   </div>
 
                   <p className="mb-1 text-lg font-bold text-gray-700">
@@ -553,6 +657,7 @@ export default function Home() {
                   <p className="text-sm text-gray-400">
                     Crafting personalized recommendations
                   </p>
+
                 </div>
               )}
 
@@ -565,15 +670,67 @@ export default function Home() {
                   }}
                 />
               )}
+
             </div>
           </section>
         )}
 
       {/* =====================================================
+          COSMIC TAROT
+      ===================================================== */}
+
+      {activeTool === 'cosmic-tarot' && (
+        <section
+          id="cosmic-tarot"
+          className="scroll-mt-24 px-4 pb-12 sm:px-6 lg:px-8"
+        >
+          <div className="mx-auto max-w-4xl">
+
+            <div className="mb-4 flex items-center justify-between">
+
+              <div>
+                <div className="flex items-center gap-2">
+
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50">
+                    <Sparkles className="h-4 w-4 text-purple-500" />
+                  </div>
+
+                  <h2 className="font-display text-xl font-bold text-slate-900 sm:text-2xl">
+                    Cosmic Tarot
+                  </h2>
+
+                </div>
+
+                <p className="mt-1 pl-11 text-xs text-slate-400 sm:text-sm">
+                  Discover your Today&apos;s Cosmic Tarot reading.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeCosmicTarot}
+                aria-label="Close Cosmic Tarot"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition-all hover:border-purple-200 hover:bg-purple-50 hover:text-purple-500"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+            </div>
+
+            <CosmicTarot />
+
+          </div>
+        </section>
+      )}
+
+      {/* =====================================================
           BLOG
       ===================================================== */}
-      {!result && !loading && <BlogSection />}
+
+      {!result &&
+        !loading &&
+        activeTool === null && <BlogSection />}
+
     </>
   );
 }
-
