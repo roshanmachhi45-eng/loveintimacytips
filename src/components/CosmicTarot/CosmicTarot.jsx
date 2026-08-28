@@ -1,5 +1,6 @@
 
 import { useMemo, useState } from "react";
+
 import styles from "./CosmicTarot.module.css";
 
 const TAROT_CARDS = [
@@ -41,18 +42,18 @@ const TAROT_CARDS = [
 ];
 
 const LOVE_SECRETS = [
-  "Your strongest relationships grow when you communicate honestly instead of expecting someone to understand feelings you have never expressed.",
-  "Protecting your peace is just as important as finding someone who makes your heart race. Healthy love should add warmth to your life, not constant confusion.",
-  "The right connection will give you room to be yourself rather than asking you to become someone else just to keep the relationship alive.",
-  "Small acts of consistency often create stronger love than dramatic romantic gestures. Pay attention to what someone repeatedly does, not only what they promise.",
-  "Your past can teach you about love without being allowed to control your future. You are allowed to write a completely different chapter.",
-  "Emotional vulnerability becomes powerful when it is shared with someone who respects it, protects your trust, and never uses your feelings against you.",
-  "A healthy relationship should feel like teamwork, not a constant test you have to pass. Both people should be willing to understand, support, and grow.",
-  "Sometimes slowing down gives you the clarity needed to recognize genuine compatibility instead of confusing excitement with emotional connection.",
-  "The best connections balance attraction with friendship, trust, respect, laughter, and the feeling that you can comfortably be yourself.",
-  "You do not have to chase a connection that is meant to meet you halfway. Mutual effort is one of the clearest signs of healthy romantic energy.",
-  "Being clear about your boundaries can bring the right people closer and naturally create distance from connections that are not aligned with your needs.",
-  "Your love story becomes stronger when you build a fulfilling life outside the relationship too. Love should become part of your happiness, not the only source of it.",
+  "Your strongest relationships grow when you communicate honestly instead of expecting someone to understand feelings you have never expressed. The more clearly you communicate your needs, hopes, and boundaries, the easier it becomes for the right person to meet you with genuine understanding.",
+  "Protecting your peace is just as important as finding someone who makes your heart race. Healthy love should add warmth to your life, not constant confusion. Notice how a connection makes you feel over time, because emotional safety can be more meaningful than temporary excitement.",
+  "The right connection will give you room to be yourself rather than asking you to become someone else just to keep the relationship alive. Love becomes stronger when two people can grow together while still respecting each other's individuality.",
+  "Small acts of consistency often create stronger love than dramatic romantic gestures. Pay attention to what someone repeatedly does, not only what they promise. Reliability, kindness, and thoughtful effort can reveal much more about long-term compatibility.",
+  "Your past can teach you about love without being allowed to control your future. You are allowed to write a completely different chapter. What happened before does not have to decide what you accept, expect, or believe about love next.",
+  "Emotional vulnerability becomes powerful when it is shared with someone who respects it, protects your trust, and never uses your feelings against you. The safest connections allow honesty without making you feel embarrassed for caring deeply.",
+  "A healthy relationship should feel like teamwork, not a constant test you have to pass. Both people should be willing to understand, support, communicate, and grow. Mutual effort is often one of the clearest signs of emotional compatibility.",
+  "Sometimes slowing down gives you the clarity needed to recognize genuine compatibility instead of confusing excitement with emotional connection. Give promising relationships enough time to show whether the feeling is supported by trust and consistency.",
+  "The best connections balance attraction with friendship, trust, respect, laughter, and the feeling that you can comfortably be yourself. A strong romantic bond often becomes more meaningful when you genuinely enjoy each other's everyday presence.",
+  "You do not have to chase a connection that is meant to meet you halfway. Mutual effort is one of the clearest signs of healthy romantic energy. You deserve a connection where interest and care do not depend on one person doing all the work.",
+  "Being clear about your boundaries can bring the right people closer and naturally create distance from connections that are not aligned with your needs. Healthy boundaries are not walls; they help create relationships built on mutual respect.",
+  "Your love story becomes stronger when you build a fulfilling life outside the relationship too. Love should become part of your happiness, not the only source of it. A full personal life can make romantic connection healthier and more balanced.",
 ];
 
 const PARTNER_PROFILES = [
@@ -122,13 +123,12 @@ function createSeed(name, birthDate) {
 }
 
 function seededIndex(seed, length, offset = 0) {
-  const value =
-    Math.imul(
-      seed ^ Math.imul(offset + 1, 0x45d9f3b),
-      0x45d9f3b
-    ) >>> 0;
+  const mixed = Math.imul(
+    seed ^ Math.imul(offset + 1, 0x45d9f3b),
+    0x45d9f3b
+  );
 
-  return value % length;
+  return (mixed >>> 0) % length;
 }
 
 function getBirthMonth(birthDate) {
@@ -201,7 +201,22 @@ function TelegramIcon() {
     >
       <path
         fill="currentColor"
-        d="M21.8 3.16 2.95 10.43c-1.29.52-1.28 1.23-.24 1.55l4.83 1.5 1.85 5.63c.23.64.12.9.78.9.51 0 .74-.23 1.03-.51l2.5-2.43 5.2 3.84c.96.53 1.66.26 1.9-.89l3.4-16.02c.36-1.41-.54-2.05-1.4-1.64Zm-2.35 3.58-7.52 6.74-.29 4.07-1.35-4.13-4.04-1.26 13.2-5.42Z"
+        d="M21.8 3.16 2.95 10.43c-1.29.52-1.28 1.23-.24 1.55l4.83 1.5 1.85 5.63c.23.64.12.9.78.9.51 0 .74-.23 1.03-.51l2.5-2.43 5.2 3.84c.96.53 1.66.26 1.9-.89l3.4-16.02c.36-1.41-.54-2.05-1.4-1.64Zm-2.35 3.58-7.52 6.74-.29 4.07-1.35 4.07-1.35-4.13-4.04-1.26 13.2-5.42Z"
+      />
+    </svg>
+  );
+}
+
+function XIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className={styles.shareIcon}
+    >
+      <path
+        fill="currentColor"
+        d="M18.9 2H22l-6.77 7.74L23.2 22h-6.24l-4.89-6.4L6.47 22H3.36l7.24-8.28L2.8 2h6.4l4.42 5.84L18.9 2Zm-1.1 17.9h1.73L8.28 3.98H6.43L17.8 19.9Z"
       />
     </svg>
   );
@@ -231,22 +246,7 @@ function MoreShareIcon() {
     >
       <path
         fill="currentColor"
-        d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 1 0 15 5c0 .24.04.47.09.7L8.04 9.81A3 3 0 1 0 8 14.19l7.05 4.11c-.05.21-.08.43-.08.65a3.01 3.01 0 1 0 3.03-2.87ZM6 13a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm12-9a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm0 16a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"
-      />
-    </svg>
-  );
-}
-
-function XIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className={styles.shareIcon}
-    >
-      <path
-        fill="currentColor"
-        d="M18.9 2H22l-6.77 7.74L23.2 22h-6.24l-4.89-6.4L6.47 22H3.36l7.24-8.28L2.8 2h6.4l4.42 5.84L18.9 2Zm-1.1 17.9h1.73L8.28 3.98H6.43L17.8 19.9Z"
+        d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 1 0 15 5c0 .24.04.47.09.7L8.04 9.81A3 3 0 1 0 8 14.19l7.05 4.11c-.05.21-.08.43-.08.65a3.01 3.01 0 1 0 3.03-2.87ZM6 13a1 1 0 1 1 0-2 1 1 0 0 0 0 2Zm12-9a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm0 16a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"
       />
     </svg>
   );
@@ -309,10 +309,12 @@ export default function CosmicTarot() {
     }
 
     const seed = createSeed(name, birthDate);
+
     const cardIndex = seededIndex(seed, TAROT_CARDS.length, 0);
     const profileIndex = seededIndex(seed, PARTNER_PROFILES.length, 1);
 
     const monthIndex = getBirthMonth(birthDate);
+
     const secretIndex =
       (monthIndex + seededIndex(seed, LOVE_SECRETS.length, 2)) %
       LOVE_SECRETS.length;
@@ -323,6 +325,7 @@ export default function CosmicTarot() {
 
     setIsShuffling(true);
     setResult(null);
+    setCopied(false);
 
     window.setTimeout(() => {
       setResult({
@@ -338,7 +341,7 @@ export default function CosmicTarot() {
       window.setTimeout(() => {
         setIsFlipping(false);
         setHasReading(true);
-      }, 950);
+      }, 1200);
     }, 2200);
   }
 
@@ -374,7 +377,7 @@ ${result.profile.personality}
 
 Zodiac energy: ${result.profile.match}
 
-This playful reading is for entertainment and self-reflection only. It is not a prediction, professional advice, or a guarantee about future relationships.
+This playful cosmic reading is for entertainment and self-reflection only. It is not a prediction, professional advice, or a guarantee about future relationships.
 
 Discover your own reading on Loveons.`;
   }
@@ -436,6 +439,7 @@ Discover your own reading on Loveons.`;
 
     try {
       await navigator.clipboard.writeText(text);
+
       setCopied(true);
 
       window.setTimeout(() => {
@@ -465,7 +469,14 @@ Discover your own reading on Loveons.`;
   }
 
   const canGenerate =
-    name.trim() && day && month && year && !hasReading && !isShuffling;
+    name.trim() &&
+    day &&
+    month &&
+    year &&
+    !hasReading &&
+    !isShuffling;
+
+  const showSelectedCard = result && !isShuffling;
 
   return (
     <section className={styles.wrapper}>
@@ -549,7 +560,9 @@ Discover your own reading on Loveons.`;
 
               {birthDate && (
                 <div className={styles.datePreview}>
-                  ✦ Your selected birth date:{" "}
+                  <span>✦</span>
+                  <span>Your selected birth date:</span>
+
                   <strong>
                     {String(day).padStart(2, "0")}/
                     {String(month).padStart(2, "0")}/{year}
@@ -575,25 +588,17 @@ Discover your own reading on Loveons.`;
           className={[
             styles.cardsArea,
             isShuffling ? styles.cardsShuffling : "",
-            result ? styles.cardsResult : "",
+            showSelectedCard ? styles.cardsResult : "",
           ].join(" ")}
           aria-live="polite"
         >
-          {TAROT_CARDS.map((card, index) => {
-            const selected =
-              result?.card?.name === card.name && !isShuffling;
-
-            const hidden = result && !selected;
-
-            return (
+          {isShuffling &&
+            TAROT_CARDS.map((card, index) => (
               <div
                 key={card.name}
                 className={[
                   styles.tarotCard,
-                  isShuffling ? styles.shuffling : "",
-                  selected ? styles.selected : "",
-                  hidden ? styles.hidden : "",
-                  isFlipping && selected ? styles.flipping : "",
+                  styles.shuffling,
                 ].join(" ")}
                 style={{
                   "--card-delay": `${index * 75}ms`,
@@ -642,8 +647,60 @@ Discover your own reading on Loveons.`;
                   </div>
                 </div>
               </div>
-            );
-          })}
+            ))}
+
+          {showSelectedCard && (
+            <div
+              className={[
+                styles.tarotCard,
+                styles.selectedCardLarge,
+                isFlipping ? styles.flipping : styles.revealed,
+              ].join(" ")}
+            >
+              <div className={styles.cardInner}>
+                <div className={styles.cardBack}>
+                  <div className={styles.cardStars}>✦ · ✧ · ✦</div>
+
+                  <div className={styles.cardMoon}>☾</div>
+
+                  <div className={styles.cardBackSymbol}>
+                    {result.card.symbol}
+                  </div>
+
+                  <small>LOVEONS</small>
+
+                  <div className={styles.cardStars}>✧ · ✦ · ✧</div>
+                </div>
+
+                <div className={styles.cardFace}>
+                  <div className={styles.cardFaceStars}>✦</div>
+
+                  <div className={styles.cardFaceSymbol}>
+                    {result.card.symbol}
+                  </div>
+
+                  <span className={styles.cardFaceLabel}>
+                    YOUR COSMIC CARD
+                  </span>
+
+                  <h3>{result.card.name}</h3>
+
+                  <span className={styles.cardFaceTheme}>
+                    {result.card.theme}
+                  </span>
+
+                  <div className={styles.cardFaceLine} />
+
+                  <p>
+                    Your cosmic energy has revealed this card for your
+                    reading.
+                  </p>
+
+                  <div className={styles.cardFaceStars}>✧</div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {isShuffling && (
@@ -653,7 +710,7 @@ Discover your own reading on Loveons.`;
           </div>
         )}
 
-        {result && !isShuffling && (
+        {result && !isShuffling && hasReading && (
           <div className={styles.results}>
             <div className={styles.resultIntro}>
               <span>✨ YOUR COSMIC READING</span>
@@ -663,8 +720,9 @@ Discover your own reading on Loveons.`;
               </h3>
 
               <p>
-                Your cosmic card has been revealed. Take a moment, read slowly,
-                and see which part of the message speaks to your heart.
+                Your cosmic card has been revealed. Take a moment, read
+                slowly, and see which part of the message speaks to your
+                heart.
               </p>
             </div>
 
