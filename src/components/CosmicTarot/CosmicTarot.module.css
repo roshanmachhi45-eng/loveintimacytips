@@ -1,19 +1,19 @@
 
 .wrapper {
   width: 100%;
-  padding: 48px 16px 70px;
+  padding: 48px 16px;
   background: #fff;
-  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .inner {
-  width: min(100%, 920px);
+  width: min(100%, 900px);
   margin: 0 auto;
 }
 
 .header {
-  max-width: 700px;
-  margin: 0 auto 30px;
+  max-width: 680px;
+  margin: 0 auto 28px;
   text-align: center;
 }
 
@@ -23,7 +23,7 @@
   color: #d9468f;
   font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
 }
 
 .header h2 {
@@ -34,60 +34,54 @@
 }
 
 .header p {
+  margin: 12px auto 0;
   max-width: 620px;
-  margin: 13px auto 0;
   color: #77717b;
   font-size: 15px;
-  line-height: 1.75;
+  line-height: 1.7;
 }
 
 .formCard {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 17px;
+  gap: 16px;
   padding: 22px;
   border: 1px solid #f1dce8;
-  border-radius: 23px;
+  border-radius: 22px;
   background: #fff;
-  box-shadow: 0 12px 38px rgba(214, 67, 139, 0.08);
+  box-shadow: 0 10px 35px rgba(214, 67, 139, 0.08);
+  box-sizing: border-box;
 }
 
 .field {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 }
 
 .field label {
   color: #342c35;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .field input,
 .field select {
   width: 100%;
-  min-height: 48px;
-  box-sizing: border-box;
+  min-height: 50px;
+  padding: 0 14px;
   border: 1px solid #eadde5;
   border-radius: 12px;
   outline: none;
   background: #fff;
   color: #29232a;
   font: inherit;
+  box-sizing: border-box;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
     background 0.2s ease;
-}
-
-.field input {
-  padding: 0 14px;
-}
-
-.field select {
-  padding: 0 12px;
-  cursor: pointer;
 }
 
 .field input:focus,
@@ -98,26 +92,39 @@
 
 .field input:disabled,
 .field select:disabled {
+  background: #faf7f9;
   cursor: not-allowed;
-  opacity: 0.65;
-  background: #fffafd;
 }
 
 .dateGrid {
   display: grid;
-  grid-template-columns: 0.8fr 1.35fr 1fr;
+  grid-template-columns: 0.8fr 1.3fr 1fr;
   gap: 8px;
 }
 
 .datePreview {
-  margin-top: 8px;
-  color: #9a5b7c;
-  font-size: 11px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid #f1d5e4;
+  border-radius: 10px;
+  background: #fff7fb;
+  color: #827681;
+  font-size: 12px;
   line-height: 1.5;
+}
+
+.datePreview span:first-child {
+  color: #d9468f;
+  font-size: 14px;
 }
 
 .datePreview strong {
   color: #d9468f;
+  font-size: 13px;
 }
 
 .generateButton {
@@ -126,13 +133,13 @@
   margin-top: 2px;
   padding: 0 22px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 13px;
   background: linear-gradient(135deg, #d9468f, #ec6cab);
   color: #fff;
   cursor: pointer;
   font: inherit;
   font-weight: 800;
-  box-shadow: 0 10px 25px rgba(217, 70, 143, 0.2);
+  box-shadow: 0 9px 22px rgba(217, 70, 143, 0.2);
   transition:
     transform 0.2s ease,
     opacity 0.2s ease,
@@ -141,7 +148,7 @@
 
 .generateButton:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 13px 30px rgba(217, 70, 143, 0.25);
+  box-shadow: 0 12px 26px rgba(217, 70, 143, 0.25);
 }
 
 .generateButton:active:not(:disabled) {
@@ -155,32 +162,41 @@
 }
 
 .cardsArea {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 13px;
+  gap: 12px;
   width: 100%;
-  min-height: 235px;
-  margin: 38px auto 18px;
-  perspective: 1200px;
+  min-height: 220px;
+  margin: 34px auto 18px;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
-.cardsArea.cardsResult {
-  min-height: 270px;
+.cardsShuffling {
+  min-height: 220px;
+}
+
+.cardsResult {
+  min-height: 400px;
+  margin-top: 36px;
+  margin-bottom: 12px;
 }
 
 .tarotCard {
   position: relative;
   width: 116px;
-  height: 195px;
+  height: 190px;
   flex: 0 0 116px;
   perspective: 1100px;
-  transform-origin: center center;
-  transition:
-    opacity 0.45s ease,
-    transform 0.45s ease,
-    filter 0.45s ease;
+  transform-style: preserve-3d;
+  box-sizing: border-box;
+}
+
+.selectedCardLarge {
+  width: 240px;
+  height: 380px;
+  flex: 0 0 240px;
 }
 
 .cardInner {
@@ -188,202 +204,220 @@
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
-  transition: transform 0.85s cubic-bezier(0.22, 0.75, 0.25, 1);
 }
 
 .cardBack,
 .cardFace {
   position: absolute;
   inset: 0;
-  display: flex;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  border-radius: 17px;
   box-sizing: border-box;
-  border-radius: 18px;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 
 .cardBack {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
-  gap: 7px;
-  overflow: hidden;
-  border: 1px solid #e9bdd3;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e9bfd5;
   background:
-    radial-gradient(
-      circle at 50% 30%,
-      rgba(255, 255, 255, 0.95) 0,
-      rgba(255, 245, 250, 0.98) 30%,
-      #f9deeb 72%,
-      #f4c9df 100%
-    );
+    radial-gradient(circle at 50% 45%, #ffffff 0%, #fff7fb 35%, #f8d9e9 100%);
   color: #d9468f;
   box-shadow:
-    0 12px 30px rgba(214, 67, 139, 0.12),
-    inset 0 0 0 4px rgba(255, 255, 255, 0.5);
+    0 12px 28px rgba(214, 67, 139, 0.12),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.7);
 }
 
 .cardBack::before {
-  position: absolute;
-  inset: 8px;
-  border: 1px solid rgba(217, 70, 143, 0.25);
-  border-radius: 13px;
   content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1px solid rgba(217, 70, 143, 0.28);
+  border-radius: 12px;
+  pointer-events: none;
 }
 
 .cardBack::after {
+  content: "✦";
   position: absolute;
-  width: 90px;
-  height: 90px;
-  border: 1px solid rgba(217, 70, 143, 0.18);
-  border-radius: 50%;
-  content: "";
+  top: 10px;
+  right: 12px;
+  color: rgba(217, 70, 143, 0.5);
+  font-size: 12px;
 }
 
 .cardStars {
-  position: relative;
-  z-index: 2;
-  color: #e17aaa;
-  font-size: 8px;
-  letter-spacing: 0.16em;
+  color: #d9468f;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
 }
 
 .cardMoon {
-  position: relative;
-  z-index: 2;
-  margin-bottom: -2px;
-  color: #c93680;
+  color: #c93682;
   font-size: 28px;
   line-height: 1;
 }
 
 .cardBackSymbol {
-  position: relative;
-  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 53px;
-  height: 53px;
-  border: 1px solid rgba(217, 70, 143, 0.28);
+  width: 54px;
+  height: 54px;
+  border: 1px solid rgba(217, 70, 143, 0.3);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.52);
+  background: rgba(255, 255, 255, 0.68);
   color: #d9468f;
-  font-size: 27px;
-  box-shadow: 0 5px 15px rgba(217, 70, 143, 0.08);
+  font-size: 30px;
+  line-height: 1;
+  box-shadow: 0 5px 16px rgba(217, 70, 143, 0.1);
 }
 
 .cardBack small {
-  position: relative;
-  z-index: 2;
-  margin-top: 2px;
-  color: #bd4b82;
-  font-size: 7px;
+  color: #c93682;
+  font-size: 8px;
   font-weight: 900;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.2em;
 }
 
 .cardFace {
-  align-items: center;
-  justify-content: flex-start;
+  display: flex;
   flex-direction: column;
-  overflow: hidden;
-  padding: 13px 10px;
-  border: 1px solid #dca0c0;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  border: 1px solid #dca9c5;
   background:
-    radial-gradient(
-      circle at 50% 15%,
-      #fff9fc 0,
-      #fff1f8 30%,
-      #f9dce9 100%
-    );
-  color: #2e2530;
+    radial-gradient(circle at 50% 20%, #fff 0%, #fff8fc 35%, #f8e1ed 100%);
+  color: #29232a;
+  text-align: center;
   transform: rotateY(180deg);
   box-shadow:
-    0 15px 35px rgba(214, 67, 139, 0.18),
-    inset 0 0 0 4px rgba(255, 255, 255, 0.65);
+    0 15px 36px rgba(214, 67, 139, 0.16),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.7);
 }
 
 .cardFace::before {
+  content: "";
   position: absolute;
-  inset: 7px;
+  inset: 9px;
   border: 1px solid rgba(217, 70, 143, 0.25);
   border-radius: 13px;
-  content: "";
+  pointer-events: none;
 }
 
 .cardFaceStars {
   position: relative;
-  z-index: 2;
+  z-index: 1;
   color: #d9468f;
   font-size: 13px;
+  line-height: 1;
 }
 
 .cardFaceSymbol {
   position: relative;
-  z-index: 2;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 43px;
-  height: 43px;
-  margin-top: 3px;
-  border: 1px solid #e8bfd3;
+  width: 64px;
+  height: 64px;
+  margin: 8px 0 10px;
+  border: 1px solid #e5bad2;
   border-radius: 50%;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.75);
   color: #d9468f;
-  font-size: 22px;
+  font-size: 34px;
+  line-height: 1;
 }
 
 .cardFaceLabel {
   position: relative;
-  z-index: 2;
-  margin-top: 7px;
-  color: #d9468f;
-  font-size: 6px;
+  z-index: 1;
+  color: #c93682;
+  font-size: 8px;
   font-weight: 900;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.16em;
 }
 
 .cardFace h3 {
   position: relative;
-  z-index: 2;
-  margin: 6px 0 3px;
-  color: #332934;
-  font-size: 13px;
+  z-index: 1;
+  margin: 8px 0 7px;
+  color: #29232a;
+  font-size: 18px;
   line-height: 1.2;
-  text-align: center;
 }
 
 .cardFaceTheme {
   position: relative;
-  z-index: 2;
-  color: #a45a7f;
-  font-size: 7px;
+  z-index: 1;
+  color: #d9468f;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.06em;
-  text-align: center;
 }
 
 .cardFaceLine {
   position: relative;
-  z-index: 2;
-  width: 45px;
+  z-index: 1;
+  width: 58px;
   height: 1px;
-  margin: 8px auto 7px;
-  background: #e4b2c9;
+  margin: 11px auto;
+  background: #e8bfd5;
 }
 
 .cardFace p {
   position: relative;
-  z-index: 2;
+  z-index: 1;
   margin: 0;
-  color: #756b73;
-  font-size: 8px;
-  line-height: 1.45;
-  text-align: center;
+  max-width: 180px;
+  color: #716a73;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.selectedCardLarge .cardFace {
+  padding: 30px 22px;
+}
+
+.selectedCardLarge .cardFaceSymbol {
+  width: 82px;
+  height: 82px;
+  margin-top: 12px;
+  margin-bottom: 14px;
+  font-size: 43px;
+}
+
+.selectedCardLarge .cardFaceLabel {
+  font-size: 9px;
+}
+
+.selectedCardLarge .cardFace h3 {
+  margin: 10px 0 8px;
+  font-size: 23px;
+}
+
+.selectedCardLarge .cardFaceTheme {
+  font-size: 11px;
+}
+
+.selectedCardLarge .cardFaceLine {
+  width: 72px;
+  margin: 14px auto;
+}
+
+.selectedCardLarge .cardFace p {
+  max-width: 190px;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .shuffling {
@@ -391,23 +425,12 @@
   animation-delay: var(--card-delay);
 }
 
-.cardsShuffling .tarotCard {
-  filter: saturate(1.08);
-}
-
-.selected {
-  z-index: 10;
-  transform: scale(1.12);
-}
-
 .flipping .cardInner {
-  transform: rotateY(180deg);
+  animation: cardFlip 1.2s cubic-bezier(0.2, 0.75, 0.25, 1) forwards;
 }
 
-.hidden {
-  opacity: 0;
-  transform: scale(0.55);
-  pointer-events: none;
+.revealed .cardInner {
+  transform: rotateY(180deg);
 }
 
 .loadingText {
@@ -415,11 +438,11 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 30px;
-  margin-top: 4px;
+  min-height: 28px;
+  margin-top: 6px;
   color: #d9468f;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   text-align: center;
 }
 
@@ -428,23 +451,20 @@
 }
 
 .results {
-  width: min(100%, 760px);
-  margin: 34px auto 0;
+  width: 100%;
+  margin-top: 22px;
 }
 
 .resultIntro {
+  max-width: 700px;
   margin: 0 auto 24px;
-  padding: 22px 20px;
-  border: 1px solid #f1d8e5;
+  padding: 24px 22px;
+  border: 1px solid #f1dce8;
   border-radius: 20px;
   background:
-    radial-gradient(
-      circle at top right,
-      rgba(250, 218, 234, 0.45),
-      transparent 42%
-    ),
-    #fff;
+    linear-gradient(145deg, #fff, #fff8fc);
   text-align: center;
+  box-shadow: 0 8px 24px rgba(214, 67, 139, 0.06);
 }
 
 .resultIntro > span {
@@ -455,17 +475,17 @@
 }
 
 .resultIntro h3 {
-  margin: 9px 0 8px;
-  color: #302731;
-  font-size: 20px;
-  line-height: 1.35;
+  margin: 9px 0 9px;
+  color: #29232a;
+  font-size: 22px;
+  line-height: 1.3;
 }
 
 .resultIntro p {
-  max-width: 600px;
   margin: 0 auto;
-  color: #756d75;
-  font-size: 13px;
+  max-width: 600px;
+  color: #716a73;
+  font-size: 14px;
   line-height: 1.7;
 }
 
@@ -473,20 +493,25 @@
   display: flex;
   gap: 16px;
   margin-bottom: 14px;
-  padding: 21px;
+  padding: 22px;
   border: 1px solid #f0e0e8;
-  border-radius: 19px;
+  border-radius: 18px;
   background: #fff;
-  box-shadow: 0 7px 22px rgba(50, 30, 45, 0.045);
-  animation: resultIn 0.55s ease both;
+  box-shadow: 0 6px 20px rgba(50, 30, 45, 0.04);
+  animation: resultIn 0.5s ease both;
+  box-sizing: border-box;
 }
 
-.resultBlock:nth-of-type(2) {
+.resultBlock:nth-child(2) {
   animation-delay: 0.08s;
 }
 
-.resultBlock:nth-of-type(3) {
+.resultBlock:nth-child(3) {
   animation-delay: 0.16s;
+}
+
+.resultBlock:nth-child(4) {
+  animation-delay: 0.24s;
 }
 
 .resultBlock > span {
@@ -499,7 +524,7 @@
   border-radius: 50%;
   background: #fde7f2;
   color: #d9468f;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
 }
 
@@ -507,11 +532,11 @@
   margin: 0 0 9px;
   color: #2d2730;
   font-size: 18px;
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 .resultBlock p {
-  margin: 7px 0;
+  margin: 7px 0 0;
   color: #716a73;
   font-size: 14px;
   line-height: 1.75;
@@ -522,55 +547,52 @@
 }
 
 .shareSection {
-  margin-top: 25px;
+  margin-top: 24px;
   padding: 22px;
-  border: 1px solid #efd6e3;
+  border: 1px solid #f1dce8;
   border-radius: 20px;
   background:
-    radial-gradient(
-      circle at top left,
-      rgba(253, 231, 242, 0.75),
-      transparent 38%
-    ),
-    #fff;
-  box-shadow: 0 8px 25px rgba(50, 30, 45, 0.045);
+    linear-gradient(145deg, #fff, #fff8fc);
+  box-shadow: 0 8px 24px rgba(214, 67, 139, 0.06);
+  box-sizing: border-box;
 }
 
 .shareHeader {
-  margin-bottom: 16px;
   text-align: center;
 }
 
 .shareHeader h3 {
   margin: 0;
-  color: #302731;
+  color: #2d2730;
   font-size: 19px;
 }
 
 .shareHeader p {
-  margin: 7px 0 0;
-  color: #7a7078;
+  margin: 7px auto 0;
+  color: #77717b;
   font-size: 13px;
   line-height: 1.6;
 }
 
 .shareButtons {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 9px;
+  margin-top: 17px;
 }
 
 .shareButton {
-  display: flex;
-  min-height: 44px;
+  display: inline-flex;
+  min-height: 42px;
   align-items: center;
   justify-content: center;
   gap: 7px;
-  padding: 0 10px;
-  border: 1px solid #eadde5;
+  padding: 0 13px;
+  border: 1px solid #ead7e1;
   border-radius: 11px;
   background: #fff;
-  color: #40353e;
+  color: #5d5660;
   cursor: pointer;
   font: inherit;
   font-size: 12px;
@@ -583,49 +605,51 @@
 
 .shareButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(60, 35, 50, 0.08);
+  box-shadow: 0 7px 17px rgba(70, 40, 60, 0.08);
 }
 
 .shareIcon {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
 }
 
 .whatsapp {
-  border-color: #cbe7d3;
-  color: #16853a;
+  color: #20a85a;
+  border-color: #c9ead7;
 }
 
 .facebook {
-  border-color: #d4def4;
-  color: #4267b2;
+  color: #1877f2;
+  border-color: #cdddf5;
 }
 
 .xShare {
-  border-color: #dedede;
   color: #111;
+  border-color: #ddd;
 }
 
 .telegram {
-  border-color: #cce5f4;
-  color: #168dcc;
+  color: #229ed9;
+  border-color: #cbe8f4;
 }
 
 .copy {
-  border-color: #ead5e1;
-  color: #b5487d;
+  color: #8b4f73;
+  border-color: #e7d1df;
 }
 
 .more {
-  border-color: #e5d8e0;
-  color: #65505e;
+  color: #6e6570;
+  border-color: #ded8dd;
 }
 
 .shareDisclaimer {
   max-width: 650px;
-  margin: 16px auto 0;
-  color: #968b93;
+  margin: 17px auto 0;
+  padding-top: 14px;
+  border-top: 1px solid #f0e1e9;
+  color: #9a9198;
   font-size: 10px;
   line-height: 1.6;
   text-align: center;
@@ -633,55 +657,65 @@
 
 .resetButton {
   display: block;
-  margin: 23px auto 0;
+  margin: 22px auto 0;
   padding: 11px 18px;
-  border: 1px solid #e8c8da;
-  border-radius: 11px;
+  border: 1px solid #e9c9da;
+  border-radius: 10px;
   background: #fff;
   color: #d9468f;
   cursor: pointer;
   font: inherit;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   transition:
-    background 0.2s ease,
-    transform 0.2s ease;
+    background 0.18s ease,
+    transform 0.18s ease;
 }
 
 .resetButton:hover {
-  background: #fff6fa;
+  background: #fff7fb;
   transform: translateY(-1px);
 }
 
 @keyframes shuffleCard {
-  from {
-    transform: translateY(-9px) rotate(-2deg);
+  0% {
+    transform: translateY(-7px) rotate(-2deg);
   }
 
-  to {
-    transform: translateY(9px) rotate(2deg);
+  100% {
+    transform: translateY(7px) rotate(2deg);
+  }
+}
+
+@keyframes cardFlip {
+  0% {
+    transform: rotateY(0deg);
+  }
+
+  100% {
+    transform: rotateY(180deg);
   }
 }
 
 @keyframes pulse {
-  from {
+  0% {
     transform: scale(0.9);
     opacity: 0.55;
   }
 
-  to {
+  100% {
     transform: scale(1.1);
     opacity: 1;
   }
 }
 
 @keyframes resultIn {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(13px);
+    transform: translateY(12px);
   }
 
-  to {
+  100% {
     opacity: 1;
     transform: translateY(0);
   }
@@ -689,7 +723,7 @@
 
 @media (max-width: 680px) {
   .wrapper {
-    padding: 36px 14px 55px;
+    padding: 36px 14px;
   }
 
   .formCard {
@@ -701,39 +735,53 @@
     grid-column: auto;
   }
 
-  .cardsArea {
-    gap: 7px;
-    min-height: 170px;
-    margin-top: 30px;
+  .dateGrid {
+    grid-template-columns: 0.8fr 1.3fr 1fr;
   }
 
-  .cardsArea.cardsResult {
-    min-height: 190px;
+  .cardsArea {
+    gap: 7px;
+    min-height: 155px;
+  }
+
+  .cardsShuffling {
+    min-height: 155px;
+  }
+
+  .cardsResult {
+    min-height: 340px;
   }
 
   .tarotCard {
     width: 64px;
-    height: 126px;
+    height: 125px;
     flex-basis: 64px;
   }
 
-  .cardBack,
-  .cardFace {
+  .selectedCardLarge {
+    width: 210px;
+    height: 330px;
+    flex-basis: 210px;
+  }
+
+  .cardBack {
     border-radius: 12px;
+    gap: 6px;
+    padding: 8px;
   }
 
   .cardStars {
-    font-size: 5px;
+    font-size: 6px;
   }
 
   .cardMoon {
-    font-size: 19px;
+    font-size: 22px;
   }
 
   .cardBackSymbol {
-    width: 34px;
-    height: 34px;
-    font-size: 18px;
+    width: 38px;
+    height: 38px;
+    font-size: 22px;
   }
 
   .cardBack small {
@@ -741,51 +789,87 @@
   }
 
   .cardFace {
-    padding: 8px 6px;
+    border-radius: 12px;
+    padding: 12px 9px;
   }
 
   .cardFaceSymbol {
-    width: 29px;
-    height: 29px;
-    font-size: 15px;
+    width: 40px;
+    height: 40px;
+    margin: 5px 0 6px;
+    font-size: 22px;
   }
 
   .cardFaceLabel {
-    margin-top: 4px;
-    font-size: 4px;
+    font-size: 5px;
   }
 
   .cardFace h3 {
-    margin-top: 4px;
-    font-size: 8px;
+    margin: 5px 0;
+    font-size: 10px;
   }
 
   .cardFaceTheme {
-    font-size: 5px;
+    font-size: 6px;
   }
 
   .cardFaceLine {
-    width: 27px;
-    margin: 5px auto 4px;
+    width: 32px;
+    margin: 7px auto;
   }
 
   .cardFace p {
-    font-size: 5px;
+    max-width: 52px;
+    font-size: 6px;
+    line-height: 1.4;
   }
 
-  .dateGrid {
-    grid-template-columns: 0.8fr 1.3fr 1fr;
+  .selectedCardLarge .cardFace {
+    padding: 22px 15px;
+  }
+
+  .selectedCardLarge .cardFaceSymbol {
+    width: 68px;
+    height: 68px;
+    margin: 9px 0 10px;
+    font-size: 36px;
+  }
+
+  .selectedCardLarge .cardFaceLabel {
+    font-size: 7px;
+  }
+
+  .selectedCardLarge .cardFace h3 {
+    margin: 8px 0 6px;
+    font-size: 18px;
+  }
+
+  .selectedCardLarge .cardFaceTheme {
+    font-size: 9px;
+  }
+
+  .selectedCardLarge .cardFaceLine {
+    width: 55px;
+    margin: 10px auto;
+  }
+
+  .selectedCardLarge .cardFace p {
+    max-width: 145px;
+    font-size: 9px;
+    line-height: 1.5;
+  }
+
+  .resultIntro {
+    padding: 20px 16px;
+  }
+
+  .resultIntro h3 {
+    font-size: 19px;
   }
 
   .resultBlock {
     padding: 17px;
     gap: 12px;
-  }
-
-  .resultBlock > span {
-    width: 31px;
-    height: 31px;
-    flex-basis: 31px;
   }
 
   .resultBlock h3 {
@@ -798,15 +882,23 @@
   }
 
   .shareSection {
-    padding: 17px;
+    padding: 18px 14px;
   }
 
   .shareButtons {
-    grid-template-columns: repeat(2, 1fr);
+    gap: 7px;
   }
 
   .shareButton {
-    min-height: 43px;
+    min-height: 40px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .shareIcon {
+    width: 16px;
+    height: 16px;
+    flex-basis: 16px;
   }
 }
 
@@ -817,29 +909,40 @@
 
   .tarotCard {
     width: 57px;
-    height: 113px;
+    height: 112px;
     flex-basis: 57px;
   }
 
-  .dateGrid {
-    gap: 5px;
+  .selectedCardLarge {
+    width: 190px;
+    height: 300px;
+    flex-basis: 190px;
   }
 
-  .field select {
-    padding: 0 7px;
-    font-size: 12px;
+  .selectedCardLarge .cardFace h3 {
+    font-size: 16px;
+  }
+
+  .selectedCardLarge .cardFace p {
+    max-width: 132px;
+    font-size: 8px;
+  }
+
+  .shareButton {
+    padding: 0 8px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .shuffling,
   .loadingText span,
+  .flipping .cardInner,
   .resultBlock {
     animation: none;
   }
 
-  .cardInner {
-    transition: none;
+  .revealed .cardInner {
+    transform: rotateY(180deg);
   }
 
   .generateButton,
@@ -848,4 +951,5 @@
     transition: none;
   }
 }
+
 
