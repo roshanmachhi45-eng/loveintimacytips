@@ -35,7 +35,7 @@
 
 .header p {
   margin: 12px auto 0;
-  max-width: 620px;
+  max-width: 600px;
   color: #77717b;
   font-size: 15px;
   line-height: 1.7;
@@ -56,7 +56,7 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   min-width: 0;
 }
 
@@ -76,7 +76,9 @@
   outline: none;
   background: #fff;
   color: #29232a;
-  font: inherit;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.2;
   box-sizing: border-box;
   transition:
     border-color 0.2s ease,
@@ -92,39 +94,35 @@
 
 .field input:disabled,
 .field select:disabled {
-  background: #faf7f9;
   cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .dateGrid {
   display: grid;
-  grid-template-columns: 0.8fr 1.3fr 1fr;
+  grid-template-columns: 0.8fr 1.35fr 1fr;
   gap: 8px;
 }
 
-.datePreview {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
-  padding: 10px 12px;
-  border: 1px solid #f1d5e4;
-  border-radius: 10px;
-  background: #fff7fb;
-  color: #827681;
-  font-size: 12px;
-  line-height: 1.5;
+.dateGrid select {
+  appearance: auto;
+  cursor: pointer;
 }
 
-.datePreview span:first-child {
-  color: #d9468f;
-  font-size: 14px;
+.datePreview {
+  margin-top: 8px;
+  padding: 9px 11px;
+  border: 1px solid #f2d8e6;
+  border-radius: 10px;
+  background: #fff8fc;
+  color: #8a7180;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .datePreview strong {
   color: #d9468f;
-  font-size: 13px;
+  font-weight: 800;
 }
 
 .generateButton {
@@ -148,7 +146,7 @@
 
 .generateButton:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 12px 26px rgba(217, 70, 143, 0.25);
+  box-shadow: 0 12px 26px rgba(217, 70, 143, 0.24);
 }
 
 .generateButton:active:not(:disabled) {
@@ -162,25 +160,17 @@
 }
 
 .cardsArea {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
   width: 100%;
-  min-height: 220px;
+  min-height: 222px;
   margin: 34px auto 18px;
+  padding: 12px 0;
   box-sizing: border-box;
   overflow: visible;
-}
-
-.cardsShuffling {
-  min-height: 220px;
-}
-
-.cardsResult {
-  min-height: 400px;
-  margin-top: 36px;
-  margin-bottom: 12px;
 }
 
 .tarotCard {
@@ -189,14 +179,12 @@
   height: 190px;
   flex: 0 0 116px;
   perspective: 1100px;
-  transform-style: preserve-3d;
-  box-sizing: border-box;
-}
-
-.selectedCardLarge {
-  width: 240px;
-  height: 380px;
-  flex: 0 0 240px;
+  transform-origin: center center;
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease,
+    width 0.45s ease,
+    flex-basis 0.45s ease;
 }
 
 .cardInner {
@@ -210,106 +198,121 @@
 .cardFace {
   position: absolute;
   inset: 0;
+  display: flex;
   width: 100%;
   height: 100%;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
   overflow: hidden;
-  border-radius: 17px;
+  border-radius: 18px;
   box-sizing: border-box;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 
 .cardBack {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   gap: 10px;
-  padding: 12px;
-  border: 1px solid #e9bfd5;
+  padding: 12px 8px;
+  border: 1px solid #efcfe0;
   background:
-    radial-gradient(circle at 50% 45%, #ffffff 0%, #fff7fb 35%, #f8d9e9 100%);
+    radial-gradient(
+      circle at 50% 35%,
+      rgba(255, 255, 255, 0.98) 0,
+      rgba(255, 247, 251, 0.98) 30%,
+      rgba(252, 231, 242, 1) 72%,
+      rgba(247, 213, 230, 1) 100%
+    );
   color: #d9468f;
   box-shadow:
-    0 12px 28px rgba(214, 67, 139, 0.12),
-    inset 0 0 0 2px rgba(255, 255, 255, 0.7);
+    0 10px 28px rgba(214, 67, 139, 0.1),
+    inset 0 0 0 5px rgba(255, 255, 255, 0.6);
 }
 
 .cardBack::before {
   content: "";
   position: absolute;
-  inset: 7px;
-  border: 1px solid rgba(217, 70, 143, 0.28);
-  border-radius: 12px;
+  inset: 8px;
+  border: 1px solid rgba(217, 70, 143, 0.22);
+  border-radius: 13px;
   pointer-events: none;
 }
 
 .cardBack::after {
-  content: "✦";
+  content: "";
   position: absolute;
-  top: 10px;
-  right: 12px;
-  color: rgba(217, 70, 143, 0.5);
-  font-size: 12px;
+  width: 82px;
+  height: 82px;
+  border: 1px solid rgba(217, 70, 143, 0.16);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 8px rgba(217, 70, 143, 0.035),
+    0 0 0 16px rgba(217, 70, 143, 0.025);
+  pointer-events: none;
 }
 
 .cardStars {
-  color: #d9468f;
-  font-size: 10px;
-  letter-spacing: 0.1em;
+  position: relative;
+  z-index: 1;
+  font-size: 11px;
+  letter-spacing: 0.2em;
   opacity: 0.8;
 }
 
 .cardMoon {
-  color: #c93682;
-  font-size: 28px;
+  position: relative;
+  z-index: 1;
+  font-size: 30px;
   line-height: 1;
 }
 
 .cardBackSymbol {
+  position: relative;
+  z-index: 1;
   display: flex;
+  width: 48px;
+  height: 48px;
   align-items: center;
   justify-content: center;
-  width: 54px;
-  height: 54px;
-  border: 1px solid rgba(217, 70, 143, 0.3);
+  border: 1px solid rgba(217, 70, 143, 0.25);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.68);
-  color: #d9468f;
-  font-size: 30px;
-  line-height: 1;
-  box-shadow: 0 5px 16px rgba(217, 70, 143, 0.1);
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 27px;
+  box-shadow: 0 4px 14px rgba(217, 70, 143, 0.08);
 }
 
 .cardBack small {
-  color: #c93682;
+  position: relative;
+  z-index: 1;
   font-size: 8px;
   font-weight: 900;
   letter-spacing: 0.2em;
 }
 
 .cardFace {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px 16px;
-  border: 1px solid #dca9c5;
+  z-index: 2;
+  padding: 16px 12px;
+  border: 1px solid #e9bdd4;
   background:
-    radial-gradient(circle at 50% 20%, #fff 0%, #fff8fc 35%, #f8e1ed 100%);
+    radial-gradient(
+      circle at 50% 25%,
+      #ffffff 0,
+      #fff9fc 34%,
+      #fce7f2 100%
+    );
   color: #29232a;
   text-align: center;
   transform: rotateY(180deg);
   box-shadow:
-    0 15px 36px rgba(214, 67, 139, 0.16),
-    inset 0 0 0 2px rgba(255, 255, 255, 0.7);
+    0 15px 40px rgba(214, 67, 139, 0.15),
+    inset 0 0 0 5px rgba(255, 255, 255, 0.65);
 }
 
 .cardFace::before {
   content: "";
   position: absolute;
-  inset: 9px;
-  border: 1px solid rgba(217, 70, 143, 0.25);
+  inset: 8px;
+  border: 1px solid rgba(217, 70, 143, 0.18);
   border-radius: 13px;
   pointer-events: none;
 }
@@ -318,7 +321,7 @@
   position: relative;
   z-index: 1;
   color: #d9468f;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1;
 }
 
@@ -326,111 +329,103 @@
   position: relative;
   z-index: 1;
   display: flex;
+  width: 42px;
+  height: 42px;
+  margin: 7px 0;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
-  margin: 8px 0 10px;
-  border: 1px solid #e5bad2;
+  border: 1px solid #efcfe0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.75);
+  background: #fff;
   color: #d9468f;
-  font-size: 34px;
-  line-height: 1;
+  font-size: 22px;
 }
 
 .cardFaceLabel {
   position: relative;
   z-index: 1;
-  color: #c93682;
-  font-size: 8px;
+  color: #d9468f;
+  font-size: 7px;
   font-weight: 900;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.13em;
 }
 
 .cardFace h3 {
   position: relative;
   z-index: 1;
-  margin: 8px 0 7px;
-  color: #29232a;
-  font-size: 18px;
+  margin: 6px 0 4px;
+  color: #2b222a;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 15px;
   line-height: 1.2;
 }
 
 .cardFaceTheme {
   position: relative;
   z-index: 1;
-  color: #d9468f;
-  font-size: 10px;
+  color: #a36c89;
+  font-size: 8px;
   font-weight: 800;
+  letter-spacing: 0.06em;
 }
 
 .cardFaceLine {
   position: relative;
   z-index: 1;
-  width: 58px;
+  width: 42px;
   height: 1px;
-  margin: 11px auto;
-  background: #e8bfd5;
+  margin: 7px 0;
+  background: #e8a9c7;
 }
 
 .cardFace p {
   position: relative;
   z-index: 1;
   margin: 0;
-  max-width: 180px;
-  color: #716a73;
-  font-size: 11px;
-  line-height: 1.55;
+  max-width: 90px;
+  color: #766c74;
+  font-size: 8px;
+  line-height: 1.45;
 }
 
-.selectedCardLarge .cardFace {
-  padding: 30px 22px;
-}
-
-.selectedCardLarge .cardFaceSymbol {
-  width: 82px;
-  height: 82px;
-  margin-top: 12px;
-  margin-bottom: 14px;
-  font-size: 43px;
-}
-
-.selectedCardLarge .cardFaceLabel {
-  font-size: 9px;
-}
-
-.selectedCardLarge .cardFace h3 {
-  margin: 10px 0 8px;
-  font-size: 23px;
-}
-
-.selectedCardLarge .cardFaceTheme {
-  font-size: 11px;
-}
-
-.selectedCardLarge .cardFaceLine {
-  width: 72px;
-  margin: 14px auto;
-}
-
-.selectedCardLarge .cardFace p {
-  max-width: 190px;
-  font-size: 12px;
-  line-height: 1.6;
-}
-
-.shuffling {
-  animation: shuffleCard 0.48s ease-in-out infinite alternate;
+.cardsShuffling .tarotCard {
+  animation: shuffleCard 0.55s ease-in-out infinite alternate;
   animation-delay: var(--card-delay);
 }
 
-.flipping .cardInner {
-  animation: cardFlip 1.2s cubic-bezier(0.2, 0.75, 0.25, 1) forwards;
+.cardsResult .tarotCard.selected {
+  animation: none;
 }
 
-.revealed .cardInner {
-  transform: rotateY(180deg);
+.shuffling {
+  will-change: transform;
+}
+
+.selected {
+  z-index: 10;
+  width: 260px;
+  flex: 0 0 260px;
+  transform: scale(1.02);
+}
+
+.selected .cardInner {
+  animation: selectedCardFlip 0.95s cubic-bezier(0.22, 0.61, 0.36, 1)
+    forwards;
+}
+
+.selected.flipping .cardInner {
+  animation: selectedCardFlip 0.95s cubic-bezier(0.22, 0.61, 0.36, 1)
+    forwards;
+}
+
+.hidden {
+  width: 0;
+  flex-basis: 0;
+  margin: 0;
+  opacity: 0;
+  transform: scale(0.7);
+  pointer-events: none;
+  overflow: hidden;
 }
 
 .loadingText {
@@ -439,7 +434,6 @@
   justify-content: center;
   gap: 8px;
   min-height: 28px;
-  margin-top: 6px;
   color: #d9468f;
   font-size: 14px;
   font-weight: 700;
@@ -452,45 +446,62 @@
 
 .results {
   width: 100%;
-  margin-top: 22px;
+  margin-top: 30px;
 }
 
 .resultIntro {
-  max-width: 700px;
-  margin: 0 auto 24px;
-  padding: 24px 22px;
-  border: 1px solid #f1dce8;
+  margin: 0 auto 22px;
+  padding: 22px 20px;
+  border: 1px solid #f0d7e5;
   border-radius: 20px;
   background:
-    linear-gradient(145deg, #fff, #fff8fc);
+    radial-gradient(
+      circle at top,
+      #fff8fc 0,
+      #fff 68%
+    );
   text-align: center;
-  box-shadow: 0 8px 24px rgba(214, 67, 139, 0.06);
+  box-shadow: 0 8px 28px rgba(214, 67, 139, 0.06);
 }
 
 .resultIntro > span {
   color: #d9468f;
   font-size: 10px;
   font-weight: 900;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.14em;
 }
 
 .resultIntro h3 {
-  margin: 9px 0 9px;
-  color: #29232a;
-  font-size: 22px;
+  margin: 9px 0 8px;
+  color: #2d2730;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(21px, 4vw, 28px);
   line-height: 1.3;
 }
 
 .resultIntro p {
+  max-width: 650px;
   margin: 0 auto;
-  max-width: 600px;
   color: #716a73;
   font-size: 14px;
   line-height: 1.7;
 }
 
+.todayBadge {
+  display: inline-flex;
+  margin-top: 14px;
+  padding: 7px 11px;
+  border: 1px solid #f0ccde;
+  border-radius: 999px;
+  background: #fff;
+  color: #d9468f;
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .resultBlock {
   display: flex;
+  align-items: flex-start;
   gap: 16px;
   margin-bottom: 14px;
   padding: 22px;
@@ -502,16 +513,12 @@
   box-sizing: border-box;
 }
 
-.resultBlock:nth-child(2) {
+.resultBlock:nth-child(3) {
   animation-delay: 0.08s;
 }
 
-.resultBlock:nth-child(3) {
-  animation-delay: 0.16s;
-}
-
 .resultBlock:nth-child(4) {
-  animation-delay: 0.24s;
+  animation-delay: 0.16s;
 }
 
 .resultBlock > span {
@@ -524,22 +531,23 @@
   border-radius: 50%;
   background: #fde7f2;
   color: #d9468f;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
 }
 
 .resultBlock h3 {
   margin: 0 0 9px;
   color: #2d2730;
-  font-size: 18px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 19px;
   line-height: 1.35;
 }
 
 .resultBlock p {
-  margin: 7px 0 0;
+  margin: 7px 0;
   color: #716a73;
   font-size: 14px;
-  line-height: 1.75;
+  line-height: 1.72;
 }
 
 .resultBlock strong {
@@ -549,11 +557,9 @@
 .shareSection {
   margin-top: 24px;
   padding: 22px;
-  border: 1px solid #f1dce8;
+  border: 1px solid #f0d9e6;
   border-radius: 20px;
-  background:
-    linear-gradient(145deg, #fff, #fff8fc);
-  box-shadow: 0 8px 24px rgba(214, 67, 139, 0.06);
+  background: #fff9fc;
   box-sizing: border-box;
 }
 
@@ -564,11 +570,12 @@
 .shareHeader h3 {
   margin: 0;
   color: #2d2730;
-  font-size: 19px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20px;
 }
 
 .shareHeader p {
-  margin: 7px auto 0;
+  margin: 7px 0 0;
   color: #77717b;
   font-size: 13px;
   line-height: 1.6;
@@ -589,10 +596,10 @@
   justify-content: center;
   gap: 7px;
   padding: 0 13px;
-  border: 1px solid #ead7e1;
+  border: 1px solid #ead5e1;
   border-radius: 11px;
   background: #fff;
-  color: #5d5660;
+  color: #5d525b;
   cursor: pointer;
   font: inherit;
   font-size: 12px;
@@ -605,7 +612,7 @@
 
 .shareButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 7px 17px rgba(70, 40, 60, 0.08);
+  box-shadow: 0 6px 15px rgba(80, 40, 60, 0.08);
 }
 
 .shareIcon {
@@ -615,49 +622,59 @@
 }
 
 .whatsapp {
-  color: #20a85a;
-  border-color: #c9ead7;
+  color: #1c9c55;
+  border-color: #cfeedd;
 }
 
 .facebook {
   color: #1877f2;
-  border-color: #cdddf5;
+  border-color: #d5e4fb;
 }
 
 .xShare {
-  color: #111;
-  border-color: #ddd;
+  color: #171717;
+  border-color: #dddddd;
 }
 
 .telegram {
   color: #229ed9;
-  border-color: #cbe8f4;
+  border-color: #d2ebf7;
 }
 
 .copy {
-  color: #8b4f73;
-  border-color: #e7d1df;
+  color: #d9468f;
+  border-color: #f0ccde;
 }
 
 .more {
-  color: #6e6570;
-  border-color: #ded8dd;
+  color: #6d6270;
 }
 
 .shareDisclaimer {
-  max-width: 650px;
+  max-width: 690px;
   margin: 17px auto 0;
-  padding-top: 14px;
-  border-top: 1px solid #f0e1e9;
-  color: #9a9198;
+  color: #927f8a;
   font-size: 10px;
   line-height: 1.6;
   text-align: center;
 }
 
+.tomorrowMessage {
+  margin: 20px auto 0;
+  padding: 13px 16px;
+  border: 1px solid #f0d2e2;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #fff8fc, #fff);
+  color: #d9468f;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .resetButton {
   display: block;
-  margin: 22px auto 0;
+  margin: 20px auto 0;
   padding: 11px 18px;
   border: 1px solid #e9c9da;
   border-radius: 10px;
@@ -679,15 +696,19 @@
 
 @keyframes shuffleCard {
   0% {
-    transform: translateY(-7px) rotate(-2deg);
+    transform: translateY(-9px) rotate(-3deg);
+  }
+
+  50% {
+    transform: translateY(2px) rotate(1deg);
   }
 
   100% {
-    transform: translateY(7px) rotate(2deg);
+    transform: translateY(9px) rotate(3deg);
   }
 }
 
-@keyframes cardFlip {
+@keyframes selectedCardFlip {
   0% {
     transform: rotateY(0deg);
   }
@@ -698,26 +719,47 @@
 }
 
 @keyframes pulse {
-  0% {
+  from {
     transform: scale(0.9);
     opacity: 0.55;
   }
 
-  100% {
+  to {
     transform: scale(1.1);
     opacity: 1;
   }
 }
 
 @keyframes resultIn {
-  0% {
+  from {
     opacity: 0;
     transform: translateY(12px);
   }
 
-  100% {
+  to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .cardsArea {
+    gap: 8px;
+  }
+
+  .tarotCard {
+    width: 86px;
+    flex-basis: 86px;
+    height: 150px;
+  }
+
+  .selected {
+    width: 240px;
+    flex-basis: 240px;
+  }
+
+  .cardFace h3 {
+    font-size: 14px;
   }
 }
 
@@ -736,42 +778,50 @@
   }
 
   .dateGrid {
-    grid-template-columns: 0.8fr 1.3fr 1fr;
+    grid-template-columns: 0.8fr 1.35fr 1fr;
+    gap: 7px;
+  }
+
+  .datePreview {
+    font-size: 11px;
   }
 
   .cardsArea {
-    gap: 7px;
-    min-height: 155px;
-  }
-
-  .cardsShuffling {
-    min-height: 155px;
-  }
-
-  .cardsResult {
-    min-height: 340px;
+    gap: 5px;
+    min-height: 185px;
+    padding: 8px 0;
   }
 
   .tarotCard {
     width: 64px;
-    height: 125px;
     flex-basis: 64px;
+    height: 125px;
   }
 
-  .selectedCardLarge {
+  .selected {
     width: 210px;
-    height: 330px;
     flex-basis: 210px;
+    transform: scale(1);
+  }
+
+  .cardBack,
+  .cardFace {
+    border-radius: 13px;
   }
 
   .cardBack {
-    border-radius: 12px;
     gap: 6px;
-    padding: 8px;
+    padding: 8px 5px;
+  }
+
+  .cardBack::before,
+  .cardFace::before {
+    inset: 6px;
+    border-radius: 10px;
   }
 
   .cardStars {
-    font-size: 6px;
+    font-size: 7px;
   }
 
   .cardMoon {
@@ -779,34 +829,33 @@
   }
 
   .cardBackSymbol {
-    width: 38px;
-    height: 38px;
-    font-size: 22px;
+    width: 34px;
+    height: 34px;
+    font-size: 20px;
   }
 
   .cardBack small {
-    font-size: 5px;
+    font-size: 6px;
   }
 
   .cardFace {
-    border-radius: 12px;
-    padding: 12px 9px;
+    padding: 10px 8px;
   }
 
   .cardFaceSymbol {
-    width: 40px;
-    height: 40px;
-    margin: 5px 0 6px;
-    font-size: 22px;
+    width: 32px;
+    height: 32px;
+    margin: 4px 0;
+    font-size: 17px;
   }
 
   .cardFaceLabel {
-    font-size: 5px;
+    font-size: 5.5px;
   }
 
   .cardFace h3 {
-    margin: 5px 0;
-    font-size: 10px;
+    margin: 4px 0 3px;
+    font-size: 11px;
   }
 
   .cardFaceTheme {
@@ -814,57 +863,25 @@
   }
 
   .cardFaceLine {
-    width: 32px;
-    margin: 7px auto;
+    width: 28px;
+    margin: 4px 0;
   }
 
   .cardFace p {
-    max-width: 52px;
-    font-size: 6px;
-    line-height: 1.4;
-  }
-
-  .selectedCardLarge .cardFace {
-    padding: 22px 15px;
-  }
-
-  .selectedCardLarge .cardFaceSymbol {
-    width: 68px;
-    height: 68px;
-    margin: 9px 0 10px;
-    font-size: 36px;
-  }
-
-  .selectedCardLarge .cardFaceLabel {
-    font-size: 7px;
-  }
-
-  .selectedCardLarge .cardFace h3 {
-    margin: 8px 0 6px;
-    font-size: 18px;
-  }
-
-  .selectedCardLarge .cardFaceTheme {
-    font-size: 9px;
-  }
-
-  .selectedCardLarge .cardFaceLine {
-    width: 55px;
-    margin: 10px auto;
-  }
-
-  .selectedCardLarge .cardFace p {
-    max-width: 145px;
-    font-size: 9px;
-    line-height: 1.5;
+    max-width: 150px;
+    font-size: 6.5px;
   }
 
   .resultIntro {
-    padding: 20px 16px;
+    padding: 18px 15px;
   }
 
   .resultIntro h3 {
-    font-size: 19px;
+    font-size: 21px;
+  }
+
+  .resultIntro p {
+    font-size: 13px;
   }
 
   .resultBlock {
@@ -872,13 +889,19 @@
     gap: 12px;
   }
 
+  .resultBlock > span {
+    width: 31px;
+    height: 31px;
+    flex-basis: 31px;
+  }
+
   .resultBlock h3 {
-    font-size: 16px;
+    font-size: 17px;
   }
 
   .resultBlock p {
     font-size: 13px;
-    line-height: 1.7;
+    line-height: 1.68;
   }
 
   .shareSection {
@@ -894,55 +917,80 @@
     padding: 0 10px;
     font-size: 11px;
   }
-
-  .shareIcon {
-    width: 16px;
-    height: 16px;
-    flex-basis: 16px;
-  }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 430px) {
   .cardsArea {
-    gap: 5px;
+    gap: 4px;
   }
 
   .tarotCard {
     width: 57px;
-    height: 112px;
     flex-basis: 57px;
+    height: 112px;
   }
 
-  .selectedCardLarge {
+  .selected {
     width: 190px;
-    height: 300px;
     flex-basis: 190px;
   }
 
-  .selectedCardLarge .cardFace h3 {
-    font-size: 16px;
+  .cardFace h3 {
+    font-size: 10px;
   }
 
-  .selectedCardLarge .cardFace p {
-    max-width: 132px;
-    font-size: 8px;
+  .cardFace p {
+    max-width: 130px;
+    font-size: 6px;
+  }
+
+  .dateGrid {
+    grid-template-columns: 0.75fr 1.35fr 1fr;
   }
 
   .shareButton {
-    padding: 0 8px;
+    flex: 1 1 calc(50% - 7px);
+  }
+}
+
+@media (max-width: 360px) {
+  .tarotCard {
+    width: 52px;
+    flex-basis: 52px;
+    height: 106px;
+  }
+
+  .selected {
+    width: 180px;
+    flex-basis: 180px;
+  }
+
+  .cardBackSymbol {
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+  }
+
+  .cardMoon {
+    font-size: 19px;
+  }
+
+  .cardFace h3 {
+    font-size: 9px;
+  }
+
+  .cardFace p {
+    font-size: 5.5px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .shuffling,
   .loadingText span,
-  .flipping .cardInner,
+  .selected .cardInner,
+  .selected.flipping .cardInner,
   .resultBlock {
     animation: none;
-  }
-
-  .revealed .cardInner {
-    transform: rotateY(180deg);
   }
 
   .generateButton,
@@ -952,4 +1000,15 @@
   }
 }
 
+@supports (-webkit-touch-callout: none) {
+  .field input,
+  .field select {
+    font-size: 16px;
+  }
+
+  .cardBack,
+  .cardFace {
+    -webkit-transform-style: preserve-3d;
+  }
+}
 
