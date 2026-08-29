@@ -98,17 +98,17 @@ export default function Home() {
      handleOpenCosmicTarot
  );
     return () => {
-   window.removeEventListener(
+  window.removeEventListener(
     'loveons:open-calculator',
     handleOpenCalculator
-     
-   window.removeEventListener(
+  );
+
+  window.removeEventListener(
     'loveons:open-cosmic-tarot',
-   handleOpenCosmicTarot
-); 
-      );
-    };
-  }, []);
+    handleOpenCosmicTarot
+  );          
+ };
+ }, []);
 
   // =====================================================
   // UPDATE PERSON 1
