@@ -12,17 +12,13 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 
 const CATEGORIES = [
+  'Relationships',
   'Communication',
-  'Conflict Resolution',
-  'Date Ideas',
-  'Relationship Tips',
-  'Trust & Commitment',
-  'Dating',
+  'Dating & Romance',
   'Marriage',
-  'Self Love',
-  'Mental Health',
-  'Breakup & Healing',
-  'Romance',
+  'Breakups & Healing',
+  'Self Growth',
+  'Love Questions',
 ];
 
 const TOOLS = [
