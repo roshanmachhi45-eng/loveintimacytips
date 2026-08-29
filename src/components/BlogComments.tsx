@@ -1,4 +1,3 @@
-
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
@@ -27,10 +26,8 @@ export default function BlogComments({
   const [comments, setComments] = useState<BlogComment[]>([]);
   const [name, setName] = useState("");
   const [comment, setComment] = useState("");
-
   const [loadingComments, setLoadingComments] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -115,7 +112,10 @@ export default function BlogComments({
 
       await loadComments();
     } catch (error) {
-      console.error("Comment submission error:", error);
+      console.error(
+        "Comment submission error:",
+        error
+      );
 
       if (error instanceof Error) {
         setErrorMessage(error.message);
@@ -133,63 +133,70 @@ export default function BlogComments({
     <section
       aria-labelledby="blog-comments-heading"
       className="
-        mt-8
+        mt-7
         rounded-2xl
         border
         border-pink-100
         bg-white
-        p-4
+        p-3
         shadow-sm
-        sm:p-5
+        shadow-pink-100/50
+        sm:p-4
       "
     >
-      {/* Comments Header */}
-      <div className="mb-4">
-        <div className="flex items-center gap-2.5">
-          <div
+      {/* COMMENTS HEADER */}
+
+      <div className="mb-3 flex items-center gap-2">
+        <div
+          className="
+            flex
+            h-8
+            w-8
+            shrink-0
+            items-center
+            justify-center
+            rounded-xl
+            bg-pink-500
+            text-white
+            shadow-sm
+          "
+        >
+          <MessageCircle className="h-4 w-4" />
+        </div>
+
+        <div>
+          <h2
+            id="blog-comments-heading"
             className="
-              flex
-              h-9
-              w-9
-              shrink-0
-              items-center
-              justify-center
-              rounded-full
-              bg-pink-500
-              text-white
+              text-base
+              font-bold
+              text-pink-600
             "
           >
-            <MessageCircle className="h-4 w-4" />
-          </div>
+            Comments
+          </h2>
 
-          <div>
-            <h2
-              id="blog-comments-heading"
-              className="text-lg font-bold text-pink-600"
-            >
-              Comments
-            </h2>
-
-            <p className="text-xs text-gray-500">
-              Share your thoughts about this article.
-            </p>
-          </div>
+          <p className="text-[11px] text-gray-500">
+            Share your thoughts about this article.
+          </p>
         </div>
       </div>
 
-      {/* Comment Form */}
+      {/* COMMENT FORM */}
+
       <form
         onSubmit={handleSubmit}
-        className="space-y-3"
+        className="space-y-2.5"
       >
-        {/* Name */}
+        {/* NAME */}
+
         <div>
           <label
             htmlFor="comment-name"
             className="
               mb-1
               block
-              text-xs
+              text-[11px]
               font-semibold
               text-gray-700
             "
@@ -204,8 +211,8 @@ export default function BlogComments({
                 absolute
                 left-3
                 top-1/2
-                h-4
-                w-4
+                h-3.5
+                w-3.5
                 -translate-y-1/2
                 text-pink-400
               "
@@ -223,19 +230,20 @@ export default function BlogComments({
               disabled={submitting}
               className="
                 w-full
-                rounded-lg
+                rounded-xl
                 border
                 border-pink-100
-                bg-white
-                py-2.5
+                bg-pink-50/30
+                py-2
                 pl-9
                 pr-3
-                text-sm
+                text-xs
                 text-gray-800
                 outline-none
                 transition
                 placeholder:text-gray-400
                 focus:border-pink-400
+                focus:bg-white
                 focus:ring-2
                 focus:ring-pink-100
                 disabled:cursor-not-allowed
@@ -244,19 +252,20 @@ export default function BlogComments({
             />
           </div>
 
-          <div className="mt-0.5 text-right text-[10px] text-gray-400">
+          <div className="mt-0.5 text-right text-[9px] text-gray-400">
             {name.length}/80
           </div>
         </div>
 
-        {/* Comment */}
+        {/* COMMENT */}
+
         <div>
           <label
             htmlFor="comment-text"
             className="
               mb-1
               block
-              text-xs
+              text-[11px]
               font-semibold
               text-gray-700
             "
@@ -272,24 +281,25 @@ export default function BlogComments({
             }
             placeholder="Write your comment here..."
             maxLength={2000}
-            rows={4}
+            rows={3}
             disabled={submitting}
             className="
               w-full
               resize-y
-              rounded-lg
+              rounded-xl
               border
               border-pink-100
-              bg-white
+              bg-pink-50/30
               px-3
-              py-2.5
-              text-sm
+              py-2
+              text-xs
               leading-5
               text-gray-800
               outline-none
               transition
               placeholder:text-gray-400
               focus:border-pink-400
+              focus:bg-white
               focus:ring-2
               focus:ring-pink-100
               disabled:cursor-not-allowed
@@ -297,12 +307,13 @@ export default function BlogComments({
             "
           />
 
-          <div className="mt-0.5 text-right text-[10px] text-gray-400">
+          <div className="mt-0.5 text-right text-[9px] text-gray-400">
             {comment.length}/2000
           </div>
         </div>
 
-        {/* Error */}
+        {/* ERROR */}
+
         {errorMessage && (
           <div
             role="alert"
@@ -310,23 +321,24 @@ export default function BlogComments({
               flex
               items-start
               gap-2
-              rounded-lg
+              rounded-xl
               border
               border-red-100
               bg-red-50
               px-3
-              py-2.5
-              text-xs
+              py-2
+              text-[11px]
               text-red-700
             "
           >
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
 
             <span>{errorMessage}</span>
           </div>
         )}
 
-        {/* Success */}
+        {/* SUCCESS */}
+
         {successMessage && (
           <div
             role="status"
@@ -334,69 +346,73 @@ export default function BlogComments({
               flex
               items-start
               gap-2
-              rounded-lg
+              rounded-xl
               border
               border-green-100
               bg-green-50
               px-3
-              py-2.5
-              text-xs
+              py-2
+              text-[11px]
               text-green-700
             "
           >
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
 
             <span>{successMessage}</span>
           </div>
         )}
 
-        {/* Submit Button */}
+        {/* SUBMIT BUTTON */}
+
         <button
           type="submit"
           disabled={submitting}
           className="
             inline-flex
-            w-full
             items-center
             justify-center
             gap-1.5
-            rounded-lg
+            rounded-xl
             bg-pink-500
             px-4
-            py-2.5
-            text-sm
+            py-2
+            text-xs
             font-semibold
             text-white
             shadow-sm
-            transition
+            shadow-pink-200/70
+            transition-all
+            duration-200
             hover:bg-pink-600
-            active:scale-[0.99]
+            hover:shadow-md
+            active:scale-[0.98]
             disabled:cursor-not-allowed
             disabled:opacity-60
-            sm:w-auto
           "
         >
           {submitting ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
               <span>Submitting...</span>
             </>
           ) : (
             <>
-              <Send className="h-4 w-4" />
+              <Send className="h-3.5 w-3.5" />
               <span>Post Comment</span>
             </>
           )}
         </button>
       </form>
 
-      {/* Divider */}
-      <div className="my-5 h-px bg-pink-100" />
+      {/* DIVIDER */}
 
-      {/* Comments List */}
+      <div className="my-4 h-px bg-pink-100" />
+
+      {/* COMMENTS LIST */}
+
       <div>
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-pink-600">
+        <div className="mb-2.5 flex items-center justify-between">
+          <h3 className="text-xs font-bold text-pink-600">
             {comments.length > 0
               ? `${comments.length} ${
                   comments.length === 1
@@ -407,23 +423,24 @@ export default function BlogComments({
           </h3>
         </div>
 
-        {/* Loading */}
+        {/* LOADING */}
+
         {loadingComments ? (
           <div
             className="
               flex
               items-center
               justify-center
-              py-6
-              text-xs
+              py-5
+              text-[11px]
               text-gray-500
             "
           >
             <Loader2
               className="
                 mr-2
-                h-4
-                w-4
+                h-3.5
+                w-3.5
                 animate-spin
                 text-pink-500
               "
@@ -432,26 +449,27 @@ export default function BlogComments({
             Loading comments...
           </div>
         ) : comments.length === 0 ? (
-          /* Empty State */
+          /* EMPTY STATE */
+
           <div
             className="
-              rounded-lg
+              rounded-xl
               border
               border-dashed
               border-pink-100
-              bg-pink-50/30
-              px-4
-              py-6
+              bg-pink-50/40
+              px-3
+              py-5
               text-center
             "
           >
             <MessageCircle
               className="
                 mx-auto
-                mb-2
-                h-6
-                w-6
-                text-pink-200
+                mb-1.5
+                h-5
+                w-5
+                text-pink-300
               "
             />
 
@@ -459,37 +477,42 @@ export default function BlogComments({
               No comments yet.
             </p>
 
-            <p className="mt-1 text-[11px] text-gray-400">
+            <p className="mt-1 text-[10px] text-gray-400">
               Be the first to share your thoughts.
             </p>
           </div>
         ) : (
-          /* Comments */
-          <div className="space-y-2.5">
+          /* COMMENTS */
+
+          <div className="space-y-2">
             {comments.map((item) => (
               <article
                 key={item.id}
                 className="
-                  rounded-lg
+                  rounded-xl
                   border
                   border-pink-100
-                  bg-white
-                  p-3
+                  bg-pink-50/20
+                  p-2.5
+                  transition
+                  hover:border-pink-200
+                  hover:bg-pink-50/40
                 "
               >
-                <div className="flex items-start gap-2.5">
-                  {/* User Initial */}
+                <div className="flex items-start gap-2">
+                  {/* USER INITIAL */}
+
                   <div
                     className="
                       flex
-                      h-8
-                      w-8
+                      h-7
+                      w-7
                       shrink-0
                       items-center
                       justify-center
                       rounded-full
                       bg-pink-100
-                      text-xs
+                      text-[10px]
                       font-bold
                       text-pink-600
                     "
@@ -510,11 +533,11 @@ export default function BlogComments({
                         gap-y-0.5
                       "
                     >
-                      <h4 className="text-xs font-semibold text-gray-800">
+                      <h4 className="text-[11px] font-semibold text-gray-800">
                         {item.name}
                       </h4>
 
-                      <span className="text-[10px] text-gray-400">
+                      <span className="text-[9px] text-gray-400">
                         {formatCommentDate(
                           item.created_at
                         )}
@@ -523,11 +546,11 @@ export default function BlogComments({
 
                     <p
                       className="
-                        mt-1.5
+                        mt-1
                         whitespace-pre-wrap
                         break-words
-                        text-xs
-                        leading-5
+                        text-[11px]
+                        leading-4
                         text-gray-600
                       "
                     >
@@ -558,4 +581,4 @@ function formatCommentDate(
     month: "short",
     year: "numeric",
   }).format(date);
-}
+              }
