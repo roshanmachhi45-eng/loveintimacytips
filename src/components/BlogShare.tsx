@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -28,7 +27,6 @@ export default function BlogShare({
 }: BlogShareProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   const getShareUrl = () => {
@@ -67,7 +65,6 @@ export default function BlogShare({
         textArea.style.top = "0";
 
         document.body.appendChild(textArea);
-
         textArea.focus();
         textArea.select();
 
@@ -99,7 +96,7 @@ export default function BlogShare({
       try {
         await navigator.share({
           title: shareTitle,
-          text: `Read this article on Loveons.com`,
+          text: "Read this article on Loveons.com",
           url,
         });
       } catch {
@@ -267,31 +264,38 @@ export default function BlogShare({
       className="relative my-5 flex justify-start"
     >
       {/* Main Share Button */}
-      className="
-        inline-flex
-        items-center
-        gap-2
-        rounded-full
-        border
-        border-transparent
-        bg-gradient-to-r
-        from-rose-500
-        to-pink-500
-        px-5
-        py-2.5
-        text-sm
-        font-semibold
-        ntext-white
-        shadow-md
-        shadow-pink-200/70
-        transition-all
-        duration-300
-        hover:-translate-y-0.5
-        hover:from-rose-600
-        hover:to-pink-600
-        hover:shadow-lg
-        hover:shadow-pink-300/70
-     
+      <button
+        type="button"
+        onClick={() => setOpen((previous) => !previous)}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        className="
+          inline-flex
+          items-center
+          gap-2
+          rounded-full
+          border
+          border-transparent
+          bg-gradient-to-r
+          from-rose-500
+          to-pink-500
+          px-5
+          py-2.5
+          text-sm
+          font-semibold
+          text-white
+          shadow-md
+          shadow-pink-200/70
+          transition-all
+          duration-300
+          hover:-translate-y-0.5
+          hover:from-rose-600
+          hover:to-pink-600
+          hover:shadow-lg
+          hover:shadow-pink-300/70
+          active:translate-y-0
+          active:scale-[0.98]
+        "
       >
         <Share2
           className="h-4 w-4"
@@ -402,7 +406,6 @@ export default function BlogShare({
                 `}
               >
                 {item.icon}
-
                 <span>{item.name}</span>
               </button>
             ))}
@@ -439,7 +442,6 @@ export default function BlogShare({
             "
           >
             <MoreHorizontal className="h-5 w-5" />
-
             <span>More sharing options</span>
           </button>
 
