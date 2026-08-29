@@ -688,61 +688,134 @@ export default function BlogTTS({
 
   return (
     <div
+  className="
+    mb-5
+    flex
+    w-fit
+    max-w-full
+    items-center
+    gap-3
+    rounded-2xl
+    border
+    border-rose-200
+    bg-rose-50
+    px-3
+    py-2
+    shadow-sm
+  "
+  aria-label="Listen to this article"
+>
+  {/* SOUND ICON */}
+  <div
+    className="
+      flex
+      h-9
+      w-9
+      shrink-0
+      items-center
+      justify-center
+      rounded-xl
+      bg-rose-500
+      text-white
+    "
+    aria-hidden="true"
+  >
+    <Volume2 className="h-4 w-4" />
+  </div>
+
+  {/* TITLE / STATUS */}
+  <div className="min-w-0 pr-1">
+    <p className="whitespace-nowrap text-xs font-semibold leading-4 text-rose-700">
+      Listen to this article
+    </p>
+
+    <p className="text-[10px] leading-3 text-rose-500">
+      {isPlaying
+        ? 'Playing'
+        : isPaused
+        ? 'Paused'
+        : 'Ready'}
+    </p>
+  </div>
+
+  {/* PLAY / PAUSE */}
+  {isPlaying ? (
+    <button
+      type="button"
+      onClick={handlePause}
+      aria-label="Pause article"
+      title="Pause"
       className="
-        mb-5
         flex
-        w-fit
-        max-w-full
+        h-9
+        w-9
+        shrink-0
         items-center
-        gap-2
-        rounded-2xl
-        bg-rose-500
-        px-3
-        py-2
+        justify-center
+        rounded-full
+        bg-white
+        text-rose-600
         shadow-sm
+        transition
+        hover:bg-rose-100
+        active:scale-95
       "
-      aria-label="Listen to this article"
     >
-      {/* SOUND ICON */}
-      <Volume2
-        className="
-          h-4
-          w-4
-          shrink-0
-          text-white
-        "
-        aria-hidden="true"
-      />
+      <Pause className="h-4 w-4" fill="currentColor" />
+    </button>
+  ) : (
+    <button
+      type="button"
+      onClick={handlePlay}
+      aria-label={isPaused ? 'Resume article' : 'Play article'}
+      title={isPaused ? 'Resume' : 'Play'}
+      className="
+        flex
+        h-9
+        w-9
+        shrink-0
+        items-center
+        justify-center
+        rounded-full
+        bg-white
+        text-rose-600
+        shadow-sm
+        transition
+        hover:bg-rose-100
+        active:scale-95
+      "
+    >
+      <Play className="ml-0.5 h-4 w-4" fill="currentColor" />
+    </button>
+  )}
 
-      {/* TITLE / STATUS */}
-      <div className="min-w-0 pr-1">
-        <p
-          className="
-            whitespace-nowrap
-            text-xs
-            font-semibold
-            leading-4
-            text-white
-          "
-        >
-          Listen to this article
-        </p>
-
-        <p
-          className="
-            text-[10px]
-            leading-3
-            text-white/80
-          "
-        >
-          {isPlaying
-            ? 'Playing'
-            : isPaused
-              ? 'Paused'
-              : 'Ready'}
-        </p>
-      </div>
-
+  {/* STOP */}
+  {(isPlaying || isPaused) && (
+    <button
+      type="button"
+      onClick={handleStop}
+      aria-label="Stop article"
+      title="Stop"
+      className="
+        flex
+        h-9
+        w-9
+        shrink-0
+        items-center
+        justify-center
+        rounded-full
+        bg-rose-500
+        text-white
+        shadow-sm
+        transition
+        hover:bg-rose-600
+        active:scale-95
+      "
+    >
+      <Square className="h-3.5 w-3.5" fill="currentColor" />
+    </button>
+  )}
+</div>
       {/* PLAY / PAUSE */}
       {isPlaying ? (
         <button
