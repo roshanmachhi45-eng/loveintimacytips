@@ -1,10 +1,10 @@
-
 import {
   useCallback,
   useEffect,
   useRef,
   useState,
 } from 'react';
+
 import {
   Pause,
   Play,
@@ -31,6 +31,7 @@ const DEFAULT_CONTENT_ID = 'blog-article-content';
  * 0.92 browser ki normal voice se thoda comfortable
  * aur natural reading speed deta hai.
  */
+
 const SPEECH_RATE = 0.92;
 const SPEECH_PITCH = 1;
 const SPEECH_VOLUME = 1;
@@ -41,6 +42,7 @@ const SPEECH_VOLUME = 1;
  *
  * Isliye article ko small chunks mein read karenge.
  */
+
 const MAX_CHUNK_LENGTH = 220;
 
 /*
@@ -48,6 +50,7 @@ const MAX_CHUNK_LENGTH = 220;
  * late aata hai. Isliye current position ko safely track
  * karne ke liye ye values use hongi.
  */
+
 interface SpeechChunk {
   text: string;
 }
@@ -71,17 +74,22 @@ function cleanText(text: string): string {
  * =========================================================
  */
 
-function createSpeechChunks(article: HTMLElement): SpeechChunk[] {
+function createSpeechChunks(
+  article: HTMLElement
+): SpeechChunk[] {
   /*
    * Article ka clone banaya ja raha hai.
    *
    * Original website DOM ko touch nahi karna.
    */
-  const clone = article.cloneNode(true) as HTMLElement;
+
+  const clone =
+    article.cloneNode(true) as HTMLElement;
 
   /*
    * TTS ko in elements ko kabhi nahi padhna chahiye.
    */
+
   clone
     .querySelectorAll(
       'script, style, button, nav, aside, form, input, textarea, select'
@@ -93,7 +101,12 @@ function createSpeechChunks(article: HTMLElement): SpeechChunk[] {
   /*
    * Article ke andar se actual readable text.
    */
-  const rawText = clone.innerText || clone.textContent || '';
+
+  const rawText =
+    clone.innerText ||
+    clone.textContent ||
+    '';
+
   const text = cleanText(rawText);
 
   if (!text) {
@@ -102,16 +115,22 @@ function createSpeechChunks(article: HTMLElement): SpeechChunk[] {
 
   /*
    * Pehle sentences ke around split karne ki koshish.
+   *
    * Isse voice zyada natural lagegi.
    */
+
   const sentences =
-    text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
+    text.match(
+      /[^.!?]+[.!?]+|[^.!?]+$/g
+    ) || [text];
 
   const chunks: SpeechChunk[] = [];
+
   let current = '';
 
   for (const sentence of sentences) {
-    const cleanSentence = cleanText(sentence);
+    const cleanSentence =
+      cleanText(sentence);
 
     if (!cleanSentence) {
       continue;
@@ -119,20 +138,27 @@ function createSpeechChunks(article: HTMLElement): SpeechChunk[] {
 
     /*
      * Agar current chunk mein sentence add karne se
-     * maximum length cross nahi hoti, to same chunk mein rakho.
+     * maximum length cross nahi hoti,
+     * to same chunk mein rakho.
      */
+
     if (
       current.length > 0 &&
-      current.length + cleanSentence.length + 1 <=
+      current.length +
+        cleanSentence.length +
+        1 <=
         MAX_CHUNK_LENGTH
     ) {
-      current = `${current} ${cleanSentence}`;
+      current =
+        `${current} ${cleanSentence}`;
+
       continue;
     }
 
     /*
      * Current chunk save karo.
      */
+
     if (current) {
       chunks.push({
         text: current,
@@ -143,14 +169,22 @@ function createSpeechChunks(article: HTMLElement): SpeechChunk[] {
      * Bahut bada sentence ho to usko words ke basis par
      * smaller chunks mein tod do.
      */
-    if (cleanSentence.length > MAX_CHUNK_LENGTH) {
-      const words = cleanSentence.split(/\s+/);
+
+    if (
+      cleanSentence.length >
+      MAX_CHUNK_LENGTH
+    ) {
+      const words =
+        cleanSentence.split(/\s+/);
+
       let wordChunk = '';
 
       for (const word of words) {
         if (
           wordChunk &&
-          wordChunk.length + word.length + 1 >
+          wordChunk.length +
+            word.length +
+            1 >
             MAX_CHUNK_LENGTH
         ) {
           chunks.push({
@@ -189,19 +223,28 @@ function createSpeechChunks(article: HTMLElement): SpeechChunk[] {
 export default function BlogTTS({
   contentId = DEFAULT_CONTENT_ID,
 }: BlogTTSProps) {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [isSupported, setIsSupported] = useState(true);
+  const [isPlaying, setIsPlaying] =
+    useState(false);
+
+  const [isPaused, setIsPaused] =
+    useState(false);
+
+  const [isSupported, setIsSupported] =
+    useState(true);
 
   /*
    * Speech chunks.
    */
-  const chunksRef = useRef<SpeechChunk[]>([]);
+
+  const chunksRef =
+    useRef<SpeechChunk[]>([]);
 
   /*
    * Current chunk index.
    */
-  const currentChunkRef = useRef(0);
+
+  const currentChunkRef =
+    useRef(0);
 
   /*
    * Current character position inside current chunk.
@@ -210,28 +253,39 @@ export default function BlogTTS({
    * Pause par utterance cancel karke isi position se
    * dobara start karenge.
    */
-  const currentCharRef = useRef(0);
+
+  const currentCharRef =
+    useRef(0);
 
   /*
    * Current utterance.
    */
+
   const utteranceRef =
-    useRef<SpeechSynthesisUtterance | null>(null);
+    useRef<
+      SpeechSynthesisUtterance | null
+    >(null);
 
   /*
    * User ne intentionally speech cancel ki ya nahi.
    */
-  const cancellingRef = useRef(false);
+
+  const cancellingRef =
+    useRef(false);
 
   /*
    * Resume operation already scheduled hai ya nahi.
    */
-  const startingRef = useRef(false);
+
+  const startingRef =
+    useRef(false);
 
   /*
    * Component mounted hai ya nahi.
    */
-  const mountedRef = useRef(true);
+
+  const mountedRef =
+    useRef(true);
 
   /*
    * =======================================================
@@ -245,7 +299,8 @@ export default function BlogTTS({
     if (
       typeof window === 'undefined' ||
       !('speechSynthesis' in window) ||
-      typeof SpeechSynthesisUtterance === 'undefined'
+      typeof SpeechSynthesisUtterance ===
+        'undefined'
     ) {
       setIsSupported(false);
     }
@@ -255,7 +310,10 @@ export default function BlogTTS({
 
       cancellingRef.current = true;
 
-      if ('speechSynthesis' in window) {
+      if (
+        typeof window !== 'undefined' &&
+        'speechSynthesis' in window
+      ) {
         window.speechSynthesis.cancel();
       }
 
@@ -270,43 +328,50 @@ export default function BlogTTS({
    */
 
   const getPreferredVoice =
-    useCallback((): SpeechSynthesisVoice | null => {
-      if (
-        typeof window === 'undefined' ||
-        !('speechSynthesis' in window)
-      ) {
-        return null;
-      }
+    useCallback(
+      (): SpeechSynthesisVoice | null => {
+        if (
+          typeof window === 'undefined' ||
+          !('speechSynthesis' in window)
+        ) {
+          return null;
+        }
 
-      const voices =
-        window.speechSynthesis.getVoices();
+        const voices =
+          window.speechSynthesis.getVoices();
 
-      if (!voices.length) {
-        return null;
-      }
+        if (!voices.length) {
+          return null;
+        }
 
-      /*
-       * English voice ko preference.
-       */
-      const englishVoice =
-        voices.find((voice) =>
-          /^en[-_]/i.test(voice.lang)
+        /*
+         * English voice ko preference.
+         */
+
+        const englishVoice =
+          voices.find((voice) =>
+            /^en[-_]/i.test(voice.lang)
+          );
+
+        if (englishVoice) {
+          return englishVoice;
+        }
+
+        /*
+         * Agar English voice available nahi hai,
+         * browser ki default voice.
+         */
+
+        return (
+          voices.find(
+            (voice) => voice.default
+          ) ||
+          voices[0] ||
+          null
         );
-
-      if (englishVoice) {
-        return englishVoice;
-      }
-
-      /*
-       * Agar English voice available nahi hai,
-       * browser ki default voice.
-       */
-      return (
-        voices.find((voice) => voice.default) ||
-        voices[0] ||
-        null
-      );
-    }, []);
+      },
+      []
+    );
 
   /*
    * =======================================================
@@ -340,7 +405,9 @@ export default function BlogTTS({
       }
 
       chunksRef.current = chunks;
+
       currentChunkRef.current = 0;
+
       currentCharRef.current = 0;
 
       return true;
@@ -359,9 +426,11 @@ export default function BlogTTS({
       }
 
       setIsPlaying(false);
+
       setIsPaused(false);
 
       currentChunkRef.current = 0;
+
       currentCharRef.current = 0;
 
       utteranceRef.current = null;
@@ -388,7 +457,9 @@ export default function BlogTTS({
         return;
       }
 
-      const chunks = chunksRef.current;
+      const chunks =
+        chunksRef.current;
+
       const chunkIndex =
         currentChunkRef.current;
 
@@ -405,6 +476,7 @@ export default function BlogTTS({
       /*
        * Previous speech ko completely clear karo.
        */
+
       window.speechSynthesis.cancel();
 
       const fullText =
@@ -420,15 +492,20 @@ export default function BlogTTS({
         );
 
       const remainingText =
-        fullText.slice(startPosition).trim();
+        fullText
+          .slice(startPosition)
+          .trim();
 
       /*
        * Agar current chunk ka text finish ho chuka hai,
        * next chunk par chale jao.
        */
+
       if (!remainingText) {
         currentChunkRef.current += 1;
+
         currentCharRef.current = 0;
+
         startingRef.current = false;
 
         window.setTimeout(() => {
@@ -443,9 +520,14 @@ export default function BlogTTS({
           remainingText
         );
 
-      utterance.rate = SPEECH_RATE;
-      utterance.pitch = SPEECH_PITCH;
-      utterance.volume = SPEECH_VOLUME;
+      utterance.rate =
+        SPEECH_RATE;
+
+      utterance.pitch =
+        SPEECH_PITCH;
+
+      utterance.volume =
+        SPEECH_VOLUME;
 
       const voice =
         getPreferredVoice();
@@ -455,25 +537,24 @@ export default function BlogTTS({
       }
 
       /*
-       * Boundary event se exact reading position track karte hain.
-       *
-       * Android/mobile browser mein ye event perfect
-       * na bhi aaye, tab bhi current chunk ka position
-       * safely preserve rahega.
+       * Boundary event se exact reading position
+       * track karte hain.
        */
-      utterance.onboundary = (event) => {
-        if (
-          event.name === 'word' ||
-          event.name === 'sentence'
-        ) {
-          currentCharRef.current =
-            startPosition +
-            Math.max(
-              0,
-              event.charIndex || 0
-            );
-        }
-      };
+
+      utterance.onboundary =
+        (event) => {
+          if (
+            event.name === 'word' ||
+            event.name === 'sentence'
+          ) {
+            currentCharRef.current =
+              startPosition +
+              Math.max(
+                0,
+                event.charIndex || 0
+              );
+          }
+        };
 
       utterance.onstart = () => {
         startingRef.current = false;
@@ -483,6 +564,7 @@ export default function BlogTTS({
         }
 
         setIsPlaying(true);
+
         setIsPaused(false);
       };
 
@@ -493,6 +575,7 @@ export default function BlogTTS({
          * Agar ye intentional cancel tha,
          * to next chunk automatically mat chalao.
          */
+
         if (cancellingRef.current) {
           cancellingRef.current = false;
           return;
@@ -501,7 +584,9 @@ export default function BlogTTS({
         /*
          * Current chunk complete.
          */
+
         currentChunkRef.current += 1;
+
         currentCharRef.current = 0;
 
         if (
@@ -515,17 +600,21 @@ export default function BlogTTS({
         /*
          * Next chunk.
          */
+
         window.setTimeout(() => {
           speakCurrentChunk();
         }, 30);
       };
 
-      utterance.onerror = (event) => {
+      utterance.onerror = (
+        event
+      ) => {
         startingRef.current = false;
 
         /*
          * Intentional cancel ko error mat samjho.
          */
+
         if (
           cancellingRef.current &&
           event.error === 'canceled'
@@ -545,11 +634,13 @@ export default function BlogTTS({
         }
       };
 
-      utteranceRef.current = utterance;
+      utteranceRef.current =
+        utterance;
 
       /*
        * New speech start.
        */
+
       window.speechSynthesis.speak(
         utterance
       );
@@ -573,7 +664,10 @@ export default function BlogTTS({
       /*
        * First play.
        */
-      if (!chunksRef.current.length) {
+
+      if (
+        !chunksRef.current.length
+      ) {
         const loaded =
           loadArticleChunks();
 
@@ -585,14 +679,15 @@ export default function BlogTTS({
       /*
        * Resume.
        *
-       * IMPORTANT:
        * Browser pause/resume use nahi kar rahe.
        * Current character position se fresh utterance
        * create hoti hai.
        */
+
       cancellingRef.current = false;
 
       setIsPaused(false);
+
       setIsPlaying(true);
 
       speakCurrentChunk();
@@ -612,7 +707,9 @@ export default function BlogTTS({
     useCallback(() => {
       if (
         typeof window === 'undefined' ||
-        !('speechSynthesis' in window)
+        !(
+          'speechSynthesis' in window
+        )
       ) {
         return;
       }
@@ -626,6 +723,7 @@ export default function BlogTTS({
        * Current character position already onboundary
        * se save ho chuki hai.
        */
+
       cancellingRef.current = true;
 
       window.speechSynthesis.cancel();
@@ -633,6 +731,7 @@ export default function BlogTTS({
       startingRef.current = false;
 
       setIsPlaying(false);
+
       setIsPaused(true);
     }, []);
 
@@ -649,15 +748,18 @@ export default function BlogTTS({
         'speechSynthesis' in window
       ) {
         cancellingRef.current = true;
+
         window.speechSynthesis.cancel();
       }
 
       startingRef.current = false;
 
       currentChunkRef.current = 0;
+
       currentCharRef.current = 0;
 
       setIsPlaying(false);
+
       setIsPaused(false);
 
       utteranceRef.current = null;
@@ -671,10 +773,15 @@ export default function BlogTTS({
 
   useEffect(() => {
     /*
-     * Blog slug change hone par old speech ko completely stop.
+     * Blog slug change hone par old speech
+     * ko completely stop.
      */
+
     handleStop();
-  }, [contentId, handleStop]);
+  }, [
+    contentId,
+    handleStop,
+  ]);
 
   /*
    * =======================================================
@@ -688,135 +795,74 @@ export default function BlogTTS({
 
   return (
     <div
-  className="
-    mb-5
-    flex
-    w-fit
-    max-w-full
-    items-center
-    gap-3
-    rounded-2xl
-    border
-    border-rose-200
-    bg-rose-50
-    px-3
-    py-2
-    shadow-sm
-  "
-  aria-label="Listen to this article"
->
-  {/* SOUND ICON */}
-  <div
-    className="
-      flex
-      h-9
-      w-9
-      shrink-0
-      items-center
-      justify-center
-      rounded-xl
-      bg-rose-500
-      text-white
-    "
-    aria-hidden="true"
-  >
-    <Volume2 className="h-4 w-4" />
-  </div>
-
-  {/* TITLE / STATUS */}
-  <div className="min-w-0 pr-1">
-    <p className="whitespace-nowrap text-xs font-semibold leading-4 text-rose-700">
-      Listen to this article
-    </p>
-
-    <p className="text-[10px] leading-3 text-rose-500">
-      {isPlaying
-        ? 'Playing'
-        : isPaused
-        ? 'Paused'
-        : 'Ready'}
-    </p>
-  </div>
-
-  {/* PLAY / PAUSE */}
-  {isPlaying ? (
-    <button
-      type="button"
-      onClick={handlePause}
-      aria-label="Pause article"
-      title="Pause"
       className="
-        flex
-        h-9
-        w-9
-        shrink-0
+        mb-5
+        inline-flex
+        max-w-full
         items-center
-        justify-center
-        rounded-full
-        bg-white
-        text-rose-600
-        shadow-sm
-        transition
-        hover:bg-rose-100
-        active:scale-95
-      "
-    >
-      <Pause className="h-4 w-4" fill="currentColor" />
-    </button>
-  ) : (
-    <button
-      type="button"
-      onClick={handlePlay}
-      aria-label={isPaused ? 'Resume article' : 'Play article'}
-      title={isPaused ? 'Resume' : 'Play'}
-      className="
-        flex
-        h-9
-        w-9
-        shrink-0
-        items-center
-        justify-center
-        rounded-full
-        bg-white
-        text-rose-600
-        shadow-sm
-        transition
-        hover:bg-rose-100
-        active:scale-95
-      "
-    >
-      <Play className="ml-0.5 h-4 w-4" fill="currentColor" />
-    </button>
-  )}
-
-  {/* STOP */}
-  {(isPlaying || isPaused) && (
-    <button
-      type="button"
-      onClick={handleStop}
-      aria-label="Stop article"
-      title="Stop"
-      className="
-        flex
-        h-9
-        w-9
-        shrink-0
-        items-center
-        justify-center
-        rounded-full
-        bg-rose-500
+        gap-2
+        rounded-2xl
+        bg-gradient-to-r
+        from-rose-500
+        to-pink-500
+        px-3
+        py-2
         text-white
-        shadow-sm
-        transition
-        hover:bg-rose-600
-        active:scale-95
+        shadow-lg
+        shadow-rose-200/70
       "
+      aria-label="Listen to this article"
     >
-      <Square className="h-3.5 w-3.5" fill="currentColor" />
-    </button>
-  )}
-</div>
+      {/* SOUND ICON */}
+
+      <div
+        className="
+          flex
+          h-8
+          w-8
+          shrink-0
+          items-center
+          justify-center
+          rounded-xl
+          bg-white/20
+        "
+        aria-hidden="true"
+      >
+        <Volume2 className="h-4 w-4" />
+      </div>
+
+      {/* TITLE / STATUS */}
+
+      <div className="min-w-0 pr-1">
+        <p
+          className="
+            whitespace-nowrap
+            text-xs
+            font-semibold
+            leading-4
+            text-white
+          "
+        >
+          Listen to this article
+        </p>
+
+        <p
+          className="
+            text-[10px]
+            leading-3
+            text-white/80
+          "
+        >
+          {isPlaying
+            ? 'Playing'
+            : isPaused
+            ? 'Paused'
+            : 'Ready'}
+        </p>
+      </div>
+
       {/* PLAY / PAUSE */}
+
       {isPlaying ? (
         <button
           type="button"
@@ -825,8 +871,8 @@ export default function BlogTTS({
           title="Pause"
           className="
             flex
-            h-8
-            w-8
+            h-9
+            w-9
             shrink-0
             items-center
             justify-center
@@ -834,7 +880,9 @@ export default function BlogTTS({
             bg-white
             text-rose-600
             shadow-sm
-            transition
+            transition-all
+            duration-200
+            hover:scale-105
             hover:bg-rose-50
             active:scale-95
           "
@@ -860,8 +908,8 @@ export default function BlogTTS({
           }
           className="
             flex
-            h-8
-            w-8
+            h-9
+            w-9
             shrink-0
             items-center
             justify-center
@@ -869,46 +917,57 @@ export default function BlogTTS({
             bg-white
             text-rose-600
             shadow-sm
-            transition
+            transition-all
+            duration-200
+            hover:scale-105
             hover:bg-rose-50
             active:scale-95
           "
         >
           <Play
-            className="ml-0.5 h-4 w-4"
+            className="
+              ml-0.5
+              h-4
+              w-4
+            "
             fill="currentColor"
           />
         </button>
       )}
 
       {/* STOP */}
-      <button
-        type="button"
-        onClick={handleStop}
-        aria-label="Stop article"
-        title="Stop"
-        className="
-          flex
-          h-7
-          w-7
-          shrink-0
-          items-center
-          justify-center
-          rounded-full
-          text-white/90
-          transition
-          hover:bg-white/10
-          hover:text-white
-          active:scale-95
-        "
-      >
-        <Square
-          className="h-3.5 w-3.5"
-          fill="currentColor"
-        />
-      </button>
+
+      {(isPlaying || isPaused) && (
+        <button
+          type="button"
+          onClick={handleStop}
+          aria-label="Stop article"
+          title="Stop"
+          className="
+            flex
+            h-8
+            w-8
+            shrink-0
+            items-center
+            justify-center
+            rounded-full
+            border
+            border-white/30
+            bg-white/15
+            text-white
+            transition-all
+            duration-200
+            hover:bg-white/25
+            active:scale-95
+          "
+        >
+          <Square
+            className="h-3.5 w-3.5"
+            fill="currentColor"
+          />
+        </button>
+      )}
     </div>
   );
-}
-
-      
+    }
+        
