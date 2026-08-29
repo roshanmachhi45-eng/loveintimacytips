@@ -87,8 +87,18 @@ export default function Home() {
       }, 50);
     };
     const handleOpenCosmicTarot = () => {
-      setActiveTool('cosmic-tarot');
-  };
+  setActiveTool('cosmic-tarot');
+
+  window.setTimeout(() => {
+    document
+      .getElementById('cosmic-tarot')
+      ?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+  }, 100);
+};
+    
     window.addEventListener(
       'loveons:open-calculator',
       handleOpenCalculator
