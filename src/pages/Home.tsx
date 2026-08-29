@@ -10,7 +10,7 @@ import {
 import InputCard from '../components/InputCard';
 import ResultsDisplay from '../components/ResultsDisplay';
 import BlogSection from '../components/BlogSection';
-import CosmicTarot from '../components/CosmicTarot';
+import CosmicTarot from './CosmicTarot';
 import Seo from '../components/Seo';
 
 import {
