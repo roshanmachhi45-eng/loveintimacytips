@@ -28,7 +28,6 @@ const CATEGORIES = [
   'Romance',
 ];
 
-const TOOLS = [
   const TOOLS = [
   {
     id: 'love-calculator',
