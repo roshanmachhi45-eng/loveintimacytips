@@ -267,34 +267,31 @@ export default function BlogShare({
       className="relative my-5 flex justify-start"
     >
       {/* Main Share Button */}
-      <button
-        type="button"
-        onClick={() => setOpen((previous) => !previous)}
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        className="
-          inline-flex
-          items-center
-          gap-2
-          rounded-full
-          border
-          border-pink-200
-          bg-white
-          px-4
-          py-2
-          text-sm
-          font-semibold
-          text-pink-700
-          shadow-sm
-          transition
-          hover:border-pink-300
-          hover:bg-pink-50
-          active:scale-[0.98]
-          dark:border-pink-900/50
-          dark:bg-gray-900
-          dark:text-pink-300
-          dark:hover:bg-pink-950/30
-        "
+      className="
+        inline-flex
+        items-center
+        gap-2
+        rounded-full
+        border
+        border-transparent
+        bg-gradient-to-r
+        from-rose-500
+        to-pink-500
+        px-5
+        py-2.5
+        text-sm
+        font-semibold
+        ntext-white
+        shadow-md
+        shadow-pink-200/70
+        transition-all
+        duration-300
+        hover:-translate-y-0.5
+        hover:from-rose-600
+        hover:to-pink-600
+        hover:shadow-lg
+        hover:shadow-pink-300/70
+     
       >
         <Share2
           className="h-4 w-4"
