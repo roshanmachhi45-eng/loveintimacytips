@@ -7,6 +7,7 @@ import {
   Info,
   Menu,
   Search,
+  Sparkles,
   X,
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -28,12 +29,19 @@ const CATEGORIES = [
 ];
 
 const TOOLS = [
+  const TOOLS = [
   {
+    id: 'love-calculator',
     label: 'Love Calculator',
     icon: Calculator,
   },
+  {
+    id: 'cosmic-love-tarot',
+    label: 'Cosmic Love Tarot',
+    icon: Sparkles,
+  },
 ];
-
+     
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -202,7 +210,21 @@ export default function Navbar() {
       new CustomEvent('loveons:open-calculator')
     );
   };
+  
+ const openCosmicLoveTarot = () => {
+    closeEverything();
+    navigate('/cosmic-tarot');
+  };
+  const openTool = (toolId: string) => {
+  if (toolId === 'love-calculator') {
+    openCalculator();
+    return;
+  }
 
+  if (toolId === 'cosmic-love-tarot') {
+    openCosmicLoveTarot();
+  }
+};
   /* ---------------------------------------------
      BLOG
   --------------------------------------------- */
@@ -612,9 +634,9 @@ export default function Navbar() {
 
                       return (
                         <button
-                          key={tool.label}
+                          key={tool.id}
                           type="button"
-                          onClick={openCalculator}
+                          onClick={() => openTool(tool.id)}
                           className="
                             flex w-full
                             items-center gap-3
