@@ -1,9 +1,7 @@
-
 import { useEffect, useRef, useState } from 'react';
 import {
   Calculator,
   ChevronDown,
-  Heart,
   Info,
   Menu,
   Search,
@@ -11,7 +9,6 @@ import {
   X,
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-
 import Logo from './Logo';
 
 const CATEGORIES = [
@@ -28,7 +25,7 @@ const CATEGORIES = [
   'Romance',
 ];
 
-  const TOOLS = [
+const TOOLS = [
   {
     id: 'love-calculator',
     label: 'Love Calculator',
@@ -40,26 +37,41 @@ const CATEGORIES = [
     icon: Sparkles,
   },
 ];
-     
+
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
 
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // IMPORTANT:
   // Desktop and mobile categories use separate states.
-  const [desktopCategoriesOpen, setDesktopCategoriesOpen] =
-    useState(false);
+  const [
+    desktopCategoriesOpen,
+    setDesktopCategoriesOpen,
+  ] = useState(false);
 
-  const [mobileCategoriesOpen, setMobileCategoriesOpen] =
-    useState(false);
+  const [
+    mobileCategoriesOpen,
+    setMobileCategoriesOpen,
+  ] = useState(false);
 
-  const [toolsOpen, setToolsOpen] = useState(false);
+  // IMPORTANT:
+  // Desktop and mobile tools use separate states.
+  const [
+    desktopToolsOpen,
+    setDesktopToolsOpen,
+  ] = useState(false);
+
+  const [
+    mobileToolsOpen,
+    setMobileToolsOpen,
+  ] = useState(false);
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
 
   const searchRef = useRef<HTMLInputElement>(null);
+
   const categoriesRef = useRef<HTMLDivElement>(null);
   const toolsRef = useRef<HTMLDivElement>(null);
 
@@ -70,7 +82,8 @@ export default function Navbar() {
     setMenuOpen(false);
     setDesktopCategoriesOpen(false);
     setMobileCategoriesOpen(false);
-    setToolsOpen(false);
+    setDesktopToolsOpen(false);
+    setMobileToolsOpen(false);
     setSearchOpen(false);
   }, [location.pathname, location.search]);
 
@@ -78,7 +91,9 @@ export default function Navbar() {
      BODY SCROLL LOCK FOR MOBILE MENU
   --------------------------------------------- */
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    document.body.style.overflow = menuOpen
+      ? 'hidden'
+      : '';
 
     return () => {
       document.body.style.overflow = '';
@@ -116,11 +131,14 @@ export default function Navbar() {
         toolsRef.current &&
         !toolsRef.current.contains(target)
       ) {
-        setToolsOpen(false);
+        setDesktopToolsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener(
+      'mousedown',
+      handleOutsideClick
+    );
 
     return () => {
       document.removeEventListener(
@@ -137,7 +155,8 @@ export default function Navbar() {
     setMenuOpen(false);
     setDesktopCategoriesOpen(false);
     setMobileCategoriesOpen(false);
-    setToolsOpen(false);
+    setDesktopToolsOpen(false);
+    setMobileToolsOpen(false);
     setSearchOpen(false);
   };
 
@@ -150,7 +169,8 @@ export default function Navbar() {
     // Opening hamburger must never open desktop dropdowns.
     setDesktopCategoriesOpen(false);
     setMobileCategoriesOpen(false);
-    setToolsOpen(false);
+    setDesktopToolsOpen(false);
+    setMobileToolsOpen(false);
     setSearchOpen(false);
   };
 
@@ -187,6 +207,7 @@ export default function Navbar() {
 
   /* ---------------------------------------------
      LOVE CALCULATOR
+
      Home.tsx listens for:
      loveons:open-calculator
   --------------------------------------------- */
@@ -198,7 +219,9 @@ export default function Navbar() {
 
       window.setTimeout(() => {
         window.dispatchEvent(
-          new CustomEvent('loveons:open-calculator')
+          new CustomEvent(
+            'loveons:open-calculator'
+          )
         );
       }, 400);
 
@@ -206,40 +229,57 @@ export default function Navbar() {
     }
 
     window.dispatchEvent(
-      new CustomEvent('loveons:open-calculator')
+      new CustomEvent(
+        'loveons:open-calculator'
+      )
     );
   };
-  
- const openCosmicLoveTarot = () => {
-  closeEverything();
 
-  if (location.pathname !== '/') {
-    navigate('/');
+  /* ---------------------------------------------
+     COSMIC LOVE TAROT
 
-    window.setTimeout(() => {
-      window.dispatchEvent(
-        new CustomEvent('loveons:open-cosmic-tarot')
-      );
-    }, 400);
+     Home.tsx listens for:
+     loveons:open-cosmic-tarot
+  --------------------------------------------- */
+  const openCosmicLoveTarot = () => {
+    closeEverything();
 
-    return;
-  }
+    if (location.pathname !== '/') {
+      navigate('/');
 
-   window.dispatchEvent(
-     new CustomEvent('loveons:open-cosmic-tarot')
-   );
- };
-  
+      window.setTimeout(() => {
+        window.dispatchEvent(
+          new CustomEvent(
+            'loveons:open-cosmic-tarot'
+          )
+        );
+      }, 400);
+
+      return;
+    }
+
+    window.dispatchEvent(
+      new CustomEvent(
+        'loveons:open-cosmic-tarot'
+      )
+    );
+  };
+
+  /* ---------------------------------------------
+     OPEN TOOL
+  --------------------------------------------- */
   const openTool = (toolId: string) => {
-  if (toolId === 'love-calculator') {
-    openCalculator();
-    return;
-  }
+    if (toolId === 'love-calculator') {
+      openCalculator();
+      return;
+    }
 
-  if (toolId === 'cosmic-love-tarot') {
-    openCosmicLoveTarot();
-  }
-};
+    if (toolId === 'cosmic-love-tarot') {
+      openCosmicLoveTarot();
+      return;
+    }
+  };
+
   /* ---------------------------------------------
      BLOG
   --------------------------------------------- */
@@ -251,11 +291,15 @@ export default function Navbar() {
   /* ---------------------------------------------
      CATEGORY
   --------------------------------------------- */
-  const openCategory = (category: string) => {
+  const openCategory = (
+    category: string
+  ) => {
     closeEverything();
 
     navigate(
-      `/blog?category=${encodeURIComponent(category)}`
+      `/blog?category=${encodeURIComponent(
+        category
+      )}`
     );
   };
 
@@ -282,7 +326,9 @@ export default function Navbar() {
     closeEverything();
 
     navigate(
-      `/search?q=${encodeURIComponent(query)}`
+      `/search?q=${encodeURIComponent(
+        query
+      )}`
     );
   };
 
@@ -291,6 +337,7 @@ export default function Navbar() {
       {/* =================================================
           NAVBAR
       ================================================= */}
+
       <header className="sticky top-0 z-[100] px-3 pt-3 sm:px-5">
         <div
           className="
@@ -312,6 +359,7 @@ export default function Navbar() {
             {/* ===========================================
                 HAMBURGER
             ============================================ */}
+
             <button
               type="button"
               onClick={toggleMenu}
@@ -346,6 +394,7 @@ export default function Navbar() {
             {/* ===========================================
                 LOGO
             ============================================ */}
+
             <Link
               to="/"
               onClick={closeEverything}
@@ -375,6 +424,7 @@ export default function Navbar() {
             {/* ===========================================
                 DESKTOP NAV
             ============================================ */}
+
             <nav
               aria-label="Main navigation"
               className="
@@ -384,6 +434,7 @@ export default function Navbar() {
               "
             >
               {/* HOME */}
+
               <Link
                 to="/"
                 onClick={closeEverything}
@@ -403,6 +454,7 @@ export default function Navbar() {
               </Link>
 
               {/* BLOG */}
+
               <button
                 type="button"
                 onClick={openBlog}
@@ -412,7 +464,9 @@ export default function Navbar() {
                   text-sm font-semibold
                   transition-all duration-200
                   ${
-                    location.pathname.startsWith('/blog')
+                    location.pathname.startsWith(
+                      '/blog'
+                    )
                       ? 'bg-rose-50 text-rose-600'
                       : 'text-gray-600 hover:bg-rose-50 hover:text-rose-600'
                   }
@@ -422,6 +476,7 @@ export default function Navbar() {
               </button>
 
               {/* LOVE CALCULATOR */}
+
               <button
                 type="button"
                 onClick={openCalculator}
@@ -442,21 +497,24 @@ export default function Navbar() {
               {/* =========================================
                   DESKTOP CATEGORIES
               ========================================== */}
+
               <div
                 ref={categoriesRef}
                 className="relative"
               >
                 <button
                   type="button"
-                  aria-expanded={desktopCategoriesOpen}
+                  aria-expanded={
+                    desktopCategoriesOpen
+                  }
                   onClick={() => {
                     setDesktopCategoriesOpen(
                       (current) => !current
                     );
 
-                    // Keep other desktop/mobile menus closed.
                     setMobileCategoriesOpen(false);
-                    setToolsOpen(false);
+                    setDesktopToolsOpen(false);
+                    setMobileToolsOpen(false);
                     setSearchOpen(false);
                   }}
                   className={`
@@ -535,57 +593,65 @@ export default function Navbar() {
                     <div className="my-1 h-px bg-rose-50" />
 
                     <div className="max-h-[340px] overflow-y-auto">
-                      {CATEGORIES.map((category) => (
-                        <button
-                          key={category}
-                          type="button"
-                          onClick={() =>
-                            openCategory(category)
-                          }
-                          className="
-                            flex w-full
-                            items-center
-                            rounded-xl px-3 py-2.5
-                            text-left text-sm
-                            text-gray-600
-                            transition-colors
-                            hover:bg-rose-50
-                            hover:text-rose-600
-                          "
-                        >
-                          <span
+                      {CATEGORIES.map(
+                        (category) => (
+                          <button
+                            key={category}
+                            type="button"
+                            onClick={() =>
+                              openCategory(
+                                category
+                              )
+                            }
                             className="
-                              mr-2 h-1.5 w-1.5
-                              rounded-full
-                              bg-rose-300
+                              flex w-full
+                              items-center
+                              rounded-xl px-3 py-2.5
+                              text-left text-sm
+                              text-gray-600
+                              transition-colors
+                              hover:bg-rose-50
+                              hover:text-rose-600
                             "
-                          />
+                          >
+                            <span
+                              className="
+                                mr-2 h-1.5 w-1.5
+                                rounded-full
+                                bg-rose-300
+                              "
+                            />
 
-                          {category}
-                        </button>
-                      ))}
+                            {category}
+                          </button>
+                        )
+                      )}
                     </div>
                   </div>
                 )}
               </div>
 
               {/* =========================================
-                  TOOLS
+                  DESKTOP TOOLS
               ========================================== */}
+
               <div
                 ref={toolsRef}
                 className="relative"
               >
                 <button
                   type="button"
-                  aria-expanded={toolsOpen}
+                  aria-expanded={
+                    desktopToolsOpen
+                  }
                   onClick={() => {
-                    setToolsOpen(
+                    setDesktopToolsOpen(
                       (current) => !current
                     );
 
                     setDesktopCategoriesOpen(false);
                     setMobileCategoriesOpen(false);
+                    setMobileToolsOpen(false);
                     setSearchOpen(false);
                   }}
                   className={`
@@ -594,7 +660,7 @@ export default function Navbar() {
                     text-sm font-semibold
                     transition-all duration-200
                     ${
-                      toolsOpen
+                      desktopToolsOpen
                         ? 'bg-rose-50 text-rose-600'
                         : 'text-gray-600 hover:bg-rose-50 hover:text-rose-600'
                     }
@@ -607,7 +673,7 @@ export default function Navbar() {
                       h-4 w-4
                       transition-transform duration-200
                       ${
-                        toolsOpen
+                        desktopToolsOpen
                           ? 'rotate-180'
                           : ''
                       }
@@ -615,7 +681,7 @@ export default function Navbar() {
                   />
                 </button>
 
-                {toolsOpen && (
+                {desktopToolsOpen && (
                   <div
                     className="
                       absolute right-0 top-full mt-3
@@ -651,7 +717,9 @@ export default function Navbar() {
                         <button
                           key={tool.id}
                           type="button"
-                          onClick={() => openTool(tool.id)}
+                          onClick={() =>
+                            openTool(tool.id)
+                          }
                           className="
                             flex w-full
                             items-center gap-3
@@ -686,6 +754,7 @@ export default function Navbar() {
               </div>
 
               {/* ABOUT */}
+
               <Link
                 to="/about"
                 onClick={closeEverything}
@@ -709,6 +778,7 @@ export default function Navbar() {
             {/* ===========================================
                 SEARCH
             ============================================ */}
+
             <div className="relative z-[130] ml-1 sm:ml-2">
               <button
                 type="button"
@@ -720,7 +790,8 @@ export default function Navbar() {
                   setMenuOpen(false);
                   setDesktopCategoriesOpen(false);
                   setMobileCategoriesOpen(false);
-                  setToolsOpen(false);
+                  setDesktopToolsOpen(false);
+                  setMobileToolsOpen(false);
                 }}
                 aria-label={
                   searchOpen
@@ -814,6 +885,7 @@ export default function Navbar() {
       {/* =================================================
           MOBILE BACKDROP
       ================================================= */}
+
       {menuOpen && (
         <div
           className="
@@ -825,6 +897,7 @@ export default function Navbar() {
           onClick={() => {
             setMenuOpen(false);
             setMobileCategoriesOpen(false);
+            setMobileToolsOpen(false);
           }}
           aria-hidden="true"
         />
@@ -833,6 +906,7 @@ export default function Navbar() {
       {/* =================================================
           MOBILE DRAWER
       ================================================= */}
+
       <aside
         aria-label="Navigation menu"
         aria-hidden={!menuOpen}
@@ -856,7 +930,9 @@ export default function Navbar() {
         `}
       >
         <div className="flex h-full flex-col">
+
           {/* DRAWER HEADER */}
+
           <div
             className="
               flex h-[76px]
@@ -891,6 +967,7 @@ export default function Navbar() {
               onClick={() => {
                 setMenuOpen(false);
                 setMobileCategoriesOpen(false);
+                setMobileToolsOpen(false);
               }}
               aria-label="Close menu"
               className="
@@ -908,9 +985,12 @@ export default function Navbar() {
           </div>
 
           {/* DRAWER CONTENT */}
+
           <div className="flex-1 overflow-y-auto p-4">
             <div className="space-y-1">
+
               {/* HOME */}
+
               <Link
                 to="/"
                 onClick={closeEverything}
@@ -929,6 +1009,7 @@ export default function Navbar() {
               </Link>
 
               {/* BLOG */}
+
               <button
                 type="button"
                 onClick={openBlog}
@@ -947,6 +1028,7 @@ export default function Navbar() {
               </button>
 
               {/* LOVE CALCULATOR */}
+
               <button
                 type="button"
                 onClick={openCalculator}
@@ -969,19 +1051,22 @@ export default function Navbar() {
               {/* =========================================
                   MOBILE CATEGORIES
               ========================================== */}
+
               <div>
                 <button
                   type="button"
-                  aria-expanded={mobileCategoriesOpen}
+                  aria-expanded={
+                    mobileCategoriesOpen
+                  }
                   onClick={() => {
                     setMobileCategoriesOpen(
                       (current) => !current
                     );
 
-                    // IMPORTANT:
                     // Never open desktop Categories from here.
                     setDesktopCategoriesOpen(false);
-                    setToolsOpen(false);
+                    setDesktopToolsOpen(false);
+                    setMobileToolsOpen(false);
                   }}
                   className="
                     flex w-full
@@ -1038,27 +1123,31 @@ export default function Navbar() {
                       All Articles
                     </button>
 
-                    {CATEGORIES.map((category) => (
-                      <button
-                        key={category}
-                        type="button"
-                        onClick={() =>
-                          openCategory(category)
-                        }
-                        className="
-                          block w-full
-                          rounded-lg
-                          px-3 py-2
-                          text-left
-                          text-sm
-                          text-gray-500
-                          hover:bg-rose-50
-                          hover:text-rose-600
-                        "
-                      >
-                        {category}
-                      </button>
-                    ))}
+                    {CATEGORIES.map(
+                      (category) => (
+                        <button
+                          key={category}
+                          type="button"
+                          onClick={() =>
+                            openCategory(
+                              category
+                            )
+                          }
+                          className="
+                            block w-full
+                            rounded-lg
+                            px-3 py-2
+                            text-left
+                            text-sm
+                            text-gray-500
+                            hover:bg-rose-50
+                            hover:text-rose-600
+                          "
+                        >
+                          {category}
+                        </button>
+                      )
+                    )}
                   </div>
                 )}
               </div>
@@ -1066,17 +1155,20 @@ export default function Navbar() {
               {/* =========================================
                   MOBILE TOOLS
               ========================================== */}
+
               <div>
                 <button
                   type="button"
-                  aria-expanded={toolsOpen}
+                  aria-expanded={mobileToolsOpen}
                   onClick={() => {
-                    setToolsOpen(
+                    setMobileToolsOpen(
                       (current) => !current
                     );
 
+                    // Never open desktop tools from mobile menu.
                     setMobileCategoriesOpen(false);
                     setDesktopCategoriesOpen(false);
+                    setDesktopToolsOpen(false);
                   }}
                   className="
                     flex w-full
@@ -1097,7 +1189,7 @@ export default function Navbar() {
                       h-4 w-4
                       transition-transform
                       ${
-                        toolsOpen
+                        mobileToolsOpen
                           ? 'rotate-180'
                           : ''
                       }
@@ -1105,7 +1197,7 @@ export default function Navbar() {
                   />
                 </button>
 
-                {toolsOpen && (
+                {mobileToolsOpen && (
                   <div
                     className="
                       ml-3 mt-1
@@ -1119,9 +1211,11 @@ export default function Navbar() {
 
                       return (
                         <button
-                          key={tool.label}
+                          key={tool.id}
                           type="button"
-                          onClick={openCalculator}
+                          onClick={() =>
+                            openTool(tool.id)
+                          }
                           className="
                             flex w-full
                             items-center gap-3
@@ -1135,6 +1229,7 @@ export default function Navbar() {
                           "
                         >
                           <Icon className="h-4 w-4" />
+
                           {tool.label}
                         </button>
                       );
@@ -1144,6 +1239,7 @@ export default function Navbar() {
               </div>
 
               {/* ABOUT */}
+
               <Link
                 to="/about"
                 onClick={closeEverything}
