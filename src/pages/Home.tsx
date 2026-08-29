@@ -86,12 +86,21 @@ export default function Home() {
           });
       }, 50);
     };
-
+    const handleOpenCosmicTarot = () => {
+      setActiveTool('cosmic-love-tarot');
+  };
     window.addEventListener(
       'loveons:open-calculator',
       handleOpenCalculator
     );
-
+   window.addEventListener(
+     'loveons:open-cosmic-tarot',
+     handleOpenCosmicTarot
+ );
+    window.removeEventListener(
+     'loveons:open-cosmic-tarot',
+     handleOpenCosmicTarot
+ );
     return () => {
       window.removeEventListener(
         'loveons:open-calculator',
