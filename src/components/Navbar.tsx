@@ -211,9 +211,25 @@ export default function Navbar() {
   };
   
  const openCosmicLoveTarot = () => {
-    closeEverything();
-    navigate('/cosmic-tarot');
-  };
+  closeEverything();
+
+  if (location.pathname !== '/') {
+    navigate('/');
+
+    window.setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent('loveons:open-cosmic-tarot')
+      );
+    }, 400);
+
+    return;
+  }
+
+   window.dispatchEvent(
+     new CustomEvent('loveons:open-cosmic-tarot')
+   );
+ };
+  
   const openTool = (toolId: string) => {
   if (toolId === 'love-calculator') {
     openCalculator();
