@@ -93,18 +93,19 @@ export default function Home() {
       'loveons:open-calculator',
       handleOpenCalculator
     );
-   window.addEventListener(
-     'loveons:open-cosmic-tarot',
-     handleOpenCosmicTarot
- );
-    window.removeEventListener(
+    window.addEventListener(
      'loveons:open-cosmic-tarot',
      handleOpenCosmicTarot
  );
     return () => {
-      window.removeEventListener(
-        'loveons:open-calculator',
-        handleOpenCalculator
+   window.removeEventListener(
+    'loveons:open-calculator',
+    handleOpenCalculator
+     
+   window.removeEventListener(
+    'loveons:open-cosmic-tarot',
+   handleOpenCosmicTarot
+); 
       );
     };
   }, []);
