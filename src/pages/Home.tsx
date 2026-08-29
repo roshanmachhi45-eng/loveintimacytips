@@ -87,7 +87,7 @@ export default function Home() {
       }, 50);
     };
     const handleOpenCosmicTarot = () => {
-      setActiveTool('cosmic-love-tarot');
+      setActiveTool('cosmic-tarot');
   };
     window.addEventListener(
       'loveons:open-calculator',
