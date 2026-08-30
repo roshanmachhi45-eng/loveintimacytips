@@ -4,7 +4,17 @@
    Contentful-powered version
    With automatic TOC heading IDs
    ========================================================= */
+export interface ChatGameQuestion {
+  keywords: string[];
+  answer: string;
+}
 
+export interface ChatGameData {
+  welcomeMessage: string;
+  maxQuestions: number;
+  articlePrompt: string;
+  questions: ChatGameQuestion[];
+}
 export interface BlogPost {
   id: string;
   title: string;
@@ -23,6 +33,8 @@ export interface BlogPost {
   meta_description: string | null;
   created_at: string;
   updated_at: string;
+  enable_chat_game?: boolean;
+  chat_game_data?: ChatGameData;
 }
 
 export const FALLBACK_IMAGE = "/images/blogs/default.webp";
@@ -105,6 +117,8 @@ interface ContentfulEntry {
     publishedDate?: string;
     seoTitle?: string;
     seoDescription?: string;
+ enableChatGame?: boolean;
+chatGameData?: ChatGameData;
   };
 }
 
@@ -770,7 +784,13 @@ function normalizeContentfulPost(
       fields.seoDescription ||
       null,
 
-    created_at:
+ enableChatGame:
+  fields.enableChatGame === true,
+
+ chatGameData:
+ fields.chatGameData || undefined,
+   
+     created_at:
       entry.sys.createdAt ||
       new Date().toISOString(),
 
