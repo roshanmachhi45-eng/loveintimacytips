@@ -1360,8 +1360,162 @@ const restartChatGame = () => {
                        {/* =================================================
                        SHARE ARTICLE 
                         ================================================= */}
-                        <BlogShare title={post.title} />
+                        <BlogShare title={post.title} />                        
+{/* =================================================
+CHAT GAME
+================================================= */}
+{post.enableChatGame &&
+  post.chatGameData?.questions &&
+  post.chatGameData.questions.length > 0 && (
+    <section
+      className="
+        mb-6
+        rounded-2xl
+        border
+        border-rose-100
+        bg-rose-50/40
+        p-5
+        sm:p-6
+      "
+    >
+      {!chatGameStarted ? (
+        <div className="text-center">
+          <h2 className="mb-2 text-xl font-bold text-gray-800">
+            Let's Play a Quick Game ✨
+          </h2>
 
+          <p className="mb-5 text-sm leading-6 text-gray-600">
+            Answer a few quick questions and explore the topic.
+          </p>
+
+          <button
+            type="button"
+            onClick={startChatGame}
+            className="
+              rounded-full
+              bg-rose-500
+              px-5
+              py-2.5
+              text-sm
+              font-semibold
+              text-white
+              transition
+              hover:bg-rose-600
+            "
+          >
+            Start Game
+          </button>
+        </div>
+      ) : chatGameFinished ? (
+        <div className="text-center">
+          <h2 className="mb-5 text-xl font-bold text-gray-800">
+            🎉 Great Job! Keep Exploring
+          </h2>
+
+          <div className="flex flex-wrap justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                document
+                  .getElementById('blog-article-content')
+                  ?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                  });
+              }}
+              className="
+                rounded-full
+                bg-rose-500
+                px-5
+                py-2.5
+                text-sm
+                font-semibold
+                text-white
+                transition
+                hover:bg-rose-600
+              "
+            >
+              Continue Reading ↓
+            </button>
+
+            <button
+              type="button"
+              onClick={restartChatGame}
+              className="
+                rounded-full
+                border
+                border-rose-200
+                bg-white
+                px-5
+                py-2.5
+                text-sm
+                font-semibold
+                text-rose-500
+                transition
+                hover:bg-rose-50
+              "
+            >
+              Play Again
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-rose-500">
+            Question {currentChatQuestion + 1} of{' '}
+            {post.chatGameData.questions.length}
+          </p>
+
+          <h2 className="mb-5 text-lg font-bold leading-7 text-gray-800">
+            {
+              post.chatGameData.questions[
+                currentChatQuestion
+              ]?.question
+            }
+          </h2>
+
+          <div className="space-y-3">
+            {post.chatGameData.questions[
+              currentChatQuestion
+            ]?.options?.map(
+              (option: string) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() =>
+                    handleChatAnswer(option)
+                  }
+                  className="
+                    w-full
+                    rounded-xl
+                    border
+                    border-rose-100
+                    bg-white
+                    px-4
+                    py-3
+                    text-left
+                    text-sm
+                    font-medium
+                    text-gray-700
+                    transition
+                    hover:border-rose-300
+                    hover:bg-rose-50
+                  "
+                >
+                  {option}
+                </button>
+              )
+            )}
+          </div>
+        </div>
+      )}
+    </section>
+  )}
+
+{/* =================================================
+TABLE OF CONTENTS
+================================================= */}
+                      
                         {/* =================================================
                             TABLE OF CONTENTS
                         ================================================= */}
@@ -1596,134 +1750,7 @@ const restartChatGame = () => {
                                    __html: addHeadingIds(post.content || ''),
                             }}        
                             />
-{/* =================================================
-CHAT GAME
-================================================= */}
-{post.enableChatGame &&
-  post.chatGameData?.questions &&
-  post.chatGameData.questions.length > 0 && (
-    <section
-      className="
-        mt-8
-        rounded-2xl
-        border
-        border-rose-100
-        bg-rose-50/40
-        p-5
-        sm:p-6
-      "
-    >
-      {!chatGameStarted ? (
-        <div className="text-center">
-          <h2 className="mb-2 text-xl font-bold text-gray-800">
-            Let's Play a Relationship Game 💕
-          </h2>
 
-          <p className="mb-5 text-sm leading-6 text-gray-600">
-            Answer a few questions and explore your
-            relationship thoughts.
-          </p>
-
-          <button
-            type="button"
-            onClick={startChatGame}
-            className="
-              rounded-full
-              bg-rose-500
-              px-5
-              py-2.5
-              text-sm
-              font-semibold
-              text-white
-              transition
-              hover:bg-rose-600
-            "
-          >
-            Start Game
-          </button>
-        </div>
-      ) : chatGameFinished ? (
-        <div className="text-center">
-          <h2 className="mb-2 text-xl font-bold text-gray-800">
-            Game Complete! 💖
-          </h2>
-
-          <p className="mb-5 text-sm text-gray-600">
-            Thanks for playing this relationship game.
-          </p>
-
-          <button
-            type="button"
-            onClick={restartChatGame}
-            className="
-              rounded-full
-              bg-rose-500
-              px-5
-              py-2.5
-              text-sm
-              font-semibold
-              text-white
-              transition
-              hover:bg-rose-600
-            "
-          >
-            Play Again
-          </button>
-        </div>
-      ) : (
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-rose-500">
-            Question {currentChatQuestion + 1} of{' '}
-            {post.chatGameData.questions.length}
-          </p>
-
-          <h2 className="mb-5 text-lg font-bold leading-7 text-gray-800">
-            {
-              post.chatGameData.questions[
-                currentChatQuestion
-              ]?.question
-            }
-          </h2>
-
-          <div className="space-y-3">
-            {
-              post.chatGameData.questions[
-                currentChatQuestion
-              ]?.options?.map(
-                (option: string) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() =>
-                      handleChatAnswer(option)
-                    }
-                    className="
-                      w-full
-                      rounded-xl
-                      border
-                      border-rose-100
-                      bg-white
-                      px-4
-                      py-3
-                      text-left
-                      text-sm
-                      font-medium
-                      text-gray-700
-                      transition
-                      hover:border-rose-300
-                      hover:bg-rose-50
-                    "
-                  >
-                    {option}
-                  </button>
-                )
-              )
-            }
-          </div>
-        </div>
-      )}
-    </section>
-)}
                         {/* =================================================
                             TAGS
                         ================================================= */}
