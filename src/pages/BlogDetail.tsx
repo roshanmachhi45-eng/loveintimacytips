@@ -1393,15 +1393,21 @@ CHAT GAME
             onClick={startChatGame}
             className="
               rounded-full
-              bg-rose-500
+              border-0
+              bg-gradient-to-r
+              from-rose-500
+              to-pink-500
               px-5
               py-2.5
               text-sm
               font-semibold
               text-white
+              shadow-md
               transition
-              hover:bg-rose-600
+              hover:scale-105
+              hover:shadow-lg
             "
+                                                                                                 
           >
             Start Game
           </button>
@@ -1423,17 +1429,23 @@ CHAT GAME
                     block: 'start',
                   });
               }}
-              className="
-                rounded-full
-                bg-rose-500
-                px-5
-                py-2.5
-                text-sm
-                font-semibold
-                text-white
-                transition
-                hover:bg-rose-600
-              "
+                    className="
+                      rounded-full
+                      border-0
+                      bg-gradient-to-r
+                      from-rose-500
+                      to-pink-500
+                      px-5
+                      py-2.5
+                      text-sm
+                      font-semibold
+                      text-white
+                      shadow-md
+                      transition
+                      hover:scale-105
+                      hover:shadow-lg
+                    "       
+                                                                                               
             >
               Continue Reading ↓
             </button>
@@ -1443,18 +1455,22 @@ CHAT GAME
               onClick={restartChatGame}
               className="
                 rounded-full
-                border
-                border-rose-200
-                bg-white
+                border-0
+                bg-gradient-to-r
+                from-rose-500
+                to-pink-500
                 px-5
                 py-2.5
                 text-sm
                 font-semibold
-                text-rose-500
+                text-white
+                shadow-md
                 transition
-                hover:bg-rose-50
-              "
-            >
+                hover:scale-105
+                hover:shadow-lg
+            "
+                                                                                                                                               
+         >
               Play Again
             </button>
           </div>
@@ -1512,10 +1528,7 @@ CHAT GAME
     </section>
   )}
 
-{/* =================================================
-TABLE OF CONTENTS
-================================================= */}
-                      
+                    
                         {/* =================================================
                             TABLE OF CONTENTS
                         ================================================= */}
