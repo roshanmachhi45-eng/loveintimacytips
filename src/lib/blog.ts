@@ -6,6 +6,18 @@ export type BlogCategory =
   | 'Relationships'
   | 'Self-Love';
 
+export interface ChatGameQuestion {
+  keywords: string[];
+  answer: string;
+}
+
+export interface ChatGameData {
+  welcomeMessage: string;
+  maxQuestions: number;
+  articlePrompt: string;
+  questions: ChatGameQuestion[];
+}
+
 export interface BlogArticle {
   id: string;
   title: string;
@@ -23,6 +35,9 @@ export interface BlogArticle {
   metaDescription: string;
   seoUrl: string;
   relatedSlugs: string[];
+
+  enableChatGame?: boolean;
+  chatGameData?: ChatGameData;
 }
 
 export const BLOG_CATEGORIES: BlogCategory[] = [
