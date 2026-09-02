@@ -13,13 +13,8 @@ import Logo from './Logo';
 
 const CATEGORIES = [
   'Relationships',
-  'Communication',
-  'Dating & Romance',
-  'Marriage',
-  'Breakups & Healing',
-  'Self Growth',
-  'Love Questions',
-];
+  
+  ];
 
 const TOOLS = [
   {
