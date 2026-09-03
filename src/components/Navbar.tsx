@@ -13,7 +13,7 @@ import Logo from './Logo';
 
 const CATEGORIES = [
   'Relationships',
-  
+  'Off-App Dating',
   ];
 
 const TOOLS = [
