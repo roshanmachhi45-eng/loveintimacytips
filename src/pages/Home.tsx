@@ -386,8 +386,10 @@ export default function Home() {
   return (
     <>
       <Seo
-        title="Loveons — Your Personal Relationship Guide"
-        description="Discover your compatibility score and get personalized relationship tips, couple activities, and wellness guidance tailored to you and your partner."
+        title="Loveons — Build Authentic Connections Beyond the Screen"
+
+        description="Tired of endless swiping? Move away from algorithms and discover real-world, screen-free love with our actionable guides, off-app dating strategies, and psychological insights."
+
         path="/"
       />
 
