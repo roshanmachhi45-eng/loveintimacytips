@@ -1544,7 +1544,7 @@ CHAT GAME
                                     bg-white
                                     shadow-sm
                                 "
-                            <
+                             >
                                <button
                                  type="button"
                                  onClick={() => {
