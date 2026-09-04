@@ -380,11 +380,11 @@ article p {
   line-height: 1.85 !important;  
   color: var(--loveons-text) !important;
 }
-/* =========================================================
-   HERO BOX TEXT STYLISH LOOK FIX
+   /* =========================================================
+   HERO BOX TEXT STYLISH LOOK FIX (WITH GRADIENT LOVERS)
    ========================================================= */
 
-/* 1. Main Big Heading (Build Authentic Connections...) */
+/* 1. Main Big Heading (Aapka purana background gradient look wapas lane ke liye) */
 h1 {
   font-family: "Playfair Display", Georgia, serif !important;
   font-weight: 700 !important;
@@ -392,22 +392,41 @@ h1 {
   letter-spacing: -0.02em !important;
 }
 
-/* 2. Hero Section ka Small Text (Tired of endless swiping?...) */
-h1 + p, 
-.hero-text, 
-header p {
-  font-family: "Playfair Display", Georgia, serif !important;
-  font-size: 1.2rem !important;      /* Padhne me aasan aur stylish size */
-  line-height: 1.8 !important;         /* Lines ke beech me smooth gap */
-  color: var(--loveons-muted) !important; /* Soft premium color */
+/* 2. Hero Heading ke andar jo special colors (love & understanding) hain unhe bypass karna */
+h1 span, 
+h1 strong, 
+h1 em, 
+.loveons-gradient-text {
+  background: linear-gradient(
+    135deg,
+    var(--loveons-rose-600),
+    var(--loveons-rose-400),
+    var(--loveons-purple-400)
+  ) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
 }
 
-/* 3. Buttons ko safe rakhna taaki unka font kharab na ho */
+/* 3. Hero Section ka Small Text (Jo aapko bilkul perfect laga) */
+h1 + p, 
+header p,
+main section p {
+  font-family: "Playfair Display", Georgia, serif !important;
+  font-size: 1.15rem !important; 
+  line-height: 1.85 !important;  
+  color: #55505a !important; /* Elegant soft dark text color */
+}
+
+/* 4. Buttons aur ticks wale default text ko safe rakhna */
 header button, 
 header a, 
-.loveons-glass button {
+.loveons-glass button,
+header ul li,
+header span:not(h1 *) {
   font-family: "Inter", system-ui, -apple-system, sans-serif !important;
 }
+
 
 
 
