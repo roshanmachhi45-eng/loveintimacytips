@@ -367,6 +367,19 @@ img {
       );
   }
 }
+/* =========================================================
+   ONLY PARAGRAPH TEXT FONT FIX
+   ========================================================= */
+
+/* Blog ke andar ke saare simple text/paragraphs ko premium serif banana */
+.prose p, 
+[class*="prose-"] p, 
+article p {
+  font-family: "Playfair Display", Georgia, serif !important;
+  font-size: 1.15rem !important; 
+  line-height: 1.85 !important;  
+  color: var(--loveons-text) !important;
+}
 
 
 
