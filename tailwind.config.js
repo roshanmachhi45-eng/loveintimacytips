@@ -17,7 +17,12 @@ export default {
           900: '#A30D3A',
         },
       },
+      // 👇 Humne yahan par aapki choice ka serif font add kar diya hai
+      fontFamily: {
+        serif: ['Georgia', 'Times New Roman', 'Times', 'serif'],
+      },
     },
   },
   plugins: [],
 };
+
