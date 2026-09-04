@@ -367,15 +367,14 @@ img {
         var(--loveons-background-end)
       );
   }
-}
 /* =========================================================
    TAILWIND TYPOGRAPHY & BLOG CONTENT FORCED STYLE
    ========================================================= */
 
-/* 1. Pure Blog container ke andar ke har ek element ka font force badalna */
-[class*="prose"] *, 
-.prose *, 
-article * {
+/* 1. Pure Blog container ke andar ke elements ka font force badalna (Buttons ko chodhkar) */
+[class*="prose"] *:not(button):not(button *), 
+.prose *:not(button):not(button *), 
+article *:not(button):not(button *) {
   font-family: "Playfair Display", Georgia, serif !important;
 }
 
@@ -384,17 +383,17 @@ article * {
 .prose p, 
 article p {
   font-family: "Playfair Display", Georgia, serif !important;
-  font-size: 1.15rem !important; /* Size thoda bada takki premium dikhe */
-  line-height: 1.85 !important;  /* Lines ke beech me acha gap */
+  font-size: 1.15rem !important; 
+  line-height: 1.85 !important;  
   color: var(--loveons-text) !important;
 }
 
-/* 3. Heading 2 (Main Points - jaise: 1. The Endless Swiping Loop) */
+/* 3. Heading 2 (Main Points) */
 [class*="prose"] h2, 
 .prose h2, 
 article h2 {
   font-family: "Playfair Display", Georgia, serif !important;
-  font-size: 2.1rem !important;  /* Ise H3 se kaafi bada takki farq saaf nazar aaye */
+  font-size: 2.1rem !important;  
   font-weight: 700 !important;
   color: var(--loveons-black) !important;
   margin-top: 2.75rem !important;
@@ -402,17 +401,25 @@ article h2 {
   display: block !important;
 }
 
-/* 4. Heading 3 (Sub-headings - jaise: How Apps Keep You Coming Back) */
+/* 4. Heading 3 (Sub-headings) */
 [class*="prose"] h3, 
 .prose h3, 
 article h3 {
   font-family: "Playfair Display", Georgia, serif !important;
-  font-size: 1.45rem !important;  /* H2 se chota, par paragraph se bada */
+  font-size: 1.45rem !important;  
   font-weight: 600 !important;
   color: #37303c !important;
   margin-top: 2rem !important;
   margin-bottom: 0.85rem !important;
   display: block !important;
+}
+
+/* 5. TTS Button aur baki buttons ka font wapas Inter (default) karne ke liye */
+article button, 
+article button *, 
+.loveons-glass button,
+.prose button {
+  font-family: "Inter", system-ui, -apple-system, sans-serif !important;
 }
 
 /* Dark mode configurations */
