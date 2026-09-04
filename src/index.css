@@ -423,6 +423,14 @@ article button *,
 }
 
 /* Dark mode configurations */
-.dark [class*="prose"] h2, .dark .prose h2 { color: var(--loveons-text) !important; }
-.dark [class*="prose"] h3, .dark .prose h3 { color: var(--loveons-muted) !important; }
+.dark [class*="prose"] h2, 
+.dark .prose h2 { 
+  color: var(--loveons-text) !important; 
+}
+
+.dark [class*="prose"] h3, 
+.dark .prose h3 { 
+  color: var(--loveons-muted) !important; 
+}
+
 
