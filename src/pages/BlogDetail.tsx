@@ -1583,17 +1583,20 @@ CHAT GAME
                                 </button>
 
                                 {tocOpen && (
-                                    <nav
-                                        className="
-                                            border-t
-                                            border-rose-50
-                                            px-3
-                                            py-3
-                                        "
-                                    >
-                                        <ol className="space-y-1">
-                                            {tocItems.map(
-                                                (item) => (
+                                      
+                                <nav
+                                  className="
+                                  max-h-48
+                                  overflow-y-auto
+                                  border-t
+                                  border-rose-50
+                                  px-3
+                                  py-3
+                                "
+                             >
+                                 <ol className="space-y-1">
+                                                                                                                                                                                                                                                                                                                                                                         {tocItems.map(
+                                            (item) => (
                                                     <li
                                                         key={
                                                             item.id
