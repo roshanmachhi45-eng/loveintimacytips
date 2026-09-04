@@ -371,27 +371,20 @@ img {
    TAILWIND TYPOGRAPHY & BLOG CONTENT FORCED STYLE
    ========================================================= */
 
-/* 1. Pure Blog container ke andar ke elements ka font force badalna (Buttons ko chodhkar) */
-[class*="prose"] *:not(button):not(button *), 
-.prose *:not(button):not(button *), 
-article *:not(button):not(button *) {
+/* 1. Pure Blog ke elements par Playfair Display font force karna */
+.prose, [class*="prose-"], article {
   font-family: "Playfair Display", Georgia, serif !important;
 }
 
-/* 2. Paragraph (Body text) ka look aur readability ekdam premium karne ke liye */
-[class*="prose"] p, 
-.prose p, 
-article p {
+.prose p, [class*="prose-"] p, article p {
   font-family: "Playfair Display", Georgia, serif !important;
   font-size: 1.15rem !important; 
   line-height: 1.85 !important;  
   color: var(--loveons-text) !important;
 }
 
-/* 3. Heading 2 (Main Points) */
-[class*="prose"] h2, 
-.prose h2, 
-article h2 {
+/* 2. Heading 2 (Main Points) */
+.prose h2, [class*="prose-"] h2, article h2 {
   font-family: "Playfair Display", Georgia, serif !important;
   font-size: 2.1rem !important;  
   font-weight: 700 !important;
@@ -401,10 +394,8 @@ article h2 {
   display: block !important;
 }
 
-/* 4. Heading 3 (Sub-headings) */
-[class*="prose"] h3, 
-.prose h3, 
-article h3 {
+/* 3. Heading 3 (Sub-headings) */
+.prose h3, [class*="prose-"] h3, article h3 {
   font-family: "Playfair Display", Georgia, serif !important;
   font-size: 1.45rem !important;  
   font-weight: 600 !important;
@@ -414,23 +405,22 @@ article h3 {
   display: block !important;
 }
 
-/* 5. TTS Button aur baki buttons ka font wapas Inter (default) karne ke liye */
+/* 4. TTS Button aur baki sabhi buttons ko wapas default Inter font me safe rakhna */
 article button, 
 article button *, 
-.loveons-glass button,
-.prose button {
+.prose button, 
+button {
   font-family: "Inter", system-ui, -apple-system, sans-serif !important;
 }
 
-/* Dark mode configurations */
-.dark [class*="prose"] h2, 
-.dark .prose h2 { 
+/* 5. Dark Mode Styles */
+.dark .prose h2, .dark [class*="prose-"] h2, .dark article h2 { 
   color: var(--loveons-text) !important; 
 }
 
-.dark [class*="prose"] h3, 
-.dark .prose h3 { 
+.dark .prose h3, .dark [class*="prose-"] h3, .dark article h3 { 
   color: var(--loveons-muted) !important; 
 }
+
 
 
