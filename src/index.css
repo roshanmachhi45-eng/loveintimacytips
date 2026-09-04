@@ -1,4 +1,3 @@
-
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap");
 
 @tailwind base;
@@ -367,6 +366,8 @@ img {
         var(--loveons-background-end)
       );
   }
+} /* 👈 Galti Yahan Thi! Yeh closing bracket missing tha, jise maine ab fix kar diya hai */
+
 /* =========================================================
    TAILWIND TYPOGRAPHY & BLOG CONTENT FORCED STYLE
    ========================================================= */
@@ -415,12 +416,6 @@ button {
 
 /* 5. Dark Mode Styles */
 .dark .prose h2, .dark [class*="prose-"] h2, .dark article h2 { 
-  color: var(--loveons-text) !important; 
-}
-
-.dark .prose h3, .dark [class*="prose-"] h3, .dark article h3 { 
-  color: var(--loveons-muted) !important; 
-}
 
 
 
