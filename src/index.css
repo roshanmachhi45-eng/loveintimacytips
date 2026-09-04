@@ -426,6 +426,35 @@ header ul li,
 header span:not(h1 *) {
   font-family: "Inter", system-ui, -apple-system, sans-serif !important;
 }
+/* =========================================================
+   BIG HEADING STYLISH ITALIC LOOK
+   ========================================================= */
+
+/* 1. Main Big Heading (Ise ekdam modern stylish, curvy aur italic look dene ke liye) */
+h1 {
+  font-family: "Playfair Display", Georgia, serif !important;
+  font-weight: 700 !important;
+  font-style: italic !important;        /* Isse pure words curvy aur stylish ho jayenge */
+  line-height: 1.25 !important;
+  letter-spacing: -0.01em !important;   /* Letters ke beech thoda elegant space */
+}
+
+/* 2. Hero Heading ke andar jo special colors hain unhe perfectly italic rakhna */
+h1 span, 
+h1 strong, 
+h1 em, 
+.loveons-gradient-text {
+  background: linear-gradient(
+    135deg,
+    var(--loveons-rose-600),
+    var(--loveons-rose-400),
+    var(--loveons-purple-400)
+  ) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+  font-style: italic !important;        /* Gradient text ko bhi perfectly cursive match karega */
+}
 
 
 
