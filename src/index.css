@@ -427,28 +427,30 @@ header span:not(h1 *) {
   font-family: "Inter", system-ui, -apple-system, sans-serif !important;
 }
 /* =========================================================
-   RUNETHIA STYLE - ELEGANT CALLIGRAPHY FONT CALL
+   MODERN ELEGANT SERIF DESIGN STYLE (GASDRIFO LOOK)
    ========================================================= */
 
-/* 1. Runethia jaisa exact web font download aur link karna */
+/* 1. High-Contrast High-End Display Web Font import karna */
 @import url('https://googleapis.com');
 
-/* 2. Main Big Heading (Ise bilkul Runethia jaisa elegant calligraphy curvy banana) */
+/* 2. Main Big Heading (Ise ekdam modern elegant serif banana bold aur sharp curves ke sath) */
 h1 {
-  font-family: 'Great Vibes', 'Playfair Display', cursive, serif !important;
-  font-weight: 400 !important;          /* Calligraphy fonts hamesha 400 ya normal weight me sundar dikhte hain */
-  font-size: 4.5rem !important;         /* Script font thoda chota lagta hai, isliye iska size humne bada kiya hai */
+  font-family: 'Playfair Display', 'Cinzel Decorative', Georgia, serif !important;
+  font-weight: 700 !important;          /* Sharp serif style ke liye text ko strong rakhna zaroori hai */
+  font-size: 3.8rem !important;         /* Look ekdam impactful lagega text size se */
   line-height: 1.2 !important;
-  letter-spacing: 0.02em !important;    /* Curvy alphabets ke liye elegant gap */
+  letter-spacing: -0.03em !important;   /* Words ke letters ko thoda pass layega jisse elegant compact design bane */
   text-transform: none !important;
 }
 
-/* 3. Hero Heading ke andar jo gradient/colored words hain unhe bhi wahi same calligraphy look dena */
+/* 3. Hero Heading ke andar jo gradient text hai (love & understanding) use soft italic sharp look dena */
 h1 span, 
 h1 strong, 
 h1 em, 
 .loveons-gradient-text {
-  font-family: 'Great Vibes', cursive !important;
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-style: italic !important;        /* Photo me jo curves hain unhe match karne ke liye special italics */
+  font-weight: 600 !important;
   background: linear-gradient(
     135deg,
     var(--loveons-rose-600),
@@ -459,6 +461,7 @@ h1 em,
   background-clip: text !important;
   color: transparent !important;
 }
+
 
 
 
