@@ -12,8 +12,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 
 const CATEGORIES = [
-  'Relationships',
-  'Off-App Dating',
+    'Off-App Dating',
   ];
 
 const TOOLS = [
