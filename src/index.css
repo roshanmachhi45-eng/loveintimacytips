@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap");
+@import url("https://googleapis.com");
 
 @tailwind base;
 @tailwind components;
@@ -366,7 +366,7 @@ img {
         var(--loveons-background-end)
       );
   }
-} /* 👈 Galti Yahan Thi! Yeh closing bracket missing tha, jise maine ab fix kar diya hai */
+}
 
 /* =========================================================
    TAILWIND TYPOGRAPHY & BLOG CONTENT FORCED STYLE
@@ -406,7 +406,7 @@ img {
   display: block !important;
 }
 
-/* 4. TTS Button aur baki sabhi buttons ko wapas default Inter font me safe rakhna */
+/* 4. TTS Button aur baki sabhi buttons ko default Inter font me safe rakhna */
 article button, 
 article button *, 
 .prose button, 
@@ -414,8 +414,15 @@ button {
   font-family: "Inter", system-ui, -apple-system, sans-serif !important;
 }
 
-/* 5. Dark Mode Styles */
-.dark .prose h2, .dark [class*="prose-"] h2, .dark article h2 { 
+/* 5. Dark Mode Styles (Perfectly Balanced Brackets) */
+.dark .prose h2, 
+.dark [class*="prose-"] h2, 
+.dark article h2 { 
+  color: var(--loveons-text) !important; 
+}
+
+.dark .prose h3, 
+
 
 
 
