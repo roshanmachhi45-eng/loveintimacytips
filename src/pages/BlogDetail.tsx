@@ -1544,30 +1544,28 @@ CHAT GAME
                                     bg-white
                                     shadow-sm
                                 "
-                            >
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setTocOpen(
-                                            (current) =>
-                                                !current
-                                        );
-                                    }}
-                                    aria-expanded={
-                                        tocOpen
-                                    }
-                                    className="
-                                        flex
-                                        w-full
-                                        items-center
-                                        justify-between
-                                        gap-3
-                                        px-4
-                                        py-3.5
-                                        text-left
-                                    "
-                                >
-                                    <span className="flex items-center gap-2">
+                            <
+                               <button
+                                 type="button"
+                                 onClick={() => {
+                                   setTocOpen(
+                                     (current) =>
+                                        !current
+                                  );
+                                }}
+                                aria-expanded={tocOpen}
+                                  className="
+                                    flex
+                                    h-12
+                                    w-full
+                                    items-center
+                                    justify-between
+                                    gap-3
+                                    px-4
+                                    text-left
+                                 "
+                               >                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
+                               <span className="flex items-center gap-2">
                                         <BookOpen className="h-4 w-4 text-rose-500" />
 
                                         <span className="font-display text-sm font-bold text-gray-800">
