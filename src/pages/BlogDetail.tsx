@@ -1659,7 +1659,7 @@ CHAT GAME
                             and footer are NOT part of TTS reading.
                         ================================================= */}
 
-                        <div className="mb-5 flex justify-start">
+                        <div className="mb-5 flex w-fit justify-start">
                             <BlogTTS
                                 contentId="blog-article-content"
                             />
