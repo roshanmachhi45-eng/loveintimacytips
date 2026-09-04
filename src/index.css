@@ -380,6 +380,34 @@ article p {
   line-height: 1.85 !important;  
   color: var(--loveons-text) !important;
 }
+/* =========================================================
+   HERO BOX TEXT STYLISH LOOK FIX
+   ========================================================= */
+
+/* 1. Main Big Heading (Build Authentic Connections...) */
+h1 {
+  font-family: "Playfair Display", Georgia, serif !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* 2. Hero Section ka Small Text (Tired of endless swiping?...) */
+h1 + p, 
+.hero-text, 
+header p {
+  font-family: "Playfair Display", Georgia, serif !important;
+  font-size: 1.2rem !important;      /* Padhne me aasan aur stylish size */
+  line-height: 1.8 !important;         /* Lines ke beech me smooth gap */
+  color: var(--loveons-muted) !important; /* Soft premium color */
+}
+
+/* 3. Buttons ko safe rakhna taaki unka font kharab na ho */
+header button, 
+header a, 
+.loveons-glass button {
+  font-family: "Inter", system-ui, -apple-system, sans-serif !important;
+}
 
 
 
