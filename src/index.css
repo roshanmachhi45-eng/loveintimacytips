@@ -368,3 +368,52 @@ img {
       );
   }
 }
+/* =========================================================
+   TAILWIND TYPOGRAPHY (CONTENTFUL RICH TEXT) CUSTOMIZATION
+   ========================================================= */
+
+/* Contentful se aane wale pure blog ke text ka font change karne ke liye */
+.prose, [class*="prose-"] {
+  font-family: "Playfair Display", Georgia, serif !important;
+  max-width: 100% !important;
+}
+
+/* Paragraph text ko sundar aur readable banane ke liye */
+.prose p {
+  font-family: "Playfair Display", Georgia, serif !important;
+  font-size: 1.15rem !important; /* Thoda premium size */
+  line-height: 1.8 !important;   /* Padhne me aasan gap */
+  color: var(--loveons-text) !important;
+}
+
+/* Heading 2 (Main Points - jaise: 1. The Endless Swiping Loop) */
+.prose h2 {
+  font-family: "Playfair Display", Georgia, serif !important;
+  font-size: 1.95rem !important;  /* Ise bada aur bold karega */
+  font-weight: 700 !important;
+  color: var(--loveons-black) !important;
+  margin-top: 2.5rem !important;
+  margin-bottom: 1rem !important;
+  display: block !important;
+}
+
+/* Dark mode me H2 ka rang */
+.dark .prose h2 {
+  color: var(--loveons-text) !important;
+}
+
+/* Heading 3 (Sub-headings - jaise: How Apps Keep You Coming Back) */
+.prose h3 {
+  font-family: "Playfair Display", Georgia, serif !important;
+  font-size: 1.4rem !important;   /* H2 se chota dikhega, jisse hierarchy banegi */
+  font-weight: 600 !important;
+  color: #37303c !important;      /* Thoda soft black */
+  margin-top: 1.75rem !important;
+  margin-bottom: 0.75rem !important;
+  display: block !important;
+}
+
+/* Dark mode me H3 ka rang */
+.dark .prose h3 {
+  color: var(--loveons-muted) !important;
+}
