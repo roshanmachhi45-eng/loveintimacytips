@@ -794,25 +794,27 @@ export default function BlogTTS({
   }
 
   return (
-    <div
-      className="
-        mb-5
-        inline-flex
-        max-w-full
-        items-center
-        gap-2
-        rounded-2xl
-        bg-gradient-to-r
-        from-rose-500
-        to-pink-500
-        px-3
-        py-2
-        text-white
-        shadow-lg
-        shadow-rose-200/70
-      "
-      aria-label="Listen to this article"
-    >
+    
+<div
+  className="
+    inline-flex
+    w-fit
+    max-w-full
+    items-center
+    gap-2
+    rounded-2xl
+    bg-gradient-to-r
+    from-rose-500
+    to-pink-500
+    px-3
+    py-2
+    text-white
+    shadow-lg
+    shadow-rose-200/70
+  "
+  aria-label="Listen to this article"
+>
+
       {/* SOUND ICON */}
 
       <div
