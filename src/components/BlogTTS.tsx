@@ -797,6 +797,7 @@ export default function BlogTTS({
     
 <div
   className="
+    blog-tts
     inline-flex
     w-fit
     max-w-full
