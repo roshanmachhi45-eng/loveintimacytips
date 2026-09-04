@@ -426,6 +426,31 @@ header ul li,
 header span:not(h1 *) {
   font-family: "Inter", system-ui, -apple-system, sans-serif !important;
 }
+/* =========================================================
+   ONLY PARAGRAPH TEXT FONT FIX (COMPLETELY BUTTON-SAFE)
+   ========================================================= */
+
+/* Blog ke andar ke sirf normal paragraphs (p) ko stylish serif banana */
+article p,
+.prose p {
+  font-family: "Playfair Display", Georgia, serif !important;
+  font-size: 1.15rem !important; 
+  line-height: 1.85 !important;  
+  color: var(--loveons-text) !important;
+}
+
+/* TTS Button aur baki complex functional elements ko default style me wapas laana */
+article button, 
+article button *, 
+.prose button,
+.prose button *,
+button,
+button * {
+  font-family: "Inter", system-ui, -apple-system, sans-serif !important;
+  font-size: unset;
+  line-height: unset;
+  text-transform: unset;
+}
 
 
 
