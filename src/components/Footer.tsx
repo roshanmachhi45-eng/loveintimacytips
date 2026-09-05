@@ -2,7 +2,7 @@
 import { Shield, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Logo from './Logo';
-
+contact.loveons@gmail.com
 const footerLinks = [
   { label: 'About Us', to: '/about' },
   { label: 'Contact Us', to: '/contact' },
