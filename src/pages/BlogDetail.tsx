@@ -1356,11 +1356,27 @@ const restartChatGame = () => {
                                 </span>
                             )}
                         </div>
+                       
+{post.tags?.length > 0 && (
+  <div className="mt-8 flex flex-wrap gap-2">
+    {post.tags.map((tag) => (
+      <span
+        key={tag}
+        className="rounded-full bg-rose-50 px-3 py-1 text-xs font-medium text-rose-500"
+      >
+        #{tag}
+      </span>
+    ))}
+  </div>
+)}
 
-                       {/* =================================================
-                       SHARE ARTICLE 
-                        ================================================= */}
-                        <BlogShare title={post.title} />                        
+{/* =================================================
+SHARE ARTICLE
+================================================= */}
+<div className="mt-6 flex justify-end">
+  <BlogShare title={post.title} />
+</div>
+                                                                                              
 {/* =================================================
 CHAT GAME
 ================================================= */}
