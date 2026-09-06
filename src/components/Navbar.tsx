@@ -978,6 +978,7 @@ return (
       )}
     </div>
   ) : (   
+<div className="flex flex-col items-end">
 <button
   onClick={handleLogin}
   disabled={authLoading}
@@ -985,8 +986,12 @@ return (
 >
   {authLoading ? '...' : 'Login'}
 </button>
-
-                  
+{authError && (
+  <p className="text-[9px] text-rose-500 mt-0.5 max-w-[100px] truncate" title={authError}>
+    {authError}
+  </p>
+)}
+</div>
  )}
 </div>
 
