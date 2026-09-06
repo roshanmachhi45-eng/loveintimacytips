@@ -10,14 +10,10 @@ const firebaseConfig = {
   appId: "1:791675098600:web:1209bda0c838172f81b49d",
   measurementId: "G-DJSXYEN7TY"
 };
-// फ़ायरबेस को इनिशियलाइज़ करें
 const app = initializeApp(firebaseConfig);
-
-// ऑथेंटिकेशन और गूगल प्रोवाइडर को एक्सपोर्ट करें
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const signInWithGoogle = async () => {
-  export const signInWithGoogle = async () => {
   try {
     const { signInWithPopup } = await import('firebase/auth');
     await signInWithPopup(auth, googleProvider);
