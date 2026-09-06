@@ -39,13 +39,23 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
     const [user, setUser] = useState<User | null>(null);
-  useEffect(() => {
+    useEffect(() => {
+    // वेर्सेल रीडायरेक्ट से वापस आने पर लॉगिन डेटा को कैप्चर करने के लिए
+    import('firebase/auth').then(({ getRedirectResult }) => {
+      getRedirectResult(auth)
+        .then((result) => {
+          if (result?.user) {
+            setUser(result.user);
+          }
+        })
+        .catch((error) => console.error("Redirect Login Error:", error));
+    });
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
     return () => unsubscribe();
-  }, []);
-
+  }, []);             
   // Desktop and mobile categories use separate states.
   const [
     desktopCategoriesOpen,
