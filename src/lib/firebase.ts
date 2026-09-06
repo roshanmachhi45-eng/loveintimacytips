@@ -1,10 +1,10 @@
 import { initializeApp } from 'firebase/app';
+import type { AuthError } from 'firebase/auth';
 import {
   getAuth,
   GoogleAuthProvider,
   signOut,
   signInWithRedirect,
-  signInWithPopup,
   browserLocalPersistence,
   setPersistence,
 } from 'firebase/auth';
@@ -23,48 +23,43 @@ const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 
-setPersistence(auth, browserLocalPersistence).catch(() => {
-  // Some browsers block persistence — auth still works per-session.
+setPersistence(auth, browserLocalPersistence).catch((err) => {
+  console.warn('Firebase persistence setup failed:', err);
 });
 
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-function isMobile(): boolean {
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
-    return false;
-  }
-
-  return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Windows Phone|Mobile/i.test(
-    navigator.userAgent || navigator.userAgentData?.toString() || ''
-  );
+export interface SignInResult {
+  success: boolean;
+  error?: string;
+  code?: string;
 }
 
-export const signInWithGoogle = async () => {
+export const signInWithGoogle = async (): Promise<SignInResult> => {
   try {
-    if (isMobile()) {
-      await signInWithRedirect(auth, googleProvider);
-      return null;
-    }
-
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
+    // signInWithRedirect is the most reliable method for production
+    // on custom domains. Popups get blocked by mobile browsers and
+    // cross-origin restrictions on Vercel.
+    await signInWithRedirect(auth, googleProvider);
+    return { success: true };
   } catch (error) {
-    console.error('Google Sign-In Error:', error);
+    const authError = error as AuthError;
+    console.error('Google Sign-In Error:', {
+      code: authError?.code,
+      message: authError?.message,
+      name: authError?.name,
+    });
 
-    // If popup is blocked, fall back to redirect on any device.
-    try {
-      await signInWithRedirect(auth, googleProvider);
-    } catch (redirectError) {
-      console.error('Google Redirect fallback Error:', redirectError);
-      throw redirectError;
-    }
-
-    return null;
+    return {
+      success: false,
+      error: authError?.message || 'Sign-in failed',
+      code: authError?.code,
+    };
   }
 };
 
-export const logoutUser = async () => {
+export const logoutUser = async (): Promise<void> => {
   try {
     await signOut(auth);
   } catch (error) {

@@ -15,6 +15,7 @@ import Logo from './Logo';
 
 import { auth, signInWithGoogle, logoutUser } from '../lib/firebase';
 import { onAuthStateChanged, User, getRedirectResult } from 'firebase/auth';
+import type { SignInResult } from '../lib/firebase';
 const CATEGORIES = [
     'Off-App Dating',
   ];
@@ -36,19 +37,31 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
     const [user, setUser] = useState<User | null>(null);
+    const [authLoading, setAuthLoading] = useState(false);
+    const [authError, setAuthError] = useState<string | null>(null);
+
   useEffect(() => {
     getRedirectResult(auth)
       .then((result) => {
         if (result?.user) {
           setUser(result.user);
+          setAuthError(null);
         }
       })
       .catch((error) => {
         console.error('Redirect Login Error:', error);
+        setAuthError(error?.message || 'Google sign-in failed');
+      })
+      .finally(() => {
+        setAuthLoading(false);
       });
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        setAuthLoading(false);
+        setAuthError(null);
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -156,6 +169,24 @@ export default function Navbar() {
       );
     };
   }, []);
+
+  /* ---------------------------------------------
+     HANDLE LOGIN
+  --------------------------------------------- */
+  const handleLogin = async () => {
+    if (authLoading) return;
+    setAuthLoading(true);
+    setAuthError(null);
+
+    const result: SignInResult = await signInWithGoogle();
+
+    if (!result.success) {
+      setAuthLoading(false);
+      setAuthError(result.error || 'Google sign-in failed');
+    }
+    // If success, the page will redirect to Google.
+    // onAuthStateChanged will update user state when we return.
+  };
 
   /* ---------------------------------------------
      CLOSE EVERYTHING
@@ -474,12 +505,20 @@ return (
       </button>
     </div>
   ) : (
-    <button
-      onClick={signInWithGoogle}
-      className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-4 py-1.5 rounded-full text-sm font-semibold shadow-sm hover:opacity-90 active:scale-95 transition"
-    >
-      Login
-    </button>
+    <div className="flex flex-col items-end">
+      <button
+        onClick={handleLogin}
+        disabled={authLoading}
+        className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-4 py-1.5 rounded-full text-sm font-semibold shadow-sm hover:opacity-90 active:scale-95 transition disabled:opacity-60"
+      >
+        {authLoading ? 'Signing in...' : 'Login'}
+      </button>
+      {authError && (
+        <p className="text-[10px] text-rose-500 mt-1 max-w-[120px] truncate" title={authError}>
+          {authError}
+        </p>
+      )}
+    </div>
   )}
 </div>
 
@@ -940,10 +979,11 @@ return (
     </div>
   ) : (   
 <button
-  onClick={signInWithGoogle}
-  className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition whitespace-nowrap"
+  onClick={handleLogin}
+  disabled={authLoading}
+  className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition whitespace-nowrap disabled:opacity-60"
 >
-  Login
+  {authLoading ? '...' : 'Login'}
 </button>
 
                   
@@ -1352,13 +1392,19 @@ return (
                       <LogOut className="h-5 w-5" />
                     </button>
                   </div>
-                ) : (                   
-                 <button
-                    onClick={signInWithGoogle}
-                    className="w-full bg-gradient-to-r from-rose-500 to-pink-500 text-white p-2.5 rounded-xl text-sm font-semibold shadow-sm text-center block transition"
-                  >
-                    Login with Google
-                  </button>
+                ) : (
+                  <div>
+                    <button
+                      onClick={handleLogin}
+                      disabled={authLoading}
+                      className="w-full bg-gradient-to-r from-rose-500 to-pink-500 text-white p-2.5 rounded-xl text-sm font-semibold shadow-sm text-center block transition disabled:opacity-60"
+                    >
+                      {authLoading ? 'Redirecting to Google...' : 'Login with Google'}
+                    </button>
+                    {authError && (
+                      <p className="text-[11px] text-rose-500 mt-1.5 px-1">{authError}</p>
+                    )}
+                  </div>
                 )}
               </div>
 
