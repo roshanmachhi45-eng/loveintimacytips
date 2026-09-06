@@ -5,11 +5,17 @@ import {
   Info,
   Menu,
   Search,
+  LogOut,
+  User as UserIcon,
   Sparkles,
   X,
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
+
+// फ़ायरबेस ऑथेंटिकेशन और आइकॉन इम्पोर्ट करें
+import { auth, signInWithGoogle, logoutUser } from '../lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 
 const CATEGORIES = [
     'Off-App Dating',
@@ -31,8 +37,14 @@ const TOOLS = [
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-
   const [menuOpen, setMenuOpen] = useState(false);
+    const [user, setUser] = useState<User | null>(null);
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Desktop and mobile categories use separate states.
   const [
@@ -883,7 +895,31 @@ return (
               )}
             </div>
           </div>
-        </div>
+                        {/* डेस्कटॉप लॉगिन/यूज़र प्रोफ़ाइल */}
+              <div className="hidden md:block">
+                {user ? (
+                  <div className="flex items-center gap-2 bg-rose-50/50 border border-rose-100 rounded-full pl-1.5 pr-3 py-1">
+                    {user.photoURL ? (
+                      <img src={user.photoURL} alt="Profile" className="h-6 w-6 rounded-full object-cover" />
+                    ) : (
+                      <div className="h-6 w-6 bg-rose-200 text-rose-700 flex items-center justify-center rounded-full text-xs font-bold"><UserIcon className="h-3.5 w-3.5" /></div>
+                    )}
+                    <span className="text-xs font-medium text-gray-700 max-w-[80px] truncate">{user.displayName || 'User'}</span>
+                    <button onClick={logoutUser} title="Logout" className="text-gray-400 hover:text-rose-600 ml-1 transition">
+                      <LogOut className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={signInWithGoogle}
+                    className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-4 py-1.5 rounded-full text-sm font-semibold shadow-sm hover:opacity-90 active:scale-95 transition"
+                  >
+                    Login
+                  </button>
+                )}
+              </div>
+
+        </div>        
       </header>
 
       {/* =================================================
@@ -1263,6 +1299,35 @@ return (
                 About Us
               </Link>
             </div>
+                          {/* मोबाइल लॉगिन बटन */}
+              <div className="pt-2 border-t border-rose-50">
+                {user ? (
+                  <div className="flex items-center justify-between bg-rose-50/40 border border-rose-100 p-3 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      {user.photoURL ? (
+                        <img src={user.photoURL} alt="Profile" className="h-8 w-8 rounded-full object-cover" />
+                      ) : (
+                        <div className="h-8 w-8 bg-rose-200 text-rose-700 flex items-center justify-center rounded-full text-sm font-bold"><UserIcon className="h-4 w-4" /></div>
+                      )}
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">{user.displayName || 'User'}</p>
+                        <p className="text-xs text-gray-400 truncate max-w-[150px]">{user.email}</p>
+                      </div>
+                    </div>
+                    <button onClick={logoutUser} className="p-2 text-gray-400 hover:text-rose-600 transition">
+                      <LogOut className="h-5 w-5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={signInWithGoogle}
+                    className="w-full bg-gradient-to-r from-rose-500 to-pink-500 text-white p-2.5 rounded-xl text-sm font-semibold shadow-sm text-center block transition"
+                  >
+                    Login with Google
+                  </button>
+                )}
+              </div>
+
           </div>
         </div>
       </aside>
