@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithRedirect, signOut } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, resolveRedirectResult, signOut } from 'firebase/auth';
 // आपका फ़ायरबेस कॉन्फ़िगरेशन कोड [image_cgxzGe.png]
 const firebaseConfig = {
   apiKey: "AIzaSyBJfn2Ive_yfleJeEabVfaqo8EN_JfIj5g",
@@ -19,12 +19,20 @@ export const googleProvider = new GoogleAuthProvider();
 
 export const signInWithGoogle = async () => {
   try {
-    await signInWithRedirect(auth, googleProvider);
+    const result = await signInWithPopup(auth, googleProvider).catch(async (error) => {
+      if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
+        window.location.href = `https://${auth.config.authDomain}/__/auth/handler?apiKey=${auth.config.apiKey}&appName=${auth.name}&authType=signInWithPopup&providerId=google.com&scopes=profile`;
+        return null;
+      }
+      throw error;
+    });
+    return result ? result.user : null;
   } catch (error) {
     console.error("Google Sign-In Error:", error);
     throw error;
   }
 };
+
 // लॉगआउट करने का हेल्पर फ़ंक्शन
 export const logoutUser = async () => {
   try {
