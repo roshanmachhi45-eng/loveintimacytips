@@ -13,9 +13,8 @@ import {
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 
-// फ़ायरबेस ऑथेंटिकेशन और आइकॉन इम्पोर्ट करें
 import { auth, signInWithGoogle, logoutUser } from '../lib/firebase';
-import { onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { onAuthStateChanged, User, getRedirectResult } from 'firebase/auth';
 const CATEGORIES = [
     'Off-App Dating',
   ];
@@ -37,19 +36,17 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
     const [user, setUser] = useState<User | null>(null);
-      useEffect(() => {
-    const handleRedirect = async () => {
-      try {
-        const { getRedirectResult } = await import('firebase/auth');
-        const result = await getRedirectResult(auth);
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then((result) => {
         if (result?.user) {
           setUser(result.user);
         }
-      } catch (error) {
-        console.error("Redirect Login Error:", error);
-      }
-    };
-    handleRedirect();
+      })
+      .catch((error) => {
+        console.error('Redirect Login Error:', error);
+      });
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
@@ -943,13 +940,7 @@ return (
     </div>
   ) : (   
 <button
-  onClick={async () => {
-    try {
-      await signInWithPopup(auth, new GoogleAuthProvider());
-    } catch (e) {
-      window.location.href = `https://firebaseapp.com{auth.config.apiKey}&appName=[DEFAULT]&authType=signInWithPopup&providerId=google.com&scopes=profile,email`;
-    }
-  }}
+  onClick={signInWithGoogle}
   className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition whitespace-nowrap"
 >
   Login
