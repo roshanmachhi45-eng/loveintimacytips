@@ -1549,8 +1549,8 @@ CHAT GAME
                                     mb-8
                                     rounded-2xl
                                     border
-                                    border-rose-100
-                                    bg-white
+                                    border-[#FFC0CB]
+                                    bg-[#FFF0F5]
                                     shadow-sm
                                 "
                              >
@@ -1596,7 +1596,7 @@ CHAT GAME
                                   max-h-48
                                   overflow-y-auto
                                   border-t
-                                  border-rose-50
+                                  border-[#FFC0CB]
                                   px-3
                                   py-3
                                 "
