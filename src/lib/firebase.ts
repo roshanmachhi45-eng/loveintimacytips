@@ -1,6 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-
+import { getAuth, GoogleAuthProvider, signInWithRedirect, signOut } from 'firebase/auth';
 // आपका फ़ायरबेस कॉन्फ़िगरेशन कोड [image_cgxzGe.png]
 const firebaseConfig = {
   apiKey: "AIzaSyBJfn2Ive_yfleJeEabVfaqo8EN_JfIj5g",
@@ -11,7 +10,6 @@ const firebaseConfig = {
   appId: "1:791675098600:web:1209bda0c838172f81b49d",
   measurementId: "G-DJSXYEN7TY"
 };
-
 // फ़ायरबेस को इनिशियलाइज़ करें
 const app = initializeApp(firebaseConfig);
 
@@ -19,17 +17,14 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// गूगल से लॉग इन करने का हेल्पर फ़ंक्शन
 export const signInWithGoogle = async () => {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
+    await signInWithRedirect(auth, googleProvider);
   } catch (error) {
     console.error("Google Sign-In Error:", error);
     throw error;
   }
 };
-
 // लॉगआउट करने का हेल्पर फ़ंक्शन
 export const logoutUser = async () => {
   try {
