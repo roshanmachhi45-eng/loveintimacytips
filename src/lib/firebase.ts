@@ -4,7 +4,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/
 // आपका फ़ायरबेस कॉन्फ़िगरेशन कोड [image_cgxzGe.png]
 const firebaseConfig = {
   apiKey: "AIzaSyBJfn2Ive_yfleJeEabVfaqo8EN_JfIj5g",
-  authDomain: "://firebaseapp.com",
+  authDomain: "loveons.firebaseapp.com",
   projectId: "loveons",
   storageBucket: "loveons.firebasestorage.app",
   messagingSenderId: "791675098600",
