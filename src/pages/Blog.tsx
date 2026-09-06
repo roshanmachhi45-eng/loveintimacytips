@@ -1,7 +1,6 @@
-
 import { useEffect, useMemo, useState } from 'react';
 import { BookOpen, Loader2 } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom'; // 1. यहाँ useNavigate जोड़ा है
 
 import Seo from '../components/Seo';
 import PageLayout from '../components/PageLayout';
@@ -13,6 +12,7 @@ import {
 } from '../lib/blogApi';
 
 export default function Blog() {
+  const navigate = useNavigate(); // 2. navigate हुक को इनिशियलाइज़ किया
   const [posts, setPosts] =
     useState<BlogPost[]>([]);
 
@@ -33,6 +33,13 @@ export default function Blog() {
       .get('category')
       ?.trim() || '';
 
+  // URL से सर्च क्वेरी प्राप्त करना (जैसे: /blog?search=Why am i tired)
+  const searchQuery =
+    searchParams
+      .get('search')
+      ?.trim()
+      .toLowerCase() || '';
+
   /* =======================================================
      LOAD CONTENTFUL BLOG POSTS
      ======================================================= */
@@ -44,10 +51,6 @@ export default function Blog() {
       setLoading(true);
 
       try {
-        /*
-         * Contentful is now the ONLY source
-         * for blog posts.
-         */
         const data =
           await fetchPublishedPosts();
 
@@ -55,10 +58,6 @@ export default function Blog() {
           return;
         }
 
-        /*
-         * Never fall back to the old
-         * Bolt AI articles.
-         */
         setPosts(data || []);
       } catch (error) {
         console.error(
@@ -67,11 +66,6 @@ export default function Blog() {
         );
 
         if (!cancelled) {
-          /*
-           * If Contentful fails, keep the
-           * blog list empty instead of showing
-           * the old hard-coded articles.
-           */
           setPosts([]);
         }
       } finally {
@@ -89,15 +83,39 @@ export default function Blog() {
   }, []);
 
   /* =======================================================
+     DIRECT OPEN FILTER ON SEARCH
+     ======================================================= */
+  useEffect(() => {
+    // अगर यूजर ने कुछ सर्च किया है और ब्लॉग्स का डेटा लोड हो चुका है
+    if (searchQuery && posts.length > 0) {
+      // शीर्षक (Title) या स्लग (Slug) में आंशिक शब्द मैच करने वाले ब्लॉग को ढूँढें
+      const matchedPost = posts.find((post) => {
+        const postTitle = post.title?.toLowerCase() || '';
+        const postSlug = post.slug?.toLowerCase() || '';
+        return postTitle.includes(searchQuery) || postSlug.includes(searchQuery);
+      });
+
+      // यदि कोई ब्लॉग मैच होता है, तो बिना लिस्ट दिखाए सीधे उसी ब्लॉग पेज पर भेजें!
+      if (matchedPost) {
+        navigate(`/blog/${matchedPost.slug}`, { replace: true });
+      }
+    }
+  }, [searchQuery, posts, navigate]);
+
+  /* =======================================================
      CATEGORY FILTER
      ======================================================= */
 
   const filteredPosts =
     useMemo(() => {
-      /*
-       * No category selected:
-       * show every published Contentful post.
-       */
+      // यदि सामान्य सर्च क्वेरी है, तो फ़िल्टर्ड लिस्ट में भी वही दिखेगा
+      if (searchQuery) {
+        return posts.filter((post) => {
+          const postTitle = post.title?.toLowerCase() || '';
+          return postTitle.includes(searchQuery);
+        });
+      }
+
       if (!selectedCategory) {
         return posts;
       }
@@ -107,15 +125,6 @@ export default function Blog() {
           .trim()
           .toLowerCase();
 
-      /*
-       * Category comparison is case-insensitive.
-       *
-       * Example:
-       * Contentful: "Communication"
-       * URL: "communication"
-       *
-       * Both will match.
-       */
       return posts.filter((post) => {
         const postCategory =
           post.category
@@ -130,6 +139,7 @@ export default function Blog() {
     }, [
       posts,
       selectedCategory,
+      searchQuery,
     ]);
 
   /* =======================================================
@@ -162,11 +172,15 @@ export default function Blog() {
         title={
           selectedCategory
             ? selectedCategory
+            : searchQuery
+            ? `Search Results for "${searchParams.get('search')}"`
             : 'Relationship Blog'
         }
         subtitle={
           selectedCategory
             ? `Articles about ${selectedCategory.toLowerCase()}`
+            : searchQuery
+            ? 'Found articles matching your search.'
             : 'Helpful insights and practical ideas for healthier relationships.'
         }
       >
@@ -186,12 +200,16 @@ export default function Blog() {
               <h2 className="font-display text-xl font-bold tracking-tight text-gray-800 sm:text-2xl">
                 {selectedCategory
                   ? `${selectedCategory} Articles`
+                  : searchQuery
+                  ? 'Matched Articles'
                   : 'Latest Relationship Articles'}
               </h2>
 
               <p className="mt-0.5 text-xs text-gray-400 sm:text-sm">
                 {selectedCategory
                   ? 'Explore articles from this relationship topic'
+                  : searchQuery
+                  ? 'Articles matching your text'
                   : 'Helpful insights for healthier relationships'}
               </p>
             </div>
@@ -251,4 +269,3 @@ export default function Blog() {
     </>
   );
 }
-
