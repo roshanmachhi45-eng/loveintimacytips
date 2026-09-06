@@ -15,8 +15,7 @@ import Logo from './Logo';
 
 // फ़ायरबेस ऑथेंटिकेशन और आइकॉन इम्पोर्ट करें
 import { auth, signInWithGoogle, logoutUser } from '../lib/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
-
+import { onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 const CATEGORIES = [
     'Off-App Dating',
   ];
@@ -942,22 +941,20 @@ return (
         </div>
       )}
     </div>
-  ) : (                    
+  ) : (   
 <button
   onClick={async () => {
-    const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
     } catch (e) {
-      window.location.href = `https://firebaseapp.com{auth.config.apiKey}&appName=[DEFAULT]&authType=signInWithPopup&providerId=google.com&scopes=profile,email&customParameters=${encodeURIComponent(JSON.stringify({auth_trigger: 'click'}))}`;
+      window.location.href = `https://firebaseapp.com{auth.config.apiKey}&appName=[DEFAULT]&authType=signInWithPopup&providerId=google.com&scopes=profile,email`;
     }
   }}
   className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition whitespace-nowrap"
 >
   Login
 </button>
-                
-
+                  
  )}
 </div>
 
