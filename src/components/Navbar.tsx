@@ -942,14 +942,23 @@ return (
         </div>
       )}
     </div>
-  ) : (
-    <button
-      onClick={signInWithGoogle}
-      className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition whitespace-nowrap"
-    >
-      Login
-    </button>
-  )}
+  ) : (                    
+<button
+  onClick={async () => {
+    const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
+    try {
+      await signInWithPopup(auth, new GoogleAuthProvider());
+    } catch (e) {
+      window.location.href = `https://firebaseapp.com{auth.config.apiKey}&appName=[DEFAULT]&authType=signInWithPopup&providerId=google.com&scopes=profile,email&customParameters=${encodeURIComponent(JSON.stringify({auth_trigger: 'click'}))}`;
+    }
+  }}
+  className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition whitespace-nowrap"
+>
+  Login
+</button>
+                
+
+ )}
 </div>
 
             </div>
@@ -1354,8 +1363,8 @@ return (
                       <LogOut className="h-5 w-5" />
                     </button>
                   </div>
-                ) : (
-                  <button
+                ) : (                   
+                 <button
                     onClick={signInWithGoogle}
                     className="w-full bg-gradient-to-r from-rose-500 to-pink-500 text-white p-2.5 rounded-xl text-sm font-semibold shadow-sm text-center block transition"
                   >
