@@ -19,9 +19,8 @@ export const googleProvider = new GoogleAuthProvider();
 
 export const signInWithGoogle = async () => {
   try {
-    const authDomain = "://firebaseapp.com";
-    const apiKey = "AIzaSyBJfn2Ive_yfleJeEabVfaqo8EN_JfIj5g";
-    
+    const authDomain = "loveons.firebaseapp.com";
+    const apiKey = "AIzaSyBJfn2Ive_yfleJeEabVfaqo8EN_JfIj5g";    
     window.location.href = `https://${authDomain}/__/auth/handler?apiKey=${apiKey}&appName=[DEFAULT]&authType=signInWithPopup&providerId=google.com&scopes=profile,email`;
   } catch (error) {
     console.error("Google Sign-In Error:", error);
