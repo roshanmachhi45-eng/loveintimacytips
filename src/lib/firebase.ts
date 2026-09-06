@@ -16,12 +16,10 @@ const app = initializeApp(firebaseConfig);
 // ऑथेंटिकेशन और गूगल प्रोवाइडर को एक्सपोर्ट करें
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
-
 export const signInWithGoogle = async () => {
   try {
-    const authDomain = "loveons.firebaseapp.com";
-    const apiKey = "AIzaSyBJfn2Ive_yfleJeEabVfaqo8EN_JfIj5g";    
-    window.location.href = `https://${authDomain}/__/auth/handler?apiKey=${apiKey}&appName=[DEFAULT]&authType=signInWithPopup&providerId=google.com&scopes=profile,email`;
+    const { signInWithRedirect } = await import('firebase/auth');
+    await signInWithRedirect(auth, googleProvider);
   } catch (error) {
     console.error("Google Sign-In Error:", error);
     throw error;
