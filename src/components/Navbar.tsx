@@ -301,7 +301,7 @@ export default function Navbar() {
     navigate('/blog');
   };
 
-  /* ---------------------------------------------
+    /* ---------------------------------------------
      SEARCH
   --------------------------------------------- */
   const submitSearch = (
@@ -310,16 +310,30 @@ export default function Navbar() {
     event.preventDefault();
 
     const query = searchValue.trim();
-
     if (!query) return;
 
-    closeEverything();
+    const lowerQuery = query.toLowerCase();
 
+    // 1. यदि यूजर लव कैलकुलेटर सर्च करता है
+    if (lowerQuery.includes('calc') || lowerQuery.includes('love') || lowerQuery.includes('calculator')) {
+      openCalculator();
+      setSearchValue(''); // इनपुट बॉक्स खाली करें
+      return;
+    }
+
+    // 2. यदि यूजर टैरो कार्ड सर्च करता है
+    if (lowerQuery.includes('tarot') || lowerQuery.includes('cosmic') || lowerQuery.includes('tar') || lowerQuery.includes('card')) {
+      openCosmicLoveTarot();
+      setSearchValue(''); // इनपुट बॉक्स खाली करें
+      return;
+    }
+
+    // 3. साधारण ब्लॉग सर्च के लिए /search पेज पर भेजें और इनपुट खाली करें
+    closeEverything();
     navigate(
-      `/search?q=${encodeURIComponent(
-        query
-      )}`
+      `/search?q=${encodeURIComponent(query)}`
     );
+    setSearchValue(''); // सर्च सबमिट होने के बाद इनपुट बॉक्स खाली करें
   };
 
   return (
