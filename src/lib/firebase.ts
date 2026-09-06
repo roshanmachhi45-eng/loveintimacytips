@@ -1,19 +1,22 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signOut } from 'firebase/auth';
+
 const firebaseConfig = {
   apiKey: "AIzaSyBJfn2Ive_yfleJeEabVfaqo8EN_JfIj5g",
-  authDomain: "://firebaseapp.com", // यहाँ हमेशा डिफॉल्ट फ़ायरबेस डोमेन ही रहना चाहिए
+  authDomain: "://firebaseapp.com",
   projectId: "loveons",
   storageBucket: "loveons.firebasestorage.app",
   messagingSenderId: "791675098600",
   appId: "1:791675098600:web:1209bda0c838172f81b49d",
   measurementId: "G-DJSXYEN7TY"
 };
+
 const app = initializeApp(firebaseConfig);
+
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
 export const signInWithGoogle = async () => {
-  export const signInWithGoogle = async () => {
   try {
     const { signInWithPopup } = await import('firebase/auth');
     const result = await signInWithPopup(auth, googleProvider);
@@ -23,6 +26,7 @@ export const signInWithGoogle = async () => {
     throw error;
   }
 };
+
 export const logoutUser = async () => {
   try {
     await signOut(auth);
