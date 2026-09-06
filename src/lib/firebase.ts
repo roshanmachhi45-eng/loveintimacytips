@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithRedirect, signOut } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signOut } from 'firebase/auth';
 // आपका फ़ायरबेस कॉन्फ़िगरेशन कोड [image_cgxzGe.png]
 const firebaseConfig = {
   apiKey: "AIzaSyBJfn2Ive_yfleJeEabVfaqo8EN_JfIj5g",
@@ -19,7 +19,10 @@ export const googleProvider = new GoogleAuthProvider();
 
 export const signInWithGoogle = async () => {
   try {
-    await signInWithRedirect(auth, googleProvider);
+    const authDomain = "://firebaseapp.com";
+    const apiKey = "AIzaSyBJfn2Ive_yfleJeEabVfaqo8EN_JfIj5g";
+    
+    window.location.href = `https://${authDomain}/__/auth/handler?apiKey=${apiKey}&appName=[DEFAULT]&authType=signInWithPopup&providerId=google.com&scopes=profile,email`;
   } catch (error) {
     console.error("Google Sign-In Error:", error);
     throw error;
