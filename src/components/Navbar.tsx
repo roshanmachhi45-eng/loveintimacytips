@@ -301,7 +301,7 @@ export default function Navbar() {
     navigate('/blog');
   };
 
-    /* ---------------------------------------------
+      /* ---------------------------------------------
      SEARCH
   --------------------------------------------- */
   const submitSearch = (
@@ -314,29 +314,29 @@ export default function Navbar() {
 
     const lowerQuery = query.toLowerCase();
 
-    // 1. यदि यूजर लव कैलकुलेटर सर्च करता है
-    if (lowerQuery.includes('calc') || lowerQuery.includes('love') || lowerQuery.includes('calculator')) {
-      openCalculator();
-      setSearchValue(''); // इनपुट बॉक्स खाली करें
-      return;
-    }
-
-    // 2. यदि यूजर टैरो कार्ड सर्च करता है
-    if (lowerQuery.includes('tarot') || lowerQuery.includes('cosmic') || lowerQuery.includes('tar') || lowerQuery.includes('card')) {
+    // 1. प्राथमिक चेक: यदि यूजर टैरो कार्ड से जुड़ा कुछ भी सर्च करे (टैरो पहले चेक होगा)
+    if (lowerQuery.includes('tarot') || lowerQuery.includes('cosmic') || lowerQuery.includes('card')) {
       openCosmicLoveTarot();
-      setSearchValue(''); // इनपुट बॉक्स खाली करें
+      setSearchValue('');
+      
       return;
     }
 
-    // 3. साधारण ब्लॉग सर्च के लिए /search पेज पर भेजें और इनपुट खाली करें
+    // 2. द्वितीयक चेक: यदि सिर्फ कैलकुलेटर या लव लिखा हो (लेकिन टैरो न हो)
+    if (lowerQuery.includes('calc') || lowerQuery.includes('calculator') || lowerQuery === 'love' || lowerQuery.includes('love calculator')) {
+      openCalculator();
+      setSearchValue('');
+      return;
+    }
+
+    // 3. ब्लॉग सर्च फिक्स: होमपेज पर जाने के बजाय इसे सीधे '/blog' पर भेजेंगे जहाँ फ़िल्टर काम करेगा
     closeEverything();
     navigate(
-      `/search?q=${encodeURIComponent(query)}`
+      `/blog?search=${encodeURIComponent(query)}`
     );
-    setSearchValue(''); // सर्च सबमिट होने के बाद इनपुट बॉक्स खाली करें
+    setSearchValue('');
   };
-
-  return (
+return (
     <>
       {/* =================================================
           NAVBAR
