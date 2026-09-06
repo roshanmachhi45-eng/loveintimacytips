@@ -449,6 +449,33 @@ return (
                 lg:flex
               "
             >
+              <div className="mr-2 hidden lg:block">
+  {user ? (
+    <div className="flex items-center gap-2 bg-rose-50/50 border border-rose-100 rounded-full pl-1.5 pr-3 py-1">
+      {user.photoURL ? (
+        <img src={user.photoURL} alt="Profile" className="h-6 w-6 rounded-full object-cover" />
+      ) : (
+        <div className="h-6 w-6 bg-rose-200 text-rose-700 flex items-center justify-center rounded-full text-xs font-bold">
+          <UserIcon className="h-3.5 w-3.5" />
+        </div>
+      )}
+      <span className="text-xs font-medium text-gray-700 max-w-[80px] truncate">
+        {user.displayName || 'User'}
+      </span>
+      <button onClick={logoutUser} title="Logout" className="text-gray-400 hover:text-rose-600 ml-1 transition">
+        <LogOut className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  ) : (
+    <button
+      onClick={signInWithGoogle}
+      className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-4 py-1.5 rounded-full text-sm font-semibold shadow-sm hover:opacity-90 active:scale-95 transition"
+    >
+      Login
+    </button>
+  )}
+</div>
+
               {/* HOME */}
 
               <Link
@@ -795,7 +822,7 @@ return (
                 SEARCH
             ============================================ */}
 
-            <div className="relative z-[130] ml-1 sm:ml-2">
+            <div className="relative z-[130] ml-auto lg:ml-2 flex items-center gap-1.5 sm:gap-2">
               <button
                 type="button"
                 onClick={() => {
@@ -893,32 +920,30 @@ return (
                   </button>
                 </form>
               )}
+              <div className="lg:hidden flex items-center">
+  {user ? (
+    <div className="h-8 w-8 rounded-full overflow-hidden border border-rose-100 shrink-0">
+      {user.photoURL ? (
+        <img src={user.photoURL} alt="Profile" className="h-full w-full object-cover" />
+      ) : (
+        <div className="h-full w-full bg-rose-200 text-rose-700 flex items-center justify-center text-xs font-bold">
+          <UserIcon className="h-4 w-4" />
+        </div>
+      )}
+    </div>
+  ) : (
+    <button
+      onClick={signInWithGoogle}
+      className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition whitespace-nowrap"
+    >
+      Login
+    </button>
+  )}
+</div>
+
             </div>
           </div>
-                        {/* डेस्कटॉप लॉगिन/यूज़र प्रोफ़ाइल */}
-              <div className="hidden md:block">
-                {user ? (
-                  <div className="flex items-center gap-2 bg-rose-50/50 border border-rose-100 rounded-full pl-1.5 pr-3 py-1">
-                    {user.photoURL ? (
-                      <img src={user.photoURL} alt="Profile" className="h-6 w-6 rounded-full object-cover" />
-                    ) : (
-                      <div className="h-6 w-6 bg-rose-200 text-rose-700 flex items-center justify-center rounded-full text-xs font-bold"><UserIcon className="h-3.5 w-3.5" /></div>
-                    )}
-                    <span className="text-xs font-medium text-gray-700 max-w-[80px] truncate">{user.displayName || 'User'}</span>
-                    <button onClick={logoutUser} title="Logout" className="text-gray-400 hover:text-rose-600 ml-1 transition">
-                      <LogOut className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={signInWithGoogle}
-                    className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-4 py-1.5 rounded-full text-sm font-semibold shadow-sm hover:opacity-90 active:scale-95 transition"
-                  >
-                    Login
-                  </button>
-                )}
-              </div>
-
+                                                    
         </div>        
       </header>
 
