@@ -3,7 +3,7 @@ import { getAuth, GoogleAuthProvider, signOut } from 'firebase/auth';
 // आपका फ़ायरबेस कॉन्फ़िगरेशन कोड [image_cgxzGe.png]
 const firebaseConfig = {
   apiKey: "AIzaSyBJfn2Ive_yfleJeEabVfaqo8EN_JfIj5g",
-  authDomain: "loveons.firebaseapp.com",
+  authDomain: "loveintimacytips-8qji61kus-roshanmachhi45-engs-projects.vercel.app",
   projectId: "loveons",
   storageBucket: "loveons.firebasestorage.app",
   messagingSenderId: "791675098600",
@@ -17,15 +17,15 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const signInWithGoogle = async () => {
+  export const signInWithGoogle = async () => {
   try {
-    const { signInWithRedirect } = await import('firebase/auth');
-    await signInWithRedirect(auth, googleProvider);
+    const { signInWithPopup } = await import('firebase/auth');
+    await signInWithPopup(auth, googleProvider);
   } catch (error) {
     console.error("Google Sign-In Error:", error);
     throw error;
   }
 };
-// लॉगआउट करने का हेल्पर फ़ंक्शन
 export const logoutUser = async () => {
   try {
     await signOut(auth);
