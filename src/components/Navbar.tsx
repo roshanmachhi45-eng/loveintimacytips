@@ -33,29 +33,30 @@ const TOOLS = [
     icon: Sparkles,
   },
 ];
-
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
     const [user, setUser] = useState<User | null>(null);
-    useEffect(() => {
-    // वेर्सेल रीडायरेक्ट से वापस आने पर लॉगिन डेटा को कैप्चर करने के लिए
-    import('firebase/auth').then(({ getRedirectResult }) => {
-      getRedirectResult(auth)
-        .then((result) => {
-          if (result?.user) {
-            setUser(result.user);
-          }
-        })
-        .catch((error) => console.error("Redirect Login Error:", error));
-    });
-
+      useEffect(() => {
+    const handleRedirect = async () => {
+      try {
+        const { getRedirectResult } = await import('firebase/auth');
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          setUser(result.user);
+        }
+      } catch (error) {
+        console.error("Redirect Login Error:", error);
+      }
+    };
+    handleRedirect();
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
     return () => unsubscribe();
-  }, []);             
+  }, []);
+           
   // Desktop and mobile categories use separate states.
   const [
     desktopCategoriesOpen,
