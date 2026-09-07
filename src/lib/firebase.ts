@@ -10,21 +10,22 @@ import {
   setPersistence,
 } from 'firebase/auth';
 
+// आपके सबसे नए स्क्रीनशॉट के अनुसार 100% सटीक कॉन्फ़िगरेशन
 const firebaseConfig = {
-  apiKey: 'AIzaSyBJfn2ive_YfleJeEabVfaqo8EN_JfIj5g',
-  authDomain: 'loveons.firebaseapp.com',
-  console.log("Firebase Auth Domain is:", firebaseConfig.authDomain);
-  projectId: 'loveons',
-  storageBucket: 'loveons.firebasestorage.app',
-  messagingSenderId: '791675090600',
-  appId: '1:791675090600:web:1209bda0c838172f01b49d',
-  measurementId: 'G-DJSXYEN7TY',
+  apiKey: "AIzaSyBJfn2ive_YfleJeEabVfaqo8EN_JfIj5g",
+  authDomain: "loveons.firebaseapp.com",
+  projectId: "loveons",
+  storageBucket: "loveons.firebasestorage.app",
+  messagingSenderId: "791675090600",
+  appId: "1:791675090600:web:1209bda0c838172f01b49d",
+  measurementId: "G-DJSXYEN7TY"
 };
 
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 
+// यूज़र का लॉगिन सेशन ब्राउज़र में सुरक्षित रखने के लिए
 setPersistence(auth, browserLocalPersistence).catch((err) => {
   console.warn('Firebase persistence setup failed:', err);
 });
@@ -38,6 +39,7 @@ export interface SignInResult {
   code?: string;
 }
 
+// यह जांचने के लिए कि यूज़र मोबाइल पर है या टैबलेट/डेस्कटॉप पर
 function isMobile(): boolean {
   if (typeof navigator === 'undefined') return false;
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -84,7 +86,7 @@ export const signInWithGoogle = async (): Promise<SignInResult> => {
       message: authError?.message,
     });
 
-    // If popup was blocked on desktop, try redirect as a fallback.
+    // अगर डेस्कटॉप पर पॉपअप ब्लॉक हो जाता है, तो फॉलबैक के रूप में रीडायरेक्ट चलाएं
     if (
       code === 'auth/popup-blocked' ||
       code === 'auth/cancelled-popup-request' ||
