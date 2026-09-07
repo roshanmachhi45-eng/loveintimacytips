@@ -13,6 +13,7 @@ import {
 const firebaseConfig = {
   apiKey: 'AIzaSyBJfn2ive_YfleJeEabVfaqo8EN_JfIj5g',
   authDomain: 'loveons.firebaseapp.com',
+  console.log("Firebase Auth Domain is:", firebaseConfig.authDomain);
   projectId: 'loveons',
   storageBucket: 'loveons.firebasestorage.app',
   messagingSenderId: '791675090600',
