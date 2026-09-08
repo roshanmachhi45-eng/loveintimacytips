@@ -4,6 +4,7 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
+  signOut,
 } from "firebase/auth";
 
 const firebaseConfig = {
@@ -27,5 +28,10 @@ export const signInWithGoogle = async () => {
   return result.user;
 };
 
+export const logoutUser = async () => {
+  await signOut(auth);
+};
+
 export default app;
+
 
