@@ -23,30 +23,23 @@ export const auth = getAuth(app);
 
 export const googleProvider = new GoogleAuthProvider();
 
-
 export const signInWithGoogle = async () => {
-  console.log("1. Google login started");
-
   try {
-    const result = await signInWithPopup(
-      auth,
-      googleProvider
-    );
-
-    console.log("2. Google login successful:", result.user);
-
+    const result = await signInWithPopup(auth, googleProvider);
     return result.user;
-  } catch (error: any) {
-    console.error("3. Google login failed:", error);
+  } catch (error) {
+    console.error("Google Sign-In Error:", error);
     throw error;
   }
 };
 
-  return result.user;
-};
-
 export const logoutUser = async () => {
-  await signOut(auth);
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.error("Logout Error:", error);
+    throw error;
+  }
 };
 
 export default app;
