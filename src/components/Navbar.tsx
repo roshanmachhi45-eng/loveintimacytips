@@ -519,14 +519,20 @@ return (
             >
               {authLoading ? '...' : 'Login'}
             </button>
+            
+{authError && (
+  <p className="text-[11px] text-rose-500 mt-2 max-w-[280px] whitespace-normal break-words text-left">
+    {authError}
+  </p>
+)}
 
-            {authError && (
-              <div className="mt-2 w-[280px] max-w-[90vw] rounded-lg border border-rose-200 bg-rose-50 p-2">
-                <p className="text-[10px] leading-4 text-rose-600 break-words whitespace-normal">
-                  {authError}
+            
+
+            
+              
                 </p>
               </div>
-            )}
+            
           </div>
         )}
 
