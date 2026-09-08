@@ -15,7 +15,6 @@ import Logo from './Logo';
 
 import { auth, signInWithGoogle, logoutUser } from '../firebase';
 import { onAuthStateChanged, User, getRedirectResult } from 'firebase/auth';
-import type { SignInResult } from '../lib/firebase';
 const CATEGORIES = [
     'Off-App Dating',
   ];
@@ -173,20 +172,25 @@ export default function Navbar() {
   /* ---------------------------------------------
      HANDLE LOGIN
   --------------------------------------------- */
-  const handleLogin = async () => {
-    if (authLoading) return;
-    setAuthLoading(true);
-    setAuthError(null);
+  
+const handleLogin = async () => {
+  if (authLoading) return;
 
-    const result: SignInResult = await signInWithGoogle();
+  setAuthLoading(true);
+  setAuthError(null);
 
-    if (!result.success) {
-      setAuthLoading(false);
-      setAuthError(result.error || 'Google sign-in failed');
-    }
-    // If success, the page will redirect to Google.
-    // onAuthStateChanged will update user state when we return.
-  };
+  try {
+    await signInWithGoogle();
+  } catch (error: any) {
+    console.error('Google Login Error:', error);
+
+    setAuthLoading(false);
+    setAuthError(
+      error?.message || 'Google sign-in failed'
+    );
+  }
+};
+
 
   /* ---------------------------------------------
      CLOSE EVERYTHING
