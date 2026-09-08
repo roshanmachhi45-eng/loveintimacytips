@@ -15,6 +15,7 @@ import Logo from './Logo';
 
 import { auth, signInWithGoogle, logoutUser } from '../firebase';
 import { onAuthStateChanged, User, getRedirectResult } from 'firebase/auth';
+import type { SignInResult } from '../lib/firebase';
 const CATEGORIES = [
     'Off-App Dating',
   ];
@@ -172,27 +173,20 @@ export default function Navbar() {
   /* ---------------------------------------------
      HANDLE LOGIN
   --------------------------------------------- */
-  
+  const handleLogin = async () => {
+    if (authLoading) return;
+    setAuthLoading(true);
+    setAuthError(null);
 
-const handleLogin = async () => {
-  if (authLoading) return;
+    const result: SignInResult = await signInWithGoogle();
 
-  setAuthLoading(true);
-  setAuthError(null);
-
-  try {
-    await signInWithGoogle();
-  } catch (error: any) {
-    console.error("Google Login Error:", error);
-
-    setAuthLoading(false);
-    setAuthError(
-      error?.message || "Google sign-in failed"
-    );
-  }
-};
-
-
+    if (!result.success) {
+      setAuthLoading(false);
+      setAuthError(result.error || 'Google sign-in failed');
+    }
+    // If success, the page will redirect to Google.
+    // onAuthStateChanged will update user state when we return.
+  };
 
   /* ---------------------------------------------
      CLOSE EVERYTHING
@@ -510,34 +504,25 @@ return (
         <LogOut className="h-3.5 w-3.5" />
       </button>
     </div>
-          ) : (
-          <div className="flex flex-col items-end">
-            <button
-              onClick={handleLogin}
-              disabled={authLoading}
-              className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition-all"
-            >
-              {authLoading ? '...' : 'Login'}
-            </button>
-
-            {authError && (
-              <div className="mt-2 w-[280px] max-w-[90vw] rounded-lg border border-rose-200 bg-rose-50 p-2">
-                <p className="text-[11px] leading-4 text-rose-500 text-left whitespace-normal break-words">
-                  {authError}
-                </p>
-              </div>
-                        </div>
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-col items-end">
-          {/* यहाँ लॉग इन होने के बाद दिखने वाला यूजर प्रोफाइल या लॉगआउट बटन आएगा */}
-        </div>
+  ) : (
+    <div className="flex flex-col items-end">
+      <button
+        onClick={handleLogin}
+        disabled={authLoading}
+        className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-4 py-1.5 rounded-full text-sm font-semibold shadow-sm hover:opacity-90 active:scale-95 transition disabled:opacity-60"
+      >
+        {authLoading ? 'Signing in...' : 'Login'}
+      </button>
+      {authError && (
+        <p className="text-[10px] text-rose-500 mt-1 max-w-[120px] truncate" title={authError}>
+          {authError}
+        </p>
       )}
+    </div>
+  )}
+</div>
 
-            
-                                      
-             {/* HOME */}
+              {/* HOME */}
 
               <Link
                 to="/"
@@ -1434,6 +1419,15 @@ return (
     </>
   );
 }
+
+
+
+
+  
+
+
+
+
 
 
 
