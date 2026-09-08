@@ -511,24 +511,26 @@ return (
       </button>
     </div>
   ) : (
-    <div className="flex flex-col items-end">
-      <button
-        onClick={handleLogin}
-        disabled={authLoading}
-        className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-4 py-1.5 rounded-full text-sm font-semibold shadow-sm hover:opacity-90 active:scale-95 transition disabled:opacity-60"
-      >
-        {authLoading ? 'Signing in...' : 'Login'}
-      </button>
-      {authError && (
-        <p className="text-[10px] text-rose-500 mt-1 max-w-[120px] truncate" title={authError}>
-          {authError}
-        </p>
-      )}
+    
+<div className="flex flex-col items-end">
+  <button
+    onClick={handleLogin}
+    disabled={authLoading}
+    className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition whitespace-nowrap disabled:opacity-60"
+  >
+    {authLoading ? '...' : 'Login'}
+  </button>
+
+  {authError && (
+    <div className="mt-2 w-[280px] max-w-[90vw] rounded-lg border border-rose-200 bg-rose-50 p-2">
+      <p className="text-[10px] leading-4 text-rose-600 break-words whitespace-normal">
+        {authError}
+      </p>
     </div>
   )}
 </div>
 
-              {/* HOME */}
+             {/* HOME */}
 
               <Link
                 to="/"
