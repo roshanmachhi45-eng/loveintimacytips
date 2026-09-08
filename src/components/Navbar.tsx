@@ -513,11 +513,12 @@ return (
       >
         {authLoading ? 'Signing in...' : 'Login'}
       </button>
-      {authError && (
-        <p className="text-[10px] text-rose-500 mt-1 max-w-[120px] truncate" title={authError}>
-          {authError}
-        </p>
-      )}
+      
+       {authError && (
+         <p className="text-[11px] text-rose-500 mt-2 max-w-[280px] whitespace-normal break-words text-left">
+           {authError}
+         </p>
+       )}        
     </div>
   )}
 </div>
