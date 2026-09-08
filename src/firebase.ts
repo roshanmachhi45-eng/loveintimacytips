@@ -3,12 +3,12 @@ import { initializeApp } from "firebase/app";
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
   signOut,
 } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBJfn2Ive_YfIeEabVfaq8EN_JfIj5g",
+  apiKey: "AIzaSyBJfn2Ive_YfIeJeEabVfaq8EN_JfIj5g",
   authDomain: "loveons.firebaseapp.com",
   projectId: "loveons",
   storageBucket: "loveons.firebasestorage.app",
@@ -24,8 +24,20 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
 export const signInWithGoogle = async () => {
-  const result = await signInWithPopup(auth, googleProvider);
-  return result.user;
+  try {
+    await signInWithRedirect(auth, googleProvider);
+
+    return {
+      success: true,
+    };
+  } catch (error: any) {
+    console.error("Google Sign-In Error:", error);
+
+    return {
+      success: false,
+      error: error?.message || "Google sign-in failed",
+    };
+  }
 };
 
 export const logoutUser = async () => {
