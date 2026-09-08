@@ -23,11 +23,24 @@ export const auth = getAuth(app);
 
 export const googleProvider = new GoogleAuthProvider();
 
+
 export const signInWithGoogle = async () => {
-  const result = await signInWithPopup(
-    auth,
-    googleProvider
-  );
+  console.log("1. Google login started");
+
+  try {
+    const result = await signInWithPopup(
+      auth,
+      googleProvider
+    );
+
+    console.log("2. Google login successful:", result.user);
+
+    return result.user;
+  } catch (error: any) {
+    console.error("3. Google login failed:", error);
+    throw error;
+  }
+};
 
   return result.user;
 };
