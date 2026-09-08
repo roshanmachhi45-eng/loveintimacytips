@@ -527,7 +527,6 @@ return (
         {authError}
       </p>
     </div>
-  )}
 </div>
 
              {/* HOME */}
