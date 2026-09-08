@@ -3,7 +3,7 @@ import { initializeApp } from "firebase/app";
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithRedirect,
+  signInWithPopup,
   signOut,
 } from "firebase/auth";
 
@@ -24,20 +24,12 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
 export const signInWithGoogle = async () => {
-  try {
-    await signInWithRedirect(auth, googleProvider);
+  const result = await signInWithPopup(
+    auth,
+    googleProvider
+  );
 
-    return {
-      success: true,
-    };
-  } catch (error: any) {
-    console.error("Google Sign-In Error:", error);
-
-    return {
-      success: false,
-      error: error?.message || "Google sign-in failed",
-    };
-  }
+  return result.user;
 };
 
 export const logoutUser = async () => {
@@ -45,5 +37,6 @@ export const logoutUser = async () => {
 };
 
 export default app;
+
 
 
