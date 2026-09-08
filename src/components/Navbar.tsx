@@ -173,6 +173,7 @@ export default function Navbar() {
      HANDLE LOGIN
   --------------------------------------------- */
   
+
 const handleLogin = async () => {
   if (authLoading) return;
 
@@ -182,14 +183,15 @@ const handleLogin = async () => {
   try {
     await signInWithGoogle();
   } catch (error: any) {
-    console.error('Google Login Error:', error);
+    console.error("Google Login Error:", error);
 
     setAuthLoading(false);
     setAuthError(
-      error?.message || 'Google sign-in failed'
+      error?.message || "Google sign-in failed"
     );
   }
 };
+
 
 
   /* ---------------------------------------------
