@@ -13,7 +13,7 @@ import {
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 
-import { auth, signInWithGoogle, logoutUser } from '../lib/firebase';
+import { auth, signInWithGoogle, logoutUser } from '../firebase';
 import { onAuthStateChanged, User, getRedirectResult } from 'firebase/auth';
 import type { SignInResult } from '../lib/firebase';
 const CATEGORIES = [
