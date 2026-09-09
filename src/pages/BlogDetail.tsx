@@ -169,7 +169,7 @@ function getLocalImageFallback(
 }
 
 /* =========================================================
-   TOC
+   TOC HELPERS
 ========================================================= */
 
 function getTocFromArticle(
@@ -213,10 +213,6 @@ function getTocFromArticle(
         );
 }
 
-/* =========================================================
-   EXACT TOC SCROLL
-========================================================= */
-
 function scrollToHeading(
     id: string
 ): void {
@@ -225,13 +221,7 @@ function scrollToHeading(
             'blog-article-content'
         );
 
-    if (!article) {
-        console.warn(
-            'Blog article container not found.'
-        );
-
-        return;
-    }
+    if (!article) return;
 
     const headings =
         Array.from(
@@ -248,14 +238,7 @@ function scrollToHeading(
                 ) === id
         ) as HTMLElement | undefined;
 
-    if (!target) {
-        console.warn(
-            'TOC heading not found:',
-            id
-        );
-
-        return;
-    }
+    if (!target) return;
 
     const rect =
         target.getBoundingClientRect();
@@ -275,10 +258,6 @@ function scrollToHeading(
     });
 }
 
-/* =========================================================
-   FORCE PAGE TOP
-========================================================= */
-
 function forcePageTop(): void {
     try {
         if (
@@ -289,7 +268,7 @@ function forcePageTop(): void {
                 'manual';
         }
     } catch {
-        // Ignore unsupported browsers.
+        // Ignore.
     }
 
     window.scrollTo({
@@ -298,10 +277,6 @@ function forcePageTop(): void {
         behavior: 'auto',
     });
 }
-
-/* =========================================================
-   BLOG DETAIL
-========================================================= */
 
 function addHeadingIds(html: string): string {
     if (!html.trim()) {
@@ -364,6 +339,10 @@ function addHeadingIds(html: string): string {
     return doc.body.innerHTML;
 }
 
+/* =========================================================
+   MAIN COMPONENT
+========================================================= */
+
 export default function BlogDetail() {
     const { slug } =
         useParams<{
@@ -414,29 +393,11 @@ export default function BlogDetail() {
         null
     );
 
-    /* =======================================================
-       CHAT GAME STATE
-    ======================================================= */
-
-    const [
-        chatGameStarted,
-        setChatGameStarted,
-    ] = useState(false);
-
-    const [
-        currentChatQuestion,
-        setCurrentChatQuestion,
-    ] = useState(0);
-
-    const [
-        chatAnswers,
-        setChatAnswers,
-    ] = useState<string[]>([]);
-
-    const [
-        chatGameFinished,
-        setChatGameFinished,
-    ] = useState(false);
+    /* CHAT GAME STATE */
+    const [chatGameStarted, setChatGameStarted] = useState(false);
+    const [currentChatQuestion, setCurrentChatQuestion] = useState(0);
+    const [chatAnswers, setChatAnswers] = useState<string[]>([]);
+    const [chatGameFinished, setChatGameFinished] = useState(false);
     
     useEffect(() => {
         setChatGameStarted(false);
@@ -445,29 +406,60 @@ export default function BlogDetail() {
         setChatGameFinished(false);
     }, [slug]);
     
-    /* =======================================================
-       RESET SCROLL WHEN SLUG CHANGES
-    ======================================================= */
-
+    /* SCROLL RESET */
     useLayoutEffect(() => {
-        if (
-            window.location.hash
-        ) {
+        if (window.location.hash) {
             window.history.replaceState(
                 null,
                 '',
-                window.location.pathname +
-                    window.location.search
+                window.location.pathname + window.location.search
             );
         }
 
         forcePageTop();
 
-        const frame1 =
-            window.requestAnimationFrame(
-                () => {
-                    forcePageTop();
+        const frame1 = window.requestAnimationFrame(() => {
+            forcePageTop();
+            window.requestAnimationFrame(() => {
+                forcePageTop();
+            });
+        });
 
-                    window.requestAnimationFrame(
-                        () => {
+        return () => {
+            window.cancelAnimationFrame(frame1);
+        };
+    }, [slug]);
+
+    /* LOAD DATA */
+    useEffect(() => {
+        let cancelled = false;
+
+        async function loadArticle() {
+            if (!slug) {
+                setLoading(false);
+                setError('Article not found.');
+                return;
+            }
+
+            setLoading(true);
+            setError('');
+            setPost(null);
+            setRelated([]);
+            setTocItems([]);
+            setActiveTocId(null);
+            setTocOpen(true);
+
+            try {
+                const data = await fetchPostBySlug(slug);
+                if (cancelled) return;
+
+                if (!data) {
+                    setError('Article not found.');
+                    return;
+                }
+
+                setPost(data);
+
+                try {
+
 
