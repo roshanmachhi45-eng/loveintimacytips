@@ -185,6 +185,18 @@ export default async function handler(
         changefreq: "weekly",
         priority: "1.0",
       },
+      
+      {
+        loc: `${SITE_URL}/love-calculator`,  
+        changefreq: 'weekly',
+        priority: '0.9',
+        },
+      
+        {
+            loc: `${SITE_URL}/cosmic-love-tarot`,
+            changefreq: 'weekly',
+            priority: '0.9',
+        },
 
       {
         loc: `${SITE_URL}/about`,
