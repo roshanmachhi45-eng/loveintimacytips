@@ -1,4 +1,4 @@
-
+import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { ArrowRight, BookOpen, Loader2 } from 'lucide-react';
 import BlogCard from './BlogCard';
@@ -74,11 +74,8 @@ export default function BlogSection() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              window.location.href = '/blog';
-            }}
+          <Link
+            to="/blog                                                  
             className="
               group
               flex
@@ -110,7 +107,7 @@ export default function BlogSection() {
                 sm:w-4
               "
             />
-          </button>
+          </Link>
         </div>
 
         {/* Articles */}
@@ -120,7 +117,7 @@ export default function BlogSection() {
           </div>
         ) : posts.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {posts.map((post) => (
+            {posts.slice(0, 6).map((post) => (
               <BlogCard
                 key={post.id}
                 post={post}
