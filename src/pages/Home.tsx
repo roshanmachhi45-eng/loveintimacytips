@@ -417,7 +417,8 @@ export default function Home() {
             <div className="grid items-stretch lg:grid-cols-2">
 
               {/* HERO TEXT */}
-               <div className="flex flex-col justify-center px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16 xl:px-16 bg-[url('/images/heart-bg.webp')] bg-no-repeat bg-left-center bg-contain lg:bg-[length:70%]">
+               <div className="flex flex-col justify-center px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16 xl:px-16 bg-[url('/images/heart-bg.webp')] bg-no-repeat bg-cover bg-center">
+
 
                    
                               
