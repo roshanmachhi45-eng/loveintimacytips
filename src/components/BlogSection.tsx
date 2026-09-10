@@ -2,10 +2,7 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { ArrowRight, BookOpen, Loader2 } from 'lucide-react';
 import BlogCard from './BlogCard';
-import {
-  fetchPublishedPosts,
-  type BlogPost,
-} from '../lib/blogApi';
+import { fetchPublishedPosts, type BlogPost } from '../lib/blogApi';
 
 export default function BlogSection() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -13,104 +10,49 @@ export default function BlogSection() {
 
   useEffect(() => {
     let cancelled = false;
-
     async function loadPosts() {
       setLoading(true);
-
       try {
         const data = await fetchPublishedPosts();
-
-        if (cancelled) return;
-
-        // Contentful is the only source of blog posts.
-        // No fallback to old hard-coded articles.
-        setPosts(data || []);
+        if (!cancelled) setPosts(data || []);
       } catch (error) {
-        console.error(
-          'Failed to load Contentful blog posts:',
-          error
-        );
-
-        if (!cancelled) {
-          setPosts([]);
-        }
+        console.error('Failed to load Contentful blog posts:', error);
+        if (!cancelled) setPosts([]);
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
-
     loadPosts();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   return (
-    <section
-      id="blog"
-      className="mt-14 scroll-mt-20 px-4 sm:mt-16"
-    >
+    <section id="blog" className="mt-14 scroll-mt-20 px-4 sm:mt-16">
       <div className="mx-auto max-w-2xl">
-
         {/* Section Header */}
         <div className="mb-6 flex items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-2.5">
-
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-50">
               <BookOpen className="h-5 w-5 text-rose-500" />
             </div>
-
             <div className="min-w-0">
               <h2 className="font-display text-xl font-bold tracking-tight text-gray-800 sm:text-2xl">
                 Latest Relationship Articles
               </h2>
-
               <p className="mt-0.5 text-xs text-gray-400 sm:text-sm">
                 Helpful insights for healthier relationships
               </p>
             </div>
           </div>
 
-          <Link
-            to="/blog                                                  
-            className="
-              group
-              flex
-              shrink-0
-              items-center
-              gap-1
-              rounded-full
-              px-2
-              py-1.5
-              text-xs
-              font-semibold
-              text-rose-500
-              transition-all
-              hover:bg-rose-50
-              hover:text-rose-600
-              sm:px-3
-              sm:text-sm
-            "
-          >
+          {/* VIEW ALL BUTTON (Perfect Fix for 404 Error) */}
+          <Link to="/blog" className="group flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-rose-500 transition-all hover:bg-rose-50 hover:text-rose-600 sm:text-sm">
             <span>View all articles</span>
-
-            <ArrowRight
-              className="
-                h-3.5
-                w-3.5
-                transition-transform
-                group-hover:translate-x-0.5
-                sm:h-4
-                sm:w-4
-              "
-            />
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 sm:h-4 sm:w-4" />
           </Link>
         </div>
 
-        {/* Articles */}
+        {/* Articles List (Fixed to Maximum 6 Blogs for Professional Look) */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-rose-400" />
@@ -118,10 +60,7 @@ export default function BlogSection() {
         ) : posts.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {posts.slice(0, 6).map((post) => (
-              <BlogCard
-                key={post.id}
-                post={post}
-              />
+              <BlogCard key={post.id} post={post} />
             ))}
           </div>
         ) : (
@@ -129,7 +68,6 @@ export default function BlogSection() {
             <p className="font-display text-base font-semibold text-gray-700">
               No articles available yet
             </p>
-
             <p className="mt-1 text-sm text-gray-400">
               New relationship articles will appear here soon.
             </p>
@@ -139,4 +77,5 @@ export default function BlogSection() {
     </section>
   );
 }
+
 
