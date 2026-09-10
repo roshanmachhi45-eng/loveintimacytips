@@ -447,7 +447,7 @@ export default function Home() {
                 </h1>
 
                 <p className="mt-5 max-w-xl text-base leading-7 text-slate-500 sm:text-lg">
-                  Tired of endless swiping? Move away from algorithms and discover real-world, screen-free love with our actionable guides, off-app dating strategies, and psychological insights.
+                  Tired of endless swiping? Move away from algorithms and discover real-world screen-free love with our actionable guides off-app dating strategies and psychological insights.
 
                 </p>
 
