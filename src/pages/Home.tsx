@@ -390,6 +390,7 @@ export default function Home() {
 
         description="Tired of endless swiping? Move away from algorithms and discover real-world screen-free love with our actionable guides off-app dating strategies and psychological insights."
 
+
         path="/"
       />
 
