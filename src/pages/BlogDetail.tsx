@@ -1331,11 +1331,13 @@ const restartChatGame = () => {
                                 text-gray-400
                             "
                         >
-                            <span className="flex items-center gap-1">
-                                <User className="h-3.5 w-3.5" />
-
-                                {post.author ||
-                                    'Loveons Editorial'}
+                          <span className="flex items-center gap-2">
+                                <img 
+                                    src="/images/rocksy-avatar.webp" 
+                                    alt="Rocksy" 
+                                    className="h-5 w-5 rounded-full object-cover border border-rose-100 shadow-sm" 
+                                />
+                                {post.author || 'Rocksy'}
                             </span>
 
                             {post.published_at && (
