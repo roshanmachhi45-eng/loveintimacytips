@@ -698,6 +698,12 @@ export default function Home() {
       ===================================================== */}
 
       {activeTool === 'love-calculator' && (
+              <>
+          <Seo 
+            title="Free Online Love Calculator - Test Your Relationship Compatibility"
+            description="Calculate the love percentage between you and your partner instantly. Get accurate relationship insights based on names and love compatibility."
+            path="/love-calculator"
+          />
         <section
           id="calculator"
           className="scroll-mt-24 px-4 pb-10 sm:px-6 lg:px-8"
@@ -761,6 +767,7 @@ export default function Home() {
           </div>
 
         </section>
+         </>       
       )}
 
       {/* =====================================================
@@ -823,6 +830,12 @@ export default function Home() {
       ===================================================== */}
 
       {activeTool === 'cosmic-tarot' && (
+              <>
+          <Seo 
+            title="Cosmic Love Tarot - Free Daily Romantic Tarot Reading"
+            description="Discover your daily cosmic love tarot reading. Get deep spiritual messages about your romantic energy and relationship destiny."
+            path="/cosmic-love-tarot"
+          />
         <section
           id="cosmic-tarot"
           className="scroll-mt-24 px-4 pb-12 sm:px-6 lg:px-8"
@@ -872,6 +885,7 @@ export default function Home() {
           </div>
 
         </section>
+        </>        
       )}
 
       {/* =====================================================
