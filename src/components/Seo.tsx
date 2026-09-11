@@ -62,7 +62,7 @@ export default function Seo({
 
     const image =
       ogImage ||
-      `${BRAND.domain}/images/loveons-social-preview.png`;
+      `${BRAND.domain}/images/loveons-social-preview.webp`;
 
     /*
      * Basic SEO
