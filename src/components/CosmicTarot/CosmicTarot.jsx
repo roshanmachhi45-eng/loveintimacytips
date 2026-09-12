@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from "react";
 import styles from "./CosmicTarot.module.css";
 
@@ -256,6 +255,21 @@ function CopyIcon() {
   );
 }
 
+function PinterestIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className={styles.shareIcon}
+    >
+      <path
+        fill="currentColor"
+        d="M12.017 0C5.396 0 0 5.396 0 12.017c0 5.072 3.138 9.402 7.585 11.198-.105-.94-.199-2.378.041-3.402.219-.94 1.41-5.977 1.41-5.977s-.36-.72-.36-1.781c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12.017 24 18.639 24 24 18.639 24 12.017 24 5.396 18.639 0 12.017 0z"
+      />
+    </svg>
+  );
+}
+
 function MoreShareIcon() {
   return (
     <svg
@@ -265,7 +279,7 @@ function MoreShareIcon() {
     >
       <path
         fill="currentColor"
-        d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 1 0 15 5c0 .24.04.47.09.7L8.04 9.81A3 3 0 1 0 8 14.19l7.05 4.11c-.05.21-.08.43-.08.65a3.01 3.01 0 1 0 3.03-2.87ZM6 13a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm12-9a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm0 16a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"
+        d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 1 0 15 5c0 .24.04.47.09.7L8.04 9.81A3 3 0 1 0 8 14.19l7.05 4.11c-.05.21-.08.43-.08.65a3.01 3.01 0 1 0 3.03-2.87ZM6 13a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm12-9a1 1 0 1 1 0 2 1 1 0 0 1 0 2Zm0 16a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"
       />
     </svg>
   );
@@ -417,6 +431,38 @@ Discover your own reading on Loveons.`;
 
   function openShareUrl(url) {
     window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  function sharePinterest() {
+    if (!result) {
+      return;
+    }
+
+    const url = encodeURIComponent(getShareUrl());
+
+    const description = encodeURIComponent(
+      `${name.trim()}'s Cosmic Love Tarot · ${result.readingDate}
+
+Cosmic Card: ${result.card.name}
+
+${result.card.reading}
+
+Love Life Secret:
+${result.secret}
+
+Potential Partner Energy:
+${result.profile.personality}
+
+Zodiac energy: ${result.profile.match}
+
+✨ Discover your own Cosmic Love Tarot reading on Loveons.
+
+For entertainment and self-reflection only.`
+    );
+
+    openShareUrl(
+      `https://www.pinterest.com/pin/create/button/?url=${url}&description=${description}`
+    );
   }
 
   function shareWhatsApp() {
@@ -781,6 +827,16 @@ Discover your own reading on Loveons.`;
               <div className={styles.shareButtons}>
                 <button
                   type="button"
+                  className={`${styles.shareButton} ${styles.pinterest}`}
+                  onClick={sharePinterest}
+                  aria-label="Share on Pinterest"
+                >
+                  <PinterestIcon />
+                  <span>Pinterest</span>
+                </button>
+
+                <button
+                  type="button"
                   className={`${styles.shareButton} ${styles.whatsapp}`}
                   onClick={shareWhatsApp}
                   aria-label="Share on WhatsApp"
@@ -826,6 +882,7 @@ Discover your own reading on Loveons.`;
                   aria-label="Copy reading"
                 >
                   <CopyIcon />
+
                   <span>
                     {copied ? "Copied!" : "Copy"}
                   </span>
