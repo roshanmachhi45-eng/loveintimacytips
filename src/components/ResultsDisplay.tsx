@@ -341,18 +341,15 @@ For entertainment purposes only. Loveons results are not scientific.`;
         <p className="text-sm text-gray-600 leading-relaxed px-2">
           {result.summary}
         </p>
-
       </div>
         {/* 📌 INDEPENDENT PINTEREST BLOCK (दाईं तरफ स्केच डिज़ाइन के अनुसार) */}
-              <div 
+        <div 
           onClick={() => {
-            const url = typeof window !== 'undefined' ? window.location.href : 'https://loveons.com';
-            const text = `❤️ My Loveons Love Match Score is ${result.score}%! Test your connection now. [Disclaimer: For entertainment purposes only. Results are not scientific and do not constitute actual relationship advice.]`;
-            window.open(
-              `https://pinterest.com{encodeURIComponent(url)}&description=${encodeURIComponent(text)}`,
-              '_blank',
-              'noopener,noreferrer'
-            );
+            if (typeof window !== 'undefined') {
+              const url = window.location.href;
+              const text = `❤️ My Loveons Love Match Score is ${result.score}%! Test your connection now. [Disclaimer: For entertainment purposes only. Results are not scientific and do not constitute actual relationship advice.]`;
+              window.location.href = `https://pinterest.com{encodeURIComponent(url)}&description=${encodeURIComponent(text)}`;
+            }
           }}
           className="result-card bg-white rounded-3xl shadow-xl shadow-rose-100 border border-rose-100 p-6 text-center flex flex-col items-center justify-center min-h-[260px] cursor-pointer transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-rose-200/50 active:scale-[0.99]"
         >
