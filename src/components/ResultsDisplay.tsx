@@ -52,12 +52,10 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
   const circumference = 2 * Math.PI * 52;
   const strokeDashoffset = circumference - (displayScore / 100) * circumference;
 
-  // 📝 मुख्य शेयर टेक्स्ट (सोशल मीडिया के लिए)
   const getShareText = () => {
-    return `❤️ Loveons Love Match Score: ${result.score}%!\nDiscover your compatibility score on Loveons.com!`;
+    return `❤️ Loveons Love Match\n\nOur Love Match Score is ${result.score}%.\n\nDiscover your own love match on Loveons.com ❤️\n\nFor entertainment purposes only. Loveons results are not scientific.`;
   };
 
-  // 📌 पिंटरेस्ट के लिए स्पेशल टेक्स्ट + लीगल डिस्क्लेमर
   const getPinterestShareText = () => {
     return `❤️ My Loveons Love Match Score is ${result.score}%! Test your connection now. [Disclaimer: For entertainment purposes only. Results are not scientific and do not constitute actual relationship advice.]`;
   };
@@ -70,7 +68,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
   };
 
   const handleNativeShare = async () => {
-    const shareText = `${getShareText()}\n\nFor entertainment only. Results not scientific.`;
+    const shareText = getShareText();
     const shareUrl = getShareUrl();
 
     if (typeof navigator !== 'undefined' && navigator.share) {
@@ -91,7 +89,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
   };
 
   const handleWhatsAppShare = () => {
-    const text = `${getShareText()}\n\nFor entertainment only. Results not scientific.\n${getShareUrl()}`;
+    const text = `${getShareText()}\n\n${getShareUrl()}`;
     window.open(`https://wa.me{encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
   };
 
@@ -100,17 +98,16 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
   };
 
   const handleXShare = () => {
-    const text = `❤️ My Loveons Love Match Score is ${result.score}%! (Entertainment only)`;
+    const text = `❤️ My Loveons Love Match Score is ${result.score}%!`;
     window.open(`https://twitter.com{encodeURIComponent(text)}&url=${encodeURIComponent(getShareUrl())}`, '_blank', 'noopener,noreferrer');
   };
 
   const handleTelegramShare = () => {
-    const text = `${getShareText()}\n\n[Entertainment purposes only]`;
-    window.open(`https://t.me{encodeURIComponent(getShareUrl())}&text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+    window.open(`https://t.me{encodeURIComponent(getShareUrl())}&text=${encodeURIComponent(getShareText())}`, '_blank', 'noopener,noreferrer');
   };
 
   const handleCopyLink = async () => {
-    const shareText = `${getShareText()}\n\nFor entertainment only. Results not scientific.\n${getShareUrl()}`;
+    const shareText = `${getShareText()}\n\n${getShareUrl()}`;
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(shareText);
@@ -126,19 +123,19 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
         document.body.removeChild(textarea);
       }
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => { setCopied(false); }, 2000);
     } catch {
       setCopied(false);
     }
   };
 
   return (
-    <div className="space-y-6 fade-in max-w-4xl mx-auto">
-      
-      {/* 🌟 TOP GRID SECTION: Score Card + Independent Pinterest Block */}
+    <div className="space-y-6 fade-in max-w-4xl mx-auto px-2">
+
+      {/* 🌟 GRID CONTAINER: Score Card + Independent Pinterest Block */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-        
-        {/* Score Card (यह डिब्बा 100% साफ़ है) */}
+
+        {/* Score Card (यह डिब्बा अब अंदर से 100% साफ़-सुथरा है) */}
         <div className="md:col-span-2 result-card bg-white rounded-3xl shadow-xl shadow-rose-100 border border-rose-100 p-6 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Sparkles className="w-5 h-5 text-purple-500" />
@@ -185,7 +182,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
           </p>
         </div>
 
-        {/* 📌 INDEPENDENT PINTEREST BLOCK (दाईं तरफ स्केच डिज़ाइन के अनुसार) */}
+        {/* 📌 INDEPENDENT PINTEREST BLOCK (दाईं तरफ आपके स्केच डिज़ाइन के अनुसार) */}
         <div className="result-card bg-white rounded-3xl shadow-xl shadow-rose-100 border border-rose-100 p-6 text-center flex flex-col items-center justify-center min-h-[260px] transition-all hover:shadow-2xl hover:shadow-rose-200/50">
           <button
             type="button"
@@ -203,7 +200,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
               <path d="M12.017 0C5.396 0 0 5.396 0 12.017c0 5.072 3.138 9.402 7.585 11.198-.105-.94-.199-2.378.041-3.402.219-.94 1.41-5.977 1.41-5.977s-.36-.72-.36-1.781c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12.017 24 18.639 24 24 18.639 24 12.017 24 5.396 18.639 0 12.017 0z" />
             </svg>
           </button>
-          
+
           <h3 className="font-display text-xl font-extrabold text-gray-800 mt-4">
             Pinterest
           </h3>
@@ -217,7 +214,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
 
       </div>
 
-      {/* Moments of Love Card */}
+      {/* Random Images - Pink Tinted */}
       <div className="result-card bg-white rounded-3xl shadow-xl shadow-rose-100 border border-rose-100 p-6">
         <div className="flex items-center gap-2 mb-4">
           <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
@@ -225,8 +222,9 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
             Moments of Love
           </h3>
         </div>
+
         <div className="grid grid-cols-3 gap-3">
-          {result.images.map((img, i) => (
+          {result.images?.map((img, i) => (
             <div key={i} className="relative rounded-2xl overflow-hidden group aspect-[3/4]">
               <img
                 src={img.url}
@@ -235,6 +233,10 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 loading="lazy"
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-rose-500/40 via-rose-400/20 to-pink-300/30 mix-blend-multiply" />
+              <div className="absolute inset-0 bg-rose-500/10" />
+              <div className="absolute bottom-0 left-0 right-0 p-2">
+
 
 
 
