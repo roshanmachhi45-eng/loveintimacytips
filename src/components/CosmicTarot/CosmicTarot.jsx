@@ -742,7 +742,26 @@ For entertainment and self-reflection only.`
             );
           })}
         </div>
+          {result && !isShuffling && (
+            <button
+              type="button"
+              className={styles.pinterestResultCard}
+              onClick={sharePinterest}
+              aria-label="Share today's Cosmic Love Tarot on Pinterest"
+            >
+              <span className={styles.pinterestResultIcon}>
+                <PinterestIcon />
+              </span>
 
+              <span className={styles.pinterestResultTitle}>
+                Pinterest
+              </span>
+
+              <span className={styles.pinterestResultText}>
+                Share your today's cosmic-love-tarot
+              </span>
+            </button>
+          )}
         {isShuffling && (
           <div className={styles.loadingText}>
             <span>🔮</span>
