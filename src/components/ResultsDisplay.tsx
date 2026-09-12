@@ -345,7 +345,9 @@ For entertainment purposes only. Loveons results are not scientific.`;
         {/* 📌 INDEPENDENT PINTEREST BLOCK (दाईं तरफ स्केच डिज़ाइन के अनुसार) */}
                 
                   <a 
-          href={`https://pinterest.com{typeof window !== 'undefined' ? encodeURIComponent(window.location.href) : 'https://loveons.com'}&description=${encodeURIComponent("❤️ My Loveons Love Match compatibility result! Test your connection now. [Disclaimer: For entertainment purposes only. Results are not scientific and do not constitute actual relationship advice.]")}`}
+          href={`https://www.pinterest.com/pin/create/button/?url=${encodeURIComponent(window.location.href)}&description=${encodeURIComponent(
+  `❤️ My Loveons Love Match Score is ${result.score}%! Test your connection now. For entertainment purposes only.`
+)}`}
           target="_blank"
           rel="noopener noreferrer"
           className="result-card bg-white rounded-3xl shadow-xl shadow-rose-100 border border-rose-100 p-6 text-center flex flex-col items-center justify-center min-h-[260px] cursor-pointer transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-rose-200/50 active:scale-[0.99]"
@@ -548,10 +550,20 @@ For entertainment purposes only. Loveons results are not scientific.`;
         <button
           type="button"
           onClick={() => {
-            const url = typeof window !== 'undefined' ? window.location.href : 'https://loveons.com';
-            const text = `❤️ My Loveons Love Match Score is ${result.score}%! Check your compatibility now.`;
-            window.open(
-              `https://pinterest.com{encodeURIComponent(url)}&description=${encodeURIComponent(text)}`,
+ const url =
+  typeof window !== 'undefined'
+    ? window.location.href
+    : 'https://loveons.com';
+
+ const text =
+  `❤️ My Loveons Love Match Score is ${result.score}%! ` +
+  `Check your compatibility now. For entertainment purposes only.`;
+
+window.open(
+  `https://www.pinterest.com/pin/create/button/?url=${encodeURIComponent(url)}&description=${encodeURIComponent(text)}`,
+  '_blank',
+  'noopener,noreferrer'
+);
               '_blank',
               'noopener,noreferrer'
             );
