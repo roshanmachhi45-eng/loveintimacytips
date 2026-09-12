@@ -1,4 +1,3 @@
-
 .wrapper {
   width: 100%;
   padding: 48px 16px;
@@ -611,6 +610,10 @@
   flex: 0 0 17px;
 }
 
+.pinterest {
+  color: #e60023;
+}
+
 .whatsapp {
   color: #229b5b;
 }
@@ -882,5 +885,4 @@
   .selected:not(.flipping) .cardInner {
     transform: rotateY(180deg);
   }
-}
-
+  }
