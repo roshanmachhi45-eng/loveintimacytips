@@ -331,26 +331,22 @@ export default function BlogShare({
         <div
           role="dialog"
           aria-label="Share this article"
-          className="
-            absolute
-            left-1/2
-          -translate-x-1/2                                         
-            top-full
-            z-50
-            mt-3
-            w-[min(92vw,360px)]
-            overflow-hidden
-            rounded-2xl
-            border
-            border-pink-100
-            bg-white
-            p-4
-            shadow-xl
-            shadow-pink-100/40
-            dark:border-pink-900/40
-            dark:bg-gray-950
-            dark:shadow-black/30
-          "
+          className=
+          absolute
+          right-0
+          top-full
+          z-50
+          mt-3
+          w-64
+          overflow-hidden
+          rounded-2xl
+          border
+          border-pink-100/80
+          bg-white
+          p-4
+          shadow-xl
+          shadow-pink-100/30
+        "            
         >                            
           {/* Header */}
           <div className="mb-4 flex items-start justify-between">
