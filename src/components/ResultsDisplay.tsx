@@ -344,7 +344,8 @@ For entertainment purposes only. Loveons results are not scientific.`;
 
       </div>
         {/* 📌 INDEPENDENT PINTEREST BLOCK (दाईं तरफ स्केच डिज़ाइन के अनुसार) */}
-         <div onClick={() => {
+              <div 
+          onClick={() => {
             const url = typeof window !== 'undefined' ? window.location.href : 'https://loveons.com';
             const text = `❤️ My Loveons Love Match Score is ${result.score}%! Test your connection now. [Disclaimer: For entertainment purposes only. Results are not scientific and do not constitute actual relationship advice.]`;
             window.open(
@@ -371,9 +372,8 @@ For entertainment purposes only. Loveons results are not scientific.`;
             Save this compatibility result to your favorite board with official safe disclosure.
           </p>
         </div>
-
-
-
+      </div> 
+            
       {/* Random Images - Pink Tinted */}
       <div className="result-card bg-white rounded-3xl shadow-xl shadow-rose-100 border border-rose-100 p-6">
 
