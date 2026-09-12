@@ -365,7 +365,7 @@ For entertainment purposes only. Loveons results are not scientific.`;
           <p className="text-[10px] text-gray-400 mt-2 max-w-[190px] leading-relaxed">
             Save this compatibility result to your favorite board with official safe disclosure.
           </p>
-        </div>
+        </a>
       </div> 
             
       {/* Random Images - Pink Tinted */}
