@@ -167,6 +167,16 @@ export default function BlogShare({
       "noopener,noreferrer"
     );
   };
+  const sharePinterest = () => {
+    const url = getShareUrl();
+    const shareTitle = getShareTitle();
+    if (!url) return;
+    window.open(
+      `https://pinterest.com{encodeURIComponent(url)}&description=${encodeURIComponent(shareTitle)}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
 
   const shareItems: ShareItem[] = [
     {
@@ -312,7 +322,10 @@ export default function BlogShare({
           aria-label="Share this article"
           className="
             absolute
-            left-0
+            right-1/2
+            translate-x-1/2
+            sm:right-0
+            sm:translate-x-0
             top-full
             z-50
             mt-3
@@ -329,7 +342,7 @@ export default function BlogShare({
             dark:bg-gray-950
             dark:shadow-black/30
           "
-        >
+        >                            
           {/* Header */}
           <div className="mb-4 flex items-start justify-between">
             <div>
