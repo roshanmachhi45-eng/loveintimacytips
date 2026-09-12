@@ -343,16 +343,13 @@ For entertainment purposes only. Loveons results are not scientific.`;
         </p>
       </div>
         {/* 📌 INDEPENDENT PINTEREST BLOCK (दाईं तरफ स्केच डिज़ाइन के अनुसार) */}
-        <div 
-          onClick={() => {
-            if (typeof window !== 'undefined') {
-              const url = window.location.href;
-              const text = `❤️ My Loveons Love Match Score is ${result.score}%! Test your connection now. [Disclaimer: For entertainment purposes only. Results are not scientific and do not constitute actual relationship advice.]`;
-              window.location.href = `https://pinterest.com{encodeURIComponent(url)}&description=${encodeURIComponent(text)}`;
-            }
-          }}
+                <a 
+          href={`https://pinterest.com{typeof window !== 'undefined' ? encodeURIComponent(window.location.href) : 'https://loveons.com'}&description=${encodeURIComponent("❤️ My Loveons Love Match compatibility result! Test your connection now. [Disclaimer: For entertainment purposes only. Results are not scientific and do not constitute actual relationship advice.]")}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="result-card bg-white rounded-3xl shadow-xl shadow-rose-100 border border-rose-100 p-6 text-center flex flex-col items-center justify-center min-h-[260px] cursor-pointer transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-rose-200/50 active:scale-[0.99]"
         >
+
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#BD081C] text-white shadow-lg shadow-red-200 transition-transform duration-300">
             <svg className="h-7 w-7 fill-white" viewBox="0 0 24 24">
               <path d="M12.017 0C5.396 0 0 5.396 0 12.017c0 5.072 3.138 9.402 7.585 11.198-.105-.94-.199-2.378.041-3.402.219-.94 1.41-5.977 1.41-5.977s-.36-.72-.36-1.781c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12.017 24 18.639 24 24 18.639 24 12.017 24 5.396 18.639 0 12.017 0z" />
