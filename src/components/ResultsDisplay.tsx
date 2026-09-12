@@ -252,34 +252,19 @@ For entertainment purposes only. Loveons results are not scientific.`;
   };
 
   return (
-    <div className="space-y-4 fade-in">
-
-      {/* Score Card */}
-            {/* Score Card */}
-      <div className="result-card bg-white rounded-3xl shadow-xl shadow-rose-100 border border-rose-100 p-6 text-center relative overflow-hidden">
-
-        {/* Independent Right-Side Pinterest Button */}
-        <a
-          href={`https://pinterest.com{encodeURIComponent(getShareUrl())}&description=${encodeURIComponent(getShareText())}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="absolute right-4 top-4 group inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#BD081C] text-white shadow-md transition-all hover:scale-110 hover:bg-[#a60718] z-30"
-          title="Pin to Pinterest"
-        >
-          <svg className="h-4 w-4 fill-white" viewBox="0 0 24 24">
-            <path d="M12.017 0C5.396 0 0 5.396 0 12.017c0 5.072 3.138 9.402 7.585 11.198-.105-.94-.199-2.378.041-3.402.219-.94 1.41-5.977 1.41-5.977s-.36-.72-.36-1.781c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12.017 24 18.639 24 24 18.639 24 12.017 24 5.396 18.639 0 12.017 0z" />
-          </svg>
-        </a>
-
-        <div className="flex items-center justify-center gap-2 mb-4 pr-8 pl-8">
-
-          <Sparkles className="w-5 h-5 text-purple-500" />
-
-          <h2 className="font-display text-xl font-bold text-gray-800">
-            Your Compatibility Score
-          </h2>
-
-        </div>
+        <div className="space-y-6 fade-in">
+      
+      {/* 🌟 TOP GRID SECTION: Score Card + Independent Pinterest Block */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+        
+        {/* Score Card (यह डिब्बा अब अंदर से 100% साफ़-सुथरा है) */}
+        <div className="md:col-span-2 result-card bg-white rounded-3xl shadow-xl shadow-rose-100 border border-rose-100 p-6 text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <Sparkles className="w-5 h-5 text-purple-500" />
+            <h2 className="font-display text-xl font-bold text-gray-800">
+              Your Compatibility Score
+            </h2>
+          </div>
 
         <div className="relative inline-flex items-center justify-center mb-4">
 
@@ -356,6 +341,39 @@ For entertainment purposes only. Loveons results are not scientific.`;
         <p className="text-sm text-gray-600 leading-relaxed px-2">
           {result.summary}
         </p>
+
+      </div>
+        {/* 📌 INDEPENDENT PINTEREST BLOCK (दाईं तरफ स्केच डिज़ाइन के अनुसार) */}
+        <div className="result-card bg-white rounded-3xl shadow-xl shadow-rose-100 border border-rose-100 p-6 text-center flex flex-col items-center justify-center min-h-[260px] transition-all hover:shadow-2xl hover:shadow-rose-200/50">
+          <button
+            type="button"
+            onClick={() => {
+              const url = typeof window !== 'undefined' ? window.location.href : 'https://loveons.com';
+              const text = `❤️ My Loveons Love Match Score is ${result.score}%! Test your connection now. [Disclaimer: For entertainment purposes only. Results are not scientific and do not constitute actual relationship advice.]`;
+              window.open(
+                `https://pinterest.com{encodeURIComponent(url)}&description=${encodeURIComponent(text)}`,
+                '_blank',
+                'noopener,noreferrer'
+              );
+            }}
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-[#BD081C] text-white shadow-lg shadow-red-200 transition-transform hover:scale-110 active:scale-95 duration-300"
+            aria-label="Pin to Pinterest"
+          >
+            <svg className="h-7 w-7 fill-white" viewBox="0 0 24 24">
+              <path d="M12.017 0C5.396 0 0 5.396 0 12.017c0 5.072 3.138 9.402 7.585 11.198-.105-.94-.199-2.378.041-3.402.219-.94 1.41-5.977 1.41-5.977s-.36-.72-.36-1.781c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12.017 24 18.639 24 24 18.639 24 12.017 24 5.396 18.639 0 12.017 0z" />
+            </svg>
+          </button>
+
+          <h3 className="font-display text-xl font-extrabold text-gray-800 mt-4">
+            Pinterest
+          </h3>
+          <p className="text-xs font-semibold text-rose-500 uppercase tracking-wider mt-1 px-4 leading-relaxed">
+            share your love score with pin
+          </p>
+          <p className="text-[10px] text-gray-400 mt-2 max-w-[190px] leading-relaxed">
+            Save this compatibility result to your favorite board with official safe disclosure.
+          </p>
+        </div>
 
       </div>
 
