@@ -343,7 +343,7 @@ For entertainment purposes only. Loveons results are not scientific.`;
         </p>
       </div>
         {/* 📌 INDEPENDENT PINTEREST BLOCK (दाईं तरफ स्केच डिज़ाइन के अनुसार) */}
-                <a 
+                
                   <a 
           href={`https://pinterest.com{typeof window !== 'undefined' ? encodeURIComponent(window.location.href) : 'https://loveons.com'}&description=${encodeURIComponent("❤️ My Loveons Love Match compatibility result! Test your connection now. [Disclaimer: For entertainment purposes only. Results are not scientific and do not constitute actual relationship advice.]")}`}
           target="_blank"
