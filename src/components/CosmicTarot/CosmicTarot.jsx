@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Pin } from "lucide-react";
 import styles from "./CosmicTarot.module.css";
 
 const TAROT_CARDS = [
@@ -934,7 +935,7 @@ For entertainment and self-reflection only.`
   aria-label="Share today's Cosmic Love Tarot on Pinterest"
 >
   <span className={styles.pinterestResultIcon}>
-    <PinterestIcon />
+    <Pin />
   </span>
 
   <span className={styles.pinterestResultText}>
