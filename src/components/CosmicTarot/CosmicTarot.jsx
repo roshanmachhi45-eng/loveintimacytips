@@ -723,24 +723,8 @@ Discover your own reading on Loveons.`;
               </div>
             );
           })}
-        </div> 
-  <button
-    type="button"
-    className={styles.pinterestResultButton}
-    onClick={sharePinterest}
-    aria-label="Share today's Cosmic Love Tarot on Pinterest"
-  >
-    <span className={styles.pinterestResultIcon}>
-      <PinterestIcon />
-    </span>
-
-    <span className={styles.pinterestResultText}>
-      <strong>Pinterest</strong>
-      <span>Share your today's cosmic-love-tarot</span>
-    </span>
-  </button>
-
-</div>          
+        </div>     
+          
         {isShuffling && (
           <div className={styles.loadingText}>
             <span>🔮</span>
@@ -905,20 +889,29 @@ Discover your own reading on Loveons.`;
               </p>
             </div>
             <button
-  type="button"
-  className={styles.pinterestResultButton}
-  onClick={sharePinterest}
-  aria-label="Share today's Cosmic Love Tarot on Pinterest"
->
-  <span className={styles.pinterestResultIcon}>
-    <Pin />
-  </span>
+              type="button"
+              className={styles.pinterestResultButton}
+              onClick={() => {
+                if (!result) return;
+                const url = encodeURIComponent(window.location.href);
+                const description = encodeURIComponent(`${name.trim()}'s Cosmic Love Reading - Discover your cosmic love destiny on Loveons.`);
+                const pinterestUrl = `https://www.pinterest.com/pin/create/button/?url=${url}&description=${description}`;
+                if (typeof window !== "undefined") {
+                  window.open(pinterestUrl, "_blank", "noopener,noreferrer");
+                }
+              }}
+              aria-label="Share today's Cosmic Love Tarot on Pinterest"
+            >
+              <span className={styles.pinterestResultIcon}>
+                <Pin />
+              </span>
 
-  <span className={styles.pinterestResultText}>
-    <strong>Pinterest</strong>
-    <span>Share your today's cosmic-love-tarot</span>
-  </span>
-</button>
+              <span className={styles.pinterestResultText}>
+                <strong>Pinterest</strong>
+                <span>Share your today's cosmic-love-tarot</span>
+              </span>
+            </button>
+
 
             <button
               type="button"
