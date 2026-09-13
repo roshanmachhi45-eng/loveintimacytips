@@ -888,16 +888,14 @@ Discover your own reading on Loveons.`;
                 relationships.
               </p>
             </div>
-           <button
+            <button
               type="button"
               className={styles.pinterestResultButton}
               onClick={() => {
                 if (!result) return;
-                const url = encodeURIComponent(window.location.href);
-                const description = encodeURIComponent(`${name.trim()}'s Cosmic Love Reading - Discover your cosmic love destiny on Loveons.`);
-                const pinterestUrl = `https://www.pinterest.com/pin/create/button/?url=${url}&description=${description}`;
+                const shareUrl = "https://pinterest.com" + encodeURIComponent(window.location.href);
                 if (typeof window !== "undefined") {
-                  window.open(pinterestUrl, "_blank", "noopener,noreferrer");
+                  window.open(shareUrl, "_blank", "noopener,noreferrer");
                 }
               }}
               aria-label="Share today's Cosmic Love Tarot on Pinterest"
@@ -905,13 +903,11 @@ Discover your own reading on Loveons.`;
               <span className={styles.pinterestResultIcon}>
                 <Pin />
               </span>
-
               <span className={styles.pinterestResultText}>
                 <strong>Pinterest</strong>
                 <span>Share your today's cosmic-love-tarot</span>
               </span>
             </button>
-
 
             <button
               type="button"
@@ -922,10 +918,12 @@ Discover your own reading on Loveons.`;
             </button>
           </div>
         </div>
-      )}    
-  </section>
- );
-} 
+          )}
+        </div>
+      </section>
+    );
+  }
+
 
       
     
