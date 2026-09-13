@@ -660,6 +660,7 @@ For entertainment and self-reflection only.`
           </div>
         )}
 
+        <div className={styles.resultWithPinterest}>
         <div
           className={[
             styles.cardsArea,
@@ -741,7 +742,24 @@ For entertainment and self-reflection only.`
               </div>
             );
           })}
-        </div>
+        </div> 
+  <button
+    type="button"
+    className={styles.pinterestResultButton}
+    onClick={sharePinterest}
+    aria-label="Share today's Cosmic Love Tarot on Pinterest"
+  >
+    <span className={styles.pinterestResultIcon}>
+      <PinterestIcon />
+    </span>
+
+    <span className={styles.pinterestResultText}>
+      <strong>Pinterest</strong>
+      <span>Share your today's cosmic-love-tarot</span>
+    </span>
+  </button>
+
+</div>
           {result && !isShuffling && (
             <button
               type="button"
