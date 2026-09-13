@@ -907,6 +907,26 @@ For entertainment and self-reflection only.`
               </p>
             </div>
 
+            <div className={styles.pinterestResultCard}>
+              <button
+                type="button"
+                className={styles.pinterestResultButton}
+                onClick={() => {
+                  if (!result) return;
+                  const pinUrl = `https://www.pinterest.com/pin/create/button/?url=${encodeURIComponent(window.location.href)}`;
+                  window.open(pinUrl, "_blank", "noopener,noreferrer");
+                }}
+              >
+                <span className={styles.pinterestResultIcon}>
+                  <PinterestIcon />
+                </span>
+                <span className={styles.pinterestResultText}>
+                  <strong>Pinterest</strong>
+                  <span>Share your today cosmic-love-tarot result</span>
+                </span>
+              </button>
+            </div>
+
             <button
               type="button"
               className={styles.resetButton}
