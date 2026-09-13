@@ -888,7 +888,7 @@ Discover your own reading on Loveons.`;
                 relationships.
               </p>
             </div>
-            <button
+           <button
               type="button"
               className={styles.pinterestResultButton}
               onClick={() => {
@@ -926,7 +926,7 @@ Discover your own reading on Loveons.`;
         </div>
       </section>
     );
-  }
+  } 
 
       
     
