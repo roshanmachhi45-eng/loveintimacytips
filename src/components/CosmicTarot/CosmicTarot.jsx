@@ -426,16 +426,20 @@ Discover your own reading on Loveons.`;
       return "";
     }
 
-    return window.location.href;
+    function sharePinterest() {
+  if (!result) {
+    return;
   }
 
-  function openShareUrl(url) {
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
+  const url = encodeURIComponent(getShareUrl());
+  const description = encodeURIComponent(
+    `${name.trim()}'s Cosmic Love Reading — ${getShareText()}`
+  );
 
-  function sharePinterest() {
-    if (!result) {
-      return;
+  const pinterestUrl =
+    `https://www.pinterest.com/pin/create/button/?url=${url}&description=${description}`;
+
+  openShareUrl(pinterestUrl);
     }
 
     const url = encodeURIComponent(getShareUrl());
@@ -923,6 +927,21 @@ For entertainment and self-reflection only.`
                 relationships.
               </p>
             </div>
+            <button
+  type="button"
+  className={styles.pinterestResultButton}
+  onClick={sharePinterest}
+  aria-label="Share today's Cosmic Love Tarot on Pinterest"
+>
+  <span className={styles.pinterestResultIcon}>
+    <PinterestIcon />
+  </span>
+
+  <span className={styles.pinterestResultText}>
+    <strong>Pinterest</strong>
+    <span>Share your today's cosmic-love-tarot</span>
+  </span>
+</button>
 
             <button
               type="button"
