@@ -867,6 +867,70 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+/* Pinterest result-side share button */
+.pinterestResultButton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 999px;
+  background: #bd081c;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(189, 8, 28, 0.18);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pinterestResultButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(189, 8, 28, 0.28);
+}
+
+.pinterestResultButton:active {
+  transform: translateY(0);
+}
+
+.pinterestResultIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pinterestResultIcon svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.pinterestResultText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+
+.pinterestResultText strong {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.pinterestResultText span {
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.92;
+}
+
+/* Right-side Pinterest share area */
+.pinterestResultCard {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  margin: 18px 0 22px;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .cardsShuffling .tarotCard,
