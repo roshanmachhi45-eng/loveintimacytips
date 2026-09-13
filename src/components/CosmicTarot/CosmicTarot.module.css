@@ -878,6 +878,9 @@
   background: #bd081c;
   color: #ffffff;
   cursor: pointer;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: 0;
   box-shadow: 0 8px 20px rgba(189, 8, 28, 0.18);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
