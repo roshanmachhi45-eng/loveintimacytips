@@ -921,8 +921,14 @@ Discover your own reading on Loveons.`;
               ↻ Try Another Reading
             </button>
           </div>
-        )}
-      </div>
-    </section>
-  );
-}
+        </div>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+      
+    
+  
+
