@@ -422,53 +422,29 @@ This playful cosmic reading is for entertainment and self-reflection only. It is
 Discover your own reading on Loveons.`;
   }
 
-  function getShareUrl() {
+    function getShareUrl() {
     if (typeof window === "undefined") {
       return "";
     }
-
-    function sharePinterest() {
-  if (!result) {
-    return;
+    return window.location.href;
   }
 
-  const url = encodeURIComponent(getShareUrl());
-  const description = encodeURIComponent(
-    `${name.trim()}'s Cosmic Love Reading — ${getShareText()}`
-  );
-
-  const pinterestUrl =
-    `https://www.pinterest.com/pin/create/button/?url=${url}&description=${description}`;
-
-  openShareUrl(pinterestUrl);
+  function openShareUrl(url) {
+    if (typeof window !== "undefined") {
+      window.open(url, "_blank", "noopener,noreferrer");
     }
-
-    const url = encodeURIComponent(getShareUrl());
-
-    const description = encodeURIComponent(
-      `${name.trim()}'s Cosmic Love Tarot · ${result.readingDate}
-
-Cosmic Card: ${result.card.name}
-
-${result.card.reading}
-
-Love Life Secret:
-${result.secret}
-
-Potential Partner Energy:
-${result.profile.personality}
-
-Zodiac energy: ${result.profile.match}
-
-✨ Discover your own Cosmic Love Tarot reading on Loveons.
-
-For entertainment and self-reflection only.`
-    );
-
-    openShareUrl(
-      `https://www.pinterest.com/pin/create/button/?url=${url}&description=${description}`
-    );
   }
+
+  function sharePinterest() {
+    if (!result) return;
+    const url = encodeURIComponent(getShareUrl());
+    const description = encodeURIComponent(
+      `${name.trim()}'s Cosmic Love Reading — ${getShareText()}`
+    );
+    const pinterestUrl = `https://pinterest.com{url}&description=${description}`;
+    openShareUrl(pinterestUrl);
+  }
+
 
   function shareWhatsApp() {
     const text = encodeURIComponent(
