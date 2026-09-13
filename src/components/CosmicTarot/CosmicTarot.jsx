@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { Pin } from "lucide-react";
 import styles from "./CosmicTarot.module.css";
 
 const TAROT_CARDS = [
@@ -422,29 +421,49 @@ This playful cosmic reading is for entertainment and self-reflection only. It is
 Discover your own reading on Loveons.`;
   }
 
-    function getShareUrl() {
+  function getShareUrl() {
     if (typeof window === "undefined") {
       return "";
     }
+
     return window.location.href;
   }
 
   function openShareUrl(url) {
-    if (typeof window !== "undefined") {
-      window.open(url, "_blank", "noopener,noreferrer");
-    }
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   function sharePinterest() {
-    if (!result) return;
-    const url = encodeURIComponent(getShareUrl());
-    const description = encodeURIComponent(
-      `${name.trim()}'s Cosmic Love Reading — ${getShareText()}`
-    );
-    const pinterestUrl = `https://pinterest.com{url}&description=${description}`;
-    openShareUrl(pinterestUrl);
-  }
+    if (!result) {
+      return;
+    }
 
+    const url = encodeURIComponent(getShareUrl());
+
+    const description = encodeURIComponent(
+      `${name.trim()}'s Cosmic Love Tarot · ${result.readingDate}
+
+Cosmic Card: ${result.card.name}
+
+${result.card.reading}
+
+Love Life Secret:
+${result.secret}
+
+Potential Partner Energy:
+${result.profile.personality}
+
+Zodiac energy: ${result.profile.match}
+
+✨ Discover your own Cosmic Love Tarot reading on Loveons.
+
+For entertainment and self-reflection only.`
+    );
+
+    openShareUrl(
+      `https://www.pinterest.com/pin/create/button/?url=${url}&description=${description}`
+    );
+  }
 
   function shareWhatsApp() {
     const text = encodeURIComponent(
@@ -641,7 +660,6 @@ Discover your own reading on Loveons.`;
           </div>
         )}
 
-        <div className={styles.resultWithPinterest}>
         <div
           className={[
             styles.cardsArea,
@@ -723,8 +741,8 @@ Discover your own reading on Loveons.`;
               </div>
             );
           })}
-        </div>     
-          
+        </div>
+
         {isShuffling && (
           <div className={styles.loadingText}>
             <span>🔮</span>
@@ -888,26 +906,6 @@ Discover your own reading on Loveons.`;
                 relationships.
               </p>
             </div>
-            <button
-              type="button"
-              className={styles.pinterestResultButton}
-              onClick={() => {
-                if (!result) return;
-                const shareUrl = "https://pinterest.com" + encodeURIComponent(window.location.href);
-                if (typeof window !== "undefined") {
-                  window.open(shareUrl, "_blank", "noopener,noreferrer");
-                }
-              }}
-              aria-label="Share today's Cosmic Love Tarot on Pinterest"
-            >
-              <span className={styles.pinterestResultIcon}>
-                <Pin />
-              </span>
-              <span className={styles.pinterestResultText}>
-                <strong>Pinterest</strong>
-                <span>Share your today's cosmic-love-tarot</span>
-              </span>
-            </button>
 
             <button
               type="button"
@@ -917,12 +915,11 @@ Discover your own reading on Loveons.`;
               ↻ Try Another Reading
             </button>
           </div>
-        </div>
-          )}
-        </div>
-      </section>
-    );
-  }
+        )}
+      </div>
+    </section>
+  );
+    }
 
 
       
