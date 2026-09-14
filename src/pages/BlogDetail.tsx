@@ -895,8 +895,7 @@ setChatGameFinished,
 CHAT GAME LOGIC
 ======================================================= */
 
-    const startChatGame = () => {
-  setChatGameStarted(true);
+    tChatGameStarted(true);
   setCurrentChatQuestion(0);
   setChatAnswers([]);
   setChatGameFinished(false);
@@ -929,6 +928,7 @@ const restartChatGame = () => {
   setChatGameFinished(false);
   setChatGameStarted(true);
 };
+  
     
     /* =======================================================
        IMAGE ERROR
@@ -1418,7 +1418,6 @@ CHAT GAME
               hover:scale-105
               hover:shadow-lg
             "
-                                                                                                 
           >
             Start Game
           </button>
@@ -1434,29 +1433,28 @@ CHAT GAME
               type="button"
               onClick={() => {
                 document
-                  .getElementById('blog-article-content')
+                  .getElementById("blog-article-content")
                   ?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start',
+                    behavior: "smooth",
+                    block: "start",
                   });
               }}
-                    className="
-                      rounded-full
-                      border-0
-                      bg-gradient-to-r
-                      from-rose-500
-                      to-pink-500
-                      px-5
-                      py-2.5
-                      text-sm
-                      font-semibold
-                      text-white
-                      shadow-md
-                      transition
-                      hover:scale-105
-                      hover:shadow-lg
-                    "       
-                                                                                               
+              className="
+                rounded-full
+                border-0
+                bg-gradient-to-r
+                from-rose-500
+                to-pink-500
+                px-5
+                py-2.5
+                text-sm
+                font-semibold
+                text-white
+                shadow-md
+                transition
+                hover:scale-105
+                hover:shadow-lg
+              "
             >
               Continue Reading ↓
             </button>
@@ -1479,9 +1477,8 @@ CHAT GAME
                 transition
                 hover:scale-105
                 hover:shadow-lg
-            "
-                                                                                                                                               
-         >
+              "
+            >
               Play Again
             </button>
           </div>
@@ -1489,7 +1486,7 @@ CHAT GAME
       ) : (
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-rose-500">
-            Question {currentChatQuestion + 1} of{' '}
+            Question {currentChatQuestion + 1} of{" "}
             {post.chatGameData.questions.length}
           </p>
 
@@ -1505,9 +1502,15 @@ CHAT GAME
             {post.chatGameData.questions[
               currentChatQuestion
             ]?.options?.map(
-              (option: string) => (
+              (
+                option: {
+                  text: string;
+                  nextId: number | string;
+                },
+                index: number
+              ) => (
                 <button
-                  key={option}
+                  key={`${option.nextId}-${index}`}
                   type="button"
                   onClick={() =>
                     handleChatAnswer(option)
@@ -1529,7 +1532,7 @@ CHAT GAME
                     hover:bg-rose-50
                   "
                 >
-                  {option}
+                  {option.text}
                 </button>
               )
             )}
