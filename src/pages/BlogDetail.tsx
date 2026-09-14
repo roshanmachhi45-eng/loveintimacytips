@@ -1770,54 +1770,58 @@ CHAT GAME
                                 [&_hr]:my-8
                                 [&_hr]:border-rose-100
                             "
-                            
-      {post.enableChatGame === 'Yes' && post.chatGameData && (
-          <div className="blog-chat-game-wrapper" style={{ margin: '30px 0', padding: '20px', background: '#f9f9f9', borderRadius: '12px' }}>
-            {typeof ChatGame !== 'undefined' || typeof ChatBot !== 'undefined' ? (
-              <ChatGame data={typeof post.chatGameData === 'string' ? JSON.parse(post.chatGameData) : post.chatGameData} />
-            ) : (
-              <p style={{ display: 'none' }}>Chat Game Data Loaded Successfully</p>
-            )}
-          </div>
-        )}
+                                    <div id="blog-article-content">
+          {post.enableChatGame === 'Yes' && post.chatGameData && (
+            <div className="blog-chat-game-wrapper" style={{ margin: '30px 0', padding: '20px', background: '#f9f9f9', borderRadius: '12px' }}>
+              {typeof ChatGame !== 'undefined' || typeof ChatBot !== 'undefined' ? (
+                <ChatGame data={typeof post.chatGameData === 'string' ? JSON.parse(post.chatGameData) : post.chatGameData} />
+              ) : (
+                <p style={{ display: 'none' }}>Chat Game Data Loaded Successfully</p>
+              )}
+            </div>
+          )}
 
-        {post.content && typeof post.content === 'object' ? (
-          <div className="rich-text-content">
-            {post.content.content?.map((block: any, idx: number) => {
-              if (block.nodeType === 'embedded-asset-block') {
-                const asset = block.data?.target?.fields;
-                const imageUrl = asset?.file?.url || asset?.file?.['en-US']?.url;
-                const altText = asset?.title || asset?.title?.['en-US'] || 'blog image';
-                if (!imageUrl) return null;
-                return (
-                  <img 
-                    key={idx}
-                    src={imageUrl.startsWith('//') ? `https:${imageUrl}` : imageUrl} 
-                    alt={altText} 
-                    style={{ maxWidth: '100%', height: 'auto', display: 'block', margin: '25px auto', borderRadius: '8px' }} 
-                  />
-                );
-              }
-              if (block.nodeType.startsWith('heading-')) {
-                const HeadingTag = `h${block.nodeType.split('-')}` as any;
-                const text = block.content?.map((c: any) => c.value).join('') || '';
-                const headingId = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                return <HeadingTag key={idx} id={headingId}>{text}</HeadingTag>;
-              }
-              if (block.nodeType === 'paragraph') {
-                const text = block.content?.map((c: any) => c.value).join('') || '';
-                return <p key={idx}>{text}</p>;
-              }
-              return null;
-            })}
-          </div>
-        ) : (
-          <div
-            dangerouslySetInnerHTML={{
-              __html: addHeadingIds(post.content || ''),
-            }}
-          />
-        )}
+          {post.content && typeof post.content === 'object' ? (
+            <div className="rich-text-content">
+              {post.content.content?.map((block: any, idx: number) => {
+                if (block.nodeType === 'embedded-asset-block') {
+                  const asset = block.data?.target?.fields;
+                  const imageUrl = asset?.file?.url || asset?.file?.['en-US']?.url;
+                  const altText = asset?.title || asset?.title?.['en-US'] || 'blog image';
+                  if (!imageUrl) return null;
+                  return (
+                    <img 
+                      key={idx}
+                      src={imageUrl.startsWith('//') ? `https:${imageUrl}` : imageUrl} 
+                      alt={altText} 
+                      style={{ maxWidth: '100%', height: 'auto', display: 'block', margin: '25px auto', borderRadius: '8px' }} 
+                    />
+                  );
+                }
+                if (block.nodeType.startsWith('heading-')) {
+                  const HeadingTag = `h${block.nodeType.split('-')}` as any;
+                  const text = block.content?.map((c: any) => c.value).join('') || '';
+                  const headingId = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                  return <HeadingTag key={idx} id={headingId}>{text}</HeadingTag>;
+                }
+                if (block.nodeType === 'paragraph') {
+                  const text = block.content?.map((c: any) => c.value).join('') || '';
+                  return <p key={idx}>{text}</p>;
+                }
+                return null;
+              })}
+            </div>
+          ) : (
+            <div
+              dangerouslySetInnerHTML={{
+                __html: addHeadingIds(post.content || ''),
+              }}
+            />
+          )}
+        </div>
+
+                            
+      
                                                                                                   
                         {/* =================================================
                             TAGS
