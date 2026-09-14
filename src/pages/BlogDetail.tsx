@@ -901,24 +901,43 @@ CHAT GAME LOGIC
   setChatGameFinished(false);
 };
 
-const handleChatAnswer = (answer: string) => {
+const handleChatAnswer = (
+  option: {
+    text: string;
+    nextId: number | string;
+  }
+) => {
   setChatAnswers((previousAnswers) => [
     ...previousAnswers,
-    answer,
+    option.text,
   ]);
 
   if (
     !post?.chatGameData?.questions ||
-    currentChatQuestion >=
-      post.chatGameData.questions.length - 1
+    post.chatGameData.questions.length === 0
   ) {
     setChatGameFinished(true);
     return;
   }
 
+  if (option.nextId === "end") {
+    setChatGameFinished(true);
+    return;
+  }
+
+  const nextQuestionIndex =
+    post.chatGameData.questions.findIndex(
+      (question) =>
+        question.id === Number(option.nextId)
+    );
+
+  if (nextQuestionIndex === -1) {
+    setChatGameFinished(true);
+    return;
+  }
+
   setCurrentChatQuestion(
-    (previousQuestion) =>
-      previousQuestion + 1
+    nextQuestionIndex
   );
 };
 
