@@ -1,12 +1,15 @@
-
 /* =========================================================
    LOVEONS BLOG API
    Contentful-powered version
    With automatic TOC heading IDs
    ========================================================= */
+
 export interface ChatGameQuestion {
-  keywords: string[];
-  answer: string;
+  question?: string;
+  options?: string[];
+  keywords?: string[];
+  answer?: string;
+  [key: string]: unknown;
 }
 
 export interface ChatGameData {
@@ -15,6 +18,7 @@ export interface ChatGameData {
   articlePrompt: string;
   questions: ChatGameQuestion[];
 }
+
 export interface BlogPost {
   id: string;
   title: string;
@@ -33,11 +37,17 @@ export interface BlogPost {
   meta_description: string | null;
   created_at: string;
   updated_at: string;
+
   enable_chat_game?: boolean;
   chat_game_data?: ChatGameData;
+
+  // Contentful / BlogDetail compatibility
+  enableChatGame?: boolean;
+  chatGameData?: ChatGameData;
 }
 
-export const FALLBACK_IMAGE = "/images/blogs/default.webp";
+export const FALLBACK_IMAGE =
+  "/images/blogs/default.webp";
 
 /* =========================================================
    CONTENTFUL CONFIG
@@ -50,10 +60,12 @@ const CONTENTFUL_ACCESS_TOKEN =
   import.meta.env.VITE_CONTENTFUL_ACCESS_TOKEN;
 
 const CONTENTFUL_ENVIRONMENT =
-  import.meta.env.VITE_CONTENTFUL_ENVIRONMENT || "master";
+  import.meta.env.VITE_CONTENTFUL_ENVIRONMENT ||
+  "master";
 
 const CONTENTFUL_CONTENT_TYPE =
-  import.meta.env.VITE_CONTENTFUL_CONTENT_TYPE || "blogPost";
+  import.meta.env.VITE_CONTENTFUL_CONTENT_TYPE ||
+  "blogPost";
 
 /* =========================================================
    CONTENTFUL TYPES
@@ -117,8 +129,11 @@ interface ContentfulEntry {
     publishedDate?: string;
     seoTitle?: string;
     seoDescription?: string;
- enableChatGame?: boolean;
-chatGameData?: ChatGameData;
+
+    enableChatGame?: boolean | string;
+    chatGameData?:
+      | ChatGameData
+      | string;
   };
 }
 
@@ -134,12 +149,18 @@ interface ContentfulResponse {
    LOCAL BLOG IMAGE MAP
    ========================================================= */
 
-const LOCAL_BLOG_IMAGES: Record<string, string> = {
-  communication: "/images/blogs/communication.webp",
+const LOCAL_BLOG_IMAGES: Record<
+  string,
+  string
+> = {
+  communication:
+    "/images/blogs/communication.webp",
 
-  conflict: "/images/blogs/conflict.webp",
+  conflict:
+    "/images/blogs/conflict.webp",
 
-  "date-ideas": "/images/blogs/date-ideas.webp",
+  "date-ideas":
+    "/images/blogs/date-ideas.webp",
 
   "relationship-tips":
     "/images/blogs/relationship-tips.webp",
@@ -173,7 +194,9 @@ function validateContentfulConfig(): void {
    CONTENTFUL URL
    ========================================================= */
 
-function getContentfulUrl(query = ""): string {
+function getContentfulUrl(
+  query = ""
+): string {
   validateContentfulConfig();
 
   const baseUrl =
@@ -193,19 +216,24 @@ function getContentfulUrl(query = ""): string {
 async function contentfulFetch(
   query = ""
 ): Promise<ContentfulResponse> {
-  const url = getContentfulUrl(query);
+  const url =
+    getContentfulUrl(query);
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization:
-        `Bearer ${CONTENTFUL_ACCESS_TOKEN}`,
-    },
+  const response = await fetch(
+    url,
+    {
+      headers: {
+        Authorization:
+          `Bearer ${CONTENTFUL_ACCESS_TOKEN}`,
+      },
 
-    cache: "no-store",
-  });
+      cache: "no-store",
+    }
+  );
 
   if (!response.ok) {
-    const message = await response.text();
+    const message =
+      await response.text();
 
     throw new Error(
       `Contentful API error ${response.status}: ${message}`
@@ -219,13 +247,30 @@ async function contentfulFetch(
    HTML HELPERS
    ========================================================= */
 
-function escapeHtml(value: string): string {
+function escapeHtml(
+  value: string
+): string {
   return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 }
 
 function escapeHtmlAttribute(
@@ -238,13 +283,24 @@ function escapeHtmlAttribute(
    SLUGIFY
    ========================================================= */
 
-export function slugify(text: string): string {
+export function slugify(
+  text: string
+): string {
   return text
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(
+      /[^\w\s-]/g,
+      ""
+    )
+    .replace(
+      /[\s_-]+/g,
+      "-"
+    )
+    .replace(
+      /^-+|-+$/g,
+      ""
+    );
 }
 
 /* =========================================================
@@ -256,13 +312,18 @@ function createHeadingId(
   usedIds: Set<string>
 ): string {
   const base =
-    slugify(text) || "section";
+    slugify(text) ||
+    "section";
 
   let id = base;
   let counter = 2;
 
-  while (usedIds.has(id)) {
-    id = `${base}-${counter}`;
+  while (
+    usedIds.has(id)
+  ) {
+    id =
+      `${base}-${counter}`;
+
     counter += 1;
   }
 
@@ -276,55 +337,161 @@ function createHeadingId(
    ========================================================= */
 
 function richTextToPlainText(
-  node: ContentfulRichTextNode | undefined
+  node:
+    | ContentfulRichTextNode
+    | undefined
 ): string {
   if (!node) {
     return "";
   }
 
-  if (node.nodeType === "text") {
+  if (
+    node.nodeType === "text"
+  ) {
     return node.value || "";
   }
 
-  return (node.content || [])
+  return (
+    node.content || []
+  )
     .map((child) =>
-      richTextToPlainText(child)
+      richTextToPlainText(
+        child
+      )
     )
     .join(" ");
 }
 
 /* =========================================================
+   RESOLVE EMBEDDED CONTENTFUL ASSET
+   ========================================================= */
+
+function getEmbeddedAsset(
+  node: ContentfulRichTextNode,
+  response: ContentfulResponse
+): ContentfulAsset | undefined {
+  const data =
+    node.data as
+      | {
+          target?: {
+            sys?: {
+              id?: string;
+            };
+          };
+        }
+      | undefined;
+
+  const assetId =
+    data?.target?.sys?.id;
+
+  if (!assetId) {
+    return undefined;
+  }
+
+  return (
+    response.includes?.Asset || []
+  ).find(
+    (asset) =>
+      asset.sys?.id ===
+      assetId
+  );
+}
+
+/* =========================================================
    RICH TEXT -> HTML
    WITH AUTOMATIC HEADING IDS
+   AND EMBEDDED IMAGES
    ========================================================= */
 
 function richTextToHtml(
   node:
     | ContentfulRichTextNode
     | undefined,
-  usedHeadingIds: Set<string>
+  usedHeadingIds: Set<string>,
+  response: ContentfulResponse
 ): string {
   if (!node) {
     return "";
   }
 
-  if (node.nodeType === "text") {
+  if (
+    node.nodeType === "text"
+  ) {
     return escapeHtml(
       node.value || ""
     );
   }
 
+  /*
+   * Embedded asset blocks do not normally
+   * contain child content, so handle them
+   * before generating children.
+   */
+  if (
+    node.nodeType ===
+    "embedded-asset-block"
+  ) {
+    const asset =
+      getEmbeddedAsset(
+        node,
+        response
+      );
+
+    const rawUrl =
+      asset?.fields?.file?.url;
+
+    if (!rawUrl) {
+      return "";
+    }
+
+    const imageUrl =
+      rawUrl.startsWith("//")
+        ? `https:${rawUrl}`
+        : rawUrl.startsWith(
+            "http://"
+          ) ||
+          rawUrl.startsWith(
+            "https://"
+          )
+          ? rawUrl
+          : `https://${rawUrl}`;
+
+    const altText =
+      asset?.fields
+        ?.description ||
+      asset?.fields?.title ||
+      "Blog image";
+
+    return `
+      <img
+        src="${escapeHtmlAttribute(
+          imageUrl
+        )}"
+        alt="${escapeHtmlAttribute(
+          altText
+        )}"
+        loading="lazy"
+        style="max-width:100%;height:auto;display:block;margin:25px auto;border-radius:8px;"
+      />
+    `;
+  }
+
   const children =
-    (node.content || [])
+    (
+      node.content || []
+    )
       .map((child) =>
         richTextToHtml(
           child,
-          usedHeadingIds
+          usedHeadingIds,
+          response
         )
       )
       .join("");
 
-  switch (node.nodeType) {
+  switch (
+    node.nodeType
+  ) {
     case "document":
       return children;
 
@@ -333,7 +500,9 @@ function richTextToHtml(
 
     case "heading-1": {
       const headingText =
-        richTextToPlainText(node).trim();
+        richTextToPlainText(
+          node
+        ).trim();
 
       const id =
         createHeadingId(
@@ -348,7 +517,9 @@ function richTextToHtml(
 
     case "heading-2": {
       const headingText =
-        richTextToPlainText(node).trim();
+        richTextToPlainText(
+          node
+        ).trim();
 
       const id =
         createHeadingId(
@@ -363,7 +534,9 @@ function richTextToHtml(
 
     case "heading-3": {
       const headingText =
-        richTextToPlainText(node).trim();
+        richTextToPlainText(
+          node
+        ).trim();
 
       const id =
         createHeadingId(
@@ -378,7 +551,9 @@ function richTextToHtml(
 
     case "heading-4": {
       const headingText =
-        richTextToPlainText(node).trim();
+        richTextToPlainText(
+          node
+        ).trim();
 
       const id =
         createHeadingId(
@@ -393,7 +568,9 @@ function richTextToHtml(
 
     case "heading-5": {
       const headingText =
-        richTextToPlainText(node).trim();
+        richTextToPlainText(
+          node
+        ).trim();
 
       const id =
         createHeadingId(
@@ -408,7 +585,9 @@ function richTextToHtml(
 
     case "heading-6": {
       const headingText =
-        richTextToPlainText(node).trim();
+        richTextToPlainText(
+          node
+        ).trim();
 
       const id =
         createHeadingId(
@@ -435,7 +614,8 @@ function richTextToHtml(
 
     case "hyperlink": {
       const uri =
-        typeof node.data?.uri === "string"
+        typeof node.data
+          ?.uri === "string"
           ? node.data.uri
           : "#";
 
@@ -447,12 +627,161 @@ function richTextToHtml(
     case "hr":
       return "<hr />";
 
-    case "embedded-asset-block":
-      return "";
-
     default:
       return children;
   }
+}
+
+/* =========================================================
+   CHAT GAME NORMALIZER
+   Supports:
+   - Contentful JSON object
+   - JSON string
+   - question/options structure
+   - legacy keywords/answer structure
+   ========================================================= */
+
+function normalizeChatGameData(
+  value:
+    | ChatGameData
+    | string
+    | undefined
+): ChatGameData | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  let source:
+    | Record<string, unknown>
+    | undefined;
+
+  if (
+    typeof value === "string"
+  ) {
+    try {
+      const parsed =
+        JSON.parse(value);
+
+      if (
+        parsed &&
+        typeof parsed ===
+          "object"
+      ) {
+        source =
+          parsed as Record<
+            string,
+            unknown
+          >;
+      }
+    } catch {
+      return undefined;
+    }
+  } else if (
+    typeof value ===
+    "object"
+  ) {
+    source =
+      value as unknown as Record<
+        string,
+        unknown
+      >;
+  }
+
+  if (!source) {
+    return undefined;
+  }
+
+  const rawQuestions =
+    Array.isArray(
+      source.questions
+    )
+      ? source.questions
+      : [];
+
+  const questions =
+    rawQuestions
+      .filter(
+        (question) =>
+          question &&
+          typeof question ===
+            "object"
+      )
+      .map((question) => {
+        const item =
+          question as Record<
+            string,
+            unknown
+          >;
+
+        const rawOptions =
+          Array.isArray(
+            item.options
+          )
+            ? item.options
+            : [];
+
+        const options =
+          rawOptions.filter(
+            (
+              option
+            ): option is string =>
+              typeof option ===
+              "string"
+          );
+
+        return {
+          ...item,
+
+          question:
+            typeof item.question ===
+            "string"
+              ? item.question
+              : undefined,
+
+          options,
+
+          keywords:
+            Array.isArray(
+              item.keywords
+            )
+              ? item.keywords.filter(
+                  (
+                    keyword
+                  ): keyword is string =>
+                    typeof keyword ===
+                    "string"
+                )
+              : undefined,
+
+          answer:
+            typeof item.answer ===
+            "string"
+              ? item.answer
+              : undefined,
+        };
+      });
+
+  return {
+    welcomeMessage:
+      typeof source.welcomeMessage ===
+      "string"
+        ? source.welcomeMessage
+        : "",
+
+    maxQuestions:
+      typeof source.maxQuestions ===
+      "number"
+        ? source.maxQuestions
+        : questions.length,
+
+    articlePrompt:
+      typeof source.articlePrompt ===
+      "string"
+        ? source.articlePrompt
+        : "",
+
+    questions,
+  };
 }
 
 /* =========================================================
@@ -462,29 +791,37 @@ function richTextToHtml(
 export function estimateReadingTime(
   content: string
 ): string {
-  const cleanContent = content
-    .replace(/<[^>]*>/g, " ")
-    .trim();
+  const cleanContent =
+    content
+      .replace(
+        /<[^>]*>/g,
+        " "
+      )
+      .trim();
 
   if (!cleanContent) {
     return "1 min read";
   }
 
-  const words = cleanContent
-    .split(/\s+/)
-    .filter(Boolean)
-    .length;
+  const words =
+    cleanContent
+      .split(/\s+/)
+      .filter(Boolean)
+      .length;
 
-  const minutes = Math.max(
-    1,
-    Math.ceil(words / 200)
-  );
+  const minutes =
+    Math.max(
+      1,
+      Math.ceil(
+        words / 200
+      )
+    );
 
   return `${minutes} min read`;
 }
 
 /* =========================================================
-   FIND CONTENTFUL IMAGE
+   FIND CONTENTFUL FEATURED IMAGE
    ========================================================= */
 
 function getAssetUrl(
@@ -495,7 +832,8 @@ function getAssetUrl(
   alt: string | null;
 } {
   const imageId =
-    post.fields.featuredImage
+    post.fields
+      .featuredImage
       ?.sys?.id;
 
   if (!imageId) {
@@ -507,11 +845,12 @@ function getAssetUrl(
 
   const asset =
     (
-      response.includes?.Asset ||
-      []
+      response.includes
+        ?.Asset || []
     ).find(
       (item) =>
-        item.sys?.id === imageId
+        item.sys?.id ===
+        imageId
     );
 
   const rawUrl =
@@ -520,8 +859,10 @@ function getAssetUrl(
   if (!rawUrl) {
     return {
       url: null,
+
       alt:
-        asset?.fields?.description ||
+        asset?.fields
+          ?.description ||
         asset?.fields?.title ||
         null,
     };
@@ -530,7 +871,12 @@ function getAssetUrl(
   const fullUrl =
     rawUrl.startsWith("//")
       ? `https:${rawUrl}`
-      : rawUrl.startsWith("http")
+      : rawUrl.startsWith(
+          "http://"
+        ) ||
+        rawUrl.startsWith(
+          "https://"
+        )
         ? rawUrl
         : `https://${rawUrl}`;
 
@@ -538,7 +884,8 @@ function getAssetUrl(
     url: fullUrl,
 
     alt:
-      asset?.fields?.description ||
+      asset?.fields
+        ?.description ||
       asset?.fields?.title ||
       null,
   };
@@ -588,10 +935,13 @@ function resolveBlogImage(
       const localFile =
         Object.values(
           LOCAL_BLOG_IMAGES
-        ).find((path) =>
-          path
-            .toLowerCase()
-            .endsWith(filename)
+        ).find(
+          (path) =>
+            path
+              .toLowerCase()
+              .endsWith(
+                filename
+              )
         );
 
       if (localFile) {
@@ -635,8 +985,12 @@ function resolveBlogImage(
   }
 
   if (
-    searchText.includes("date") ||
-    searchText.includes("dating")
+    searchText.includes(
+      "date"
+    ) ||
+    searchText.includes(
+      "dating"
+    )
   ) {
     return LOCAL_BLOG_IMAGES[
       "date-ideas"
@@ -644,7 +998,9 @@ function resolveBlogImage(
   }
 
   if (
-    searchText.includes("trust") ||
+    searchText.includes(
+      "trust"
+    ) ||
     searchText.includes(
       "commitment"
     )
@@ -711,7 +1067,8 @@ function normalizeContentfulPost(
   const contentHtml =
     richTextToHtml(
       fields.content,
-      usedHeadingIds
+      usedHeadingIds,
+      response
     );
 
   const contentPlainText =
@@ -730,6 +1087,20 @@ function normalizeContentfulPost(
     entry.sys.publishedAt ||
     null;
 
+  const enableChatGame =
+    fields.enableChatGame ===
+      true ||
+    String(
+      fields.enableChatGame ||
+      ""
+    ).toLowerCase() ===
+      "yes";
+
+  const chatGameData =
+    normalizeChatGameData(
+      fields.chatGameData
+    );
+
   const post: BlogPost = {
     id: entry.sys.id,
 
@@ -739,8 +1110,8 @@ function normalizeContentfulPost(
     slug:
       slugify(
         fields.slug ||
-        fields.title ||
-        ""
+          fields.title ||
+          ""
       ),
 
     category:
@@ -778,19 +1149,27 @@ function normalizeContentfulPost(
     tags: [],
 
     meta_title:
-      fields.seoTitle || null,
+      fields.seoTitle ||
+      null,
 
     meta_description:
       fields.seoDescription ||
       null,
 
- enableChatGame:
-  fields.enableChatGame === true,
+    enable_chat_game:
+      enableChatGame,
 
- chatGameData:
- fields.chatGameData || undefined,
-   
-     created_at:
+    chat_game_data:
+      chatGameData,
+
+    // Contentful / BlogDetail compatibility
+    enableChatGame:
+      enableChatGame,
+
+    chatGameData:
+      chatGameData,
+
+    created_at:
       entry.sys.createdAt ||
       new Date().toISOString(),
 
@@ -838,7 +1217,8 @@ export async function fetchPublishedPosts():
       .filter((entry) =>
         Boolean(
           entry.sys.publishedAt ||
-          entry.fields.publishedDate
+          entry.fields
+            .publishedDate
         )
       )
       .map((entry) =>
@@ -892,7 +1272,8 @@ export async function fetchPostBySlug(
       ).find((item) =>
         Boolean(
           item.sys.publishedAt ||
-          item.fields.publishedDate
+          item.fields
+            .publishedDate
         )
       );
 
@@ -926,7 +1307,9 @@ export async function fetchPostBySlug(
 export async function fetchPostsBySlug(
   slug: string
 ): Promise<BlogPost | null> {
-  return fetchPostBySlug(slug);
+  return fetchPostBySlug(
+    slug
+  );
 }
 
 /* =========================================================
@@ -1026,8 +1409,8 @@ export async function createPost(
   _post: Omit<
     BlogPost,
     "id" |
-    "created_at" |
-    "updated_at"
+      "created_at" |
+      "updated_at"
   >
 ): Promise<BlogPost> {
   throw new Error(
@@ -1136,4 +1519,4 @@ export async function isSlugAvailable(
 
     return true;
   }
-}
+     }
