@@ -1769,8 +1769,8 @@ CHAT GAME
 
                                 [&_hr]:my-8
                                 [&_hr]:border-rose-100
-                            "
-                                    <div id="blog-article-content">
+                              "
+       <div id="blog-article-content">
           {post.enableChatGame === 'Yes' && post.chatGameData && (
             <div className="blog-chat-game-wrapper" style={{ margin: '30px 0', padding: '20px', background: '#f9f9f9', borderRadius: '12px' }}>
               {typeof ChatGame !== 'undefined' || typeof ChatBot !== 'undefined' ? (
@@ -1799,7 +1799,7 @@ CHAT GAME
                   );
                 }
                 if (block.nodeType.startsWith('heading-')) {
-                  const HeadingTag = `h${block.nodeType.split('-')}` as any;
+                  const HeadingTag = `h${block.nodeType.split('-')[1]}` as any;
                   const text = block.content?.map((c: any) => c.value).join('') || '';
                   const headingId = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
                   return <HeadingTag key={idx} id={headingId}>{text}</HeadingTag>;
@@ -1820,9 +1820,7 @@ CHAT GAME
           )}
         </div>
 
-                            
-      
-                                                                                                  
+                                                                                                                                           
                         {/* =================================================
                             TAGS
                         ================================================= */}
