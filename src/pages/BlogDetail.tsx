@@ -1769,8 +1769,8 @@ CHAT GAME
 
                                 [&_hr]:my-8
                                 [&_hr]:border-rose-100
-                              "       
-
+                              "                                 
+                             >
           {post.content && typeof post.content === 'object' ? (
             <div className="rich-text-content">
               {post.content.content?.map((block: any, idx: number) => {
