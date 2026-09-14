@@ -3,7 +3,6 @@
    Contentful-powered version
    With automatic TOC heading IDs
    ========================================================= */
-
 export interface ChatGameQuestion {
   question?: string;
   options?: string[];
@@ -640,10 +639,10 @@ function richTextToHtml(
    - question/options structure
    - legacy keywords/answer structure
    ========================================================= */
-
 function normalizeChatGameData(
   value:
     | ChatGameData
+    | ChatGameQuestion[]
     | string
     | undefined
 ): ChatGameData | undefined {
@@ -651,136 +650,204 @@ function normalizeChatGameData(
     return undefined;
   }
 
-  let source:
-    | Record<string, unknown>
-    | undefined;
+  let parsedValue: unknown = value;
 
-  if (
-    typeof value === "string"
-  ) {
+  if (typeof value === "string") {
     try {
-      const parsed =
-        JSON.parse(value);
+      parsedValue = JSON.parse(value);
+    } catch (error) {
+      console.error(
+        "Invalid chatGameData JSON:",
+        error
+      );
 
-      if (
-        parsed &&
-        typeof parsed ===
-          "object"
-      ) {
-        source =
-          parsed as Record<
-            string,
-            unknown
-          >;
-      }
-    } catch {
       return undefined;
     }
+  }
+
+  /*
+   * Your Contentful JSON is a direct array:
+   *
+   * [
+   *   {
+   *     id: 1,
+   *     question: "...",
+   *     options: [
+   *       {
+   *         text: "...",
+   *         nextId: 2
+   *       }
+   *     ]
+   *   }
+   * ]
+   */
+
+  let rawQuestions: unknown[] = [];
+
+  let welcomeMessage = "";
+  let maxQuestions = 0;
+  let articlePrompt = "";
+
+  if (Array.isArray(parsedValue)) {
+    rawQuestions = parsedValue;
   } else if (
-    typeof value ===
-    "object"
+    parsedValue &&
+    typeof parsedValue === "object"
   ) {
-    source =
-      value as unknown as Record<
-        string,
-        unknown
-      >;
+    const source =
+      parsedValue as Record<string, unknown>;
+
+    if (Array.isArray(source.questions)) {
+      rawQuestions = source.questions;
+    }
+
+    if (
+      typeof source.welcomeMessage ===
+      "string"
+    ) {
+      welcomeMessage =
+        source.welcomeMessage;
+    }
+
+    if (
+      typeof source.maxQuestions ===
+      "number"
+    ) {
+      maxQuestions =
+        source.maxQuestions;
+    }
+
+    if (
+      typeof source.articlePrompt ===
+      "string"
+    ) {
+      articlePrompt =
+        source.articlePrompt;
+    }
   }
 
-  if (!source) {
-    return undefined;
-  }
-
-  const rawQuestions =
-    Array.isArray(
-      source.questions
-    )
-      ? source.questions
-      : [];
-
-  const questions =
+  const questions: ChatGameQuestion[] =
     rawQuestions
       .filter(
         (question) =>
           question &&
-          typeof question ===
-            "object"
+          typeof question === "object"
       )
-      .map((question) => {
-        const item =
-          question as Record<
-            string,
-            unknown
-          >;
+      .map(
+        (
+          question,
+          questionIndex
+        ) => {
+          const item =
+            question as Record<
+              string,
+              unknown
+            >;
 
-        const rawOptions =
-          Array.isArray(
-            item.options
-          )
-            ? item.options
-            : [];
-
-        const options =
-          rawOptions.filter(
-            (
-              option
-            ): option is string =>
-              typeof option ===
-              "string"
-          );
-
-        return {
-          ...item,
-
-          question:
-            typeof item.question ===
-            "string"
-              ? item.question
-              : undefined,
-
-          options,
-
-          keywords:
+          const rawOptions =
             Array.isArray(
-              item.keywords
+              item.options
             )
-              ? item.keywords.filter(
-                  (
-                    keyword
-                  ): keyword is string =>
-                    typeof keyword ===
-                    "string"
-                )
-              : undefined,
+              ? item.options
+              : [];
 
-          answer:
-            typeof item.answer ===
-            "string"
-              ? item.answer
-              : undefined,
-        };
-      });
+          const options =
+            rawOptions
+              .filter(
+                (option) =>
+                  option &&
+                  typeof option ===
+                    "object"
+              )
+              .map(
+                (
+                  option,
+                  optionIndex
+                ) => {
+                  const optionObject =
+                    option as Record<
+                      string,
+                      unknown
+                    >;
+
+                  return {
+                    text:
+                      typeof optionObject.text ===
+                      "string"
+                        ? optionObject.text
+                        : "",
+
+                    nextId:
+                      typeof optionObject.nextId ===
+                      "number" ||
+                      typeof optionObject.nextId ===
+                      "string"
+                        ? optionObject.nextId
+                        : "end",
+                  };
+                }
+              )
+              .filter(
+                (option) =>
+                  option.text.length > 0
+              );
+
+          return {
+            id:
+              typeof item.id ===
+              "number"
+                ? item.id
+                : questionIndex + 1,
+
+            question:
+              typeof item.question ===
+              "string"
+                ? item.question
+                : "",
+
+            options,
+
+            keywords:
+              Array.isArray(
+                item.keywords
+              )
+                ? item.keywords.filter(
+                    (
+                      keyword
+                    ): keyword is string =>
+                      typeof keyword ===
+                      "string"
+                  )
+                : undefined,
+
+            answer:
+              typeof item.answer ===
+              "string"
+                ? item.answer
+                : undefined,
+          };
+        }
+      )
+      .filter(
+        (question) =>
+          question.question.length > 0 &&
+          question.options.length > 0
+      );
+
+  if (questions.length === 0) {
+    return undefined;
+  }
 
   return {
-    welcomeMessage:
-      typeof source.welcomeMessage ===
-      "string"
-        ? source.welcomeMessage
-        : "",
+    questions,
+
+    welcomeMessage,
 
     maxQuestions:
-      typeof source.maxQuestions ===
-      "number"
-        ? source.maxQuestions
-        : questions.length,
+      maxQuestions ||
+      questions.length,
 
-    articlePrompt:
-      typeof source.articlePrompt ===
-      "string"
-        ? source.articlePrompt
-        : "",
-
-    questions,
+    articlePrompt,
   };
 }
 
