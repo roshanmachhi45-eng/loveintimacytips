@@ -1401,31 +1401,37 @@ return (
                       <LogOut className="h-5 w-5" />
                     </button>
                   </div>
-                        
-): (
-  <div className="flex flex-col gap-2">
-    <button
-      onClick={handleLogin}
-      disabled={authLoading}
-      className="w-full bg-transparent text-gray-700 border border-gray-200 p-2.5 rounded-xl text-sm font-semibold text-center block transition active:scale-95 disabled:opacity-60"
-    >
-      Login
-    </button>
-    <button
-      onClick={handleLogin}
-      disabled={authLoading}
-      className="w-full bg-gradient-to-r from-rose-500 to-pink-500 text-white p-2.5 rounded-xl text-sm font-semibold shadow-sm text-center block transition active:scale-95 disabled:opacity-60"
-    >
-      {authLoading ? '...' : 'Sign Up with Google'}
-    </button>
-    {authError && (
-      <p className="text-[11px] text-rose-500 mt-1.5 px-1">{authError}</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleLogin}
+                disabled={authLoading}
+                className="w-full bg-transparent text-gray-700 border border-gray-200 p-2.5 rounded-xl text-sm font-semibold text-center block transition active:scale-95 disabled:opacity-60"
+              >
+                Login
+              </button>
+              
+              <button
+                onClick={handleLogin}
+                disabled={authLoading}
+                className="w-full bg-gradient-to-r from-rose-500 to-pink-500 text-white p-2.5 rounded-xl text-sm font-semibold shadow-sm text-center block transition active:scale-95 disabled:opacity-60"
+              >
+                {authLoading ? '...' : 'Sign Up with Google'}
+              </button>
+              
+              {authError && (
+                <p className="text-[11px] text-rose-500 mt-1.5 px-1">{authError}</p>
               )}
+            </div>
+          )}
         </div>
       </div>
-    </div>
-  );
-}
+    </aside>
+  </>
+);
+
+                        
+
 
     
 
