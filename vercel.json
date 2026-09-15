@@ -7,7 +7,7 @@
       "destination": "/api/sitemap"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!assets|static|favicon.ico|manifest.json|_next).*)" ,
       "destination": "/index.html"
     }
   ],
@@ -23,4 +23,5 @@
     }
   ]
 }
+
 
