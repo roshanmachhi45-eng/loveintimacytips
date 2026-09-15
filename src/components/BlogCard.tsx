@@ -10,7 +10,8 @@ import { Link } from 'react-router-dom';
 import type { BlogPost } from '../lib/blogApi';
 import BlogImage from './BlogImage';
 interface BlogCardProps {
-  post: BlogPost;
+import rocksyAvatar from '../public/images/rocksky-avatar.webp';
+post: BlogPost;
 }
 
 function formatDate(dateStr?: string): string {
