@@ -3,9 +3,15 @@
    Contentful-powered version
    With automatic TOC heading IDs
    ========================================================= */
+export interface ChatGameOption {
+  text: string;
+  nextId: number | string;
+}
+
 export interface ChatGameQuestion {
+  id?: number;
   question?: string;
-  options?: string[];
+  options?: ChatGameOption[];
   keywords?: string[];
   answer?: string;
   [key: string]: unknown;

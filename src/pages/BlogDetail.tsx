@@ -895,7 +895,8 @@ setChatGameFinished,
 CHAT GAME LOGIC
 ======================================================= */
 
-    tChatGameStarted(true);
+    const startChatGame = () => {
+  setChatGameStarted(true);
   setCurrentChatQuestion(0);
   setChatAnswers([]);
   setChatGameFinished(false);
@@ -1949,7 +1950,7 @@ CHAT GAME
             </div>
         </>
     );
-        
+}
 
 
 
