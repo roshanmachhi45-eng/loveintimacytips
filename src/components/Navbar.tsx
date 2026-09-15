@@ -1420,17 +1420,14 @@ return (
     </button>
     {authError && (
       <p className="text-[11px] text-rose-500 mt-1.5 px-1">{authError}</p>
-    )}
-  </div>
-)
-                )}
-              </div>
-          </div>
+              )}
         </div>
-      </aside>
-    </>
+      </div>
+    </div>
   );
 }
+
+    
 
 
 
