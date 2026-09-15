@@ -1401,7 +1401,7 @@ return (
                       <LogOut className="h-5 w-5" />
                     </button>
                   </div>
-          ) : (
+           ) : (
             <div className="flex flex-col gap-2">
               <button
                 onClick={handleLogin}
@@ -1428,7 +1428,10 @@ return (
       </div>
     </aside>
   </>
-);
+  );
+}
+
+          
 
                         
 
