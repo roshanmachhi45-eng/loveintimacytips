@@ -9,6 +9,8 @@ import { Link } from 'react-router-dom';
 
 import type { BlogPost } from '../lib/blogApi';
 import BlogImage from './BlogImage';
+import rocksyAvatar from '/images/rocksky-avatar.webp';
+
 
 interface BlogCardProps {
   post: BlogPost;
