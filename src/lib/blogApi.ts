@@ -34,6 +34,7 @@ export interface BlogPost {
   image_url: string | null;
   image_alt: string | null;
   author: string;
+  authorImage?: string;
   published: boolean;
   published_at: string | null;
   reading_time: string | null;
@@ -1204,6 +1205,7 @@ function normalizeContentfulPost(
 
     author:
       fields.author || "",
+    authorImage: "/images/rocksky-avatar.webp",
 
     published:
       Boolean(
