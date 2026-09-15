@@ -198,27 +198,32 @@ export default function BlogCard({
               pt-3.5
             "
           >
-            {/* Author */}
-            <span
-              className="
-                inline-flex
-                min-w-0
-                items-center
-                gap-1.5
-                truncate
-                text-xs
-                font-medium
-                text-slate-400
-              "
-            >
-              <User className="h-3.5 w-3.5 shrink-0" />
+{/* Author */}
+<span
+  className="
+    inline-flex
+    min-w-0
+    items-center
+    gap-2
+    truncate 
+    text-xs
+    font-medium
+    text-slate-400
+  "
+>
+  {/* किसी लोकल पाथ की झंझट के बिना सीधे क्लाउड से एक सुंदर अवतार इमेज लोड करना */}
+  <img
+    src="https://dicebear.com"
+    alt="Rocksy"
+    className="h-5 w-5 shrink-0 rounded-full object-cover border border-rose-100 shadow-sm bg-rose-50"
+  />
 
-              <span className="truncate">
-                {post.author || 'Loveons'}
-              </span>
-            </span>
-         
-            {/* Read More */}
+  <span className="truncate">
+    {post.author || 'Rocksy'}
+  </span>
+</span>
+             
+           {/* Read More */}
             <span
               className="
                 inline-flex
