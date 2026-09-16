@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://sitemaps.org">
+  <!-- Main Pages -->
+  <url>
+    <loc>https://loveons.com</loc>
+    <priority>1.00</priority>
+  </url>
+  <url>
+    <loc>https://loveons.comblog</loc>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- Live Blog Posts -->
+  <url>
+    <loc>https://loveons.comblog/why-am-i-tired-of-dating-apps-dating-app-fatigue-is-real</loc>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://loveons.comblog/how-to-meet-singles-without-dating-apps-off-app-dating-guide</loc>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://loveons.comblog/best-places-to-meet-singles-without-dating-apps-off-app-dating</loc>
+    <priority>0.70</priority>
+  </url>
+</urlset>
