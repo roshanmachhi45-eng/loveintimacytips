@@ -509,21 +509,21 @@ return (
       </button>
     </div>
   ) : (
-    <div className="flex flex-col items-end">
-      <button
-        onClick={handleLogin}
-        disabled={authLoading}
-        className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-4 py-1.5 rounded-full text-sm font-semibold shadow-sm hover:opacity-90 active:scale-95 transition disabled:opacity-60"
-      >
-        {authLoading ? 'Signing in...' : 'Login'}
-      </button>
-      
-       {authError && (
-         <p className="text-[11px] text-rose-500 mt-2 max-w-[280px] whitespace-normal break-words text-left">
-           {authError}
-         </p>
-       )}        
-    </div>
+    <div className="flex flex-col items-end shrink-0">
+  <button
+    onClick={handleLogin}
+    disabled={authLoading}
+    className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-4 py-2 rounded-full text-xs sm:text-sm font-semibold shadow-sm hover:opacity-90 active:scale-95 transition disabled:opacity-60 whitespace-nowrap min-w-[125px] text-center"
+  >
+    {authLoading ? 'Signing in...' : 'Login / Sign Up'}
+  </button>
+  
+  {authError && (
+    <p className="text-[11px] text-rose-500 mt-2 max-w-[280px] whitespace-normal break-words text-left">
+      {authError}
+    </p>
+  )}        
+</div>
   )}
 </div>
 
@@ -983,19 +983,19 @@ return (
       )}
     </div>
   ) : (   
-<div className="flex flex-col items-end">
-<button
-  onClick={handleLogin}
-  disabled={authLoading}
-  className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition whitespace-nowrap disabled:opacity-60"
->
-  {authLoading ? '...' : 'Login'}
-</button>
-{authError && (
-  <p className="text-[9px] text-rose-500 mt-0.5 max-w-[100px] truncate" title={authError}>
-    {authError}
-  </p>
-)}
+ <div className="flex flex-col items-end shrink-0">
+  <button
+    onClick={handleLogin}
+    disabled={authLoading}
+    className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-bold shadow-sm active:scale-95 transition whitespace-nowrap disabled:opacity-60 min-w-[105px] text-center"
+  >
+    {authLoading ? '...' : 'Login / Sign Up'}
+  </button>
+  {authError && (
+    <p className="text-[9px] text-rose-500 mt-0.5 max-w-[100px] truncate" title={authError}>
+      {authError}
+    </p>
+  )}
 </div>
  )}
 </div>
