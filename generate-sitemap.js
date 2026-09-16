@@ -1,13 +1,13 @@
-import fs from 'fs';
-import path from 'path';
+const fs = require('fs');
+const path = require('path');
 
 const SPACE_ID = process.env.VITE_CONTENTFUL_SPACE_ID;
 const ACCESS_TOKEN = process.env.VITE_CONTENT_ACCESS_TOKEN;
-const CONTENT_TYPE = 'blogPost'; // आपके Contentful का Content Type ID
+const CONTENT_TYPE = 'blogPost'; 
 
 async function generateSitemap() {
   if (!SPACE_ID || !ACCESS_TOKEN) {
-    console.error('❌ त्रुटि: Contentful ID या Token नहीं मिला!');
+    console.error('❌ Contentful ID or Token not found!');
     return;
   }
 
@@ -49,9 +49,9 @@ async function generateSitemap() {
     }
     
     fs.writeFileSync(path.join(publicDir, 'sitemap.xml'), sitemapContent.trim());
-    console.log('✅ परफेक्ट! ऑटोमैटिक साइटमैप सफलतापुर्वक बन गया है।');
+    console.log('✅ Sitemap updated successfully!');
   } catch (error) {
-    console.error('❌ साइटमैप बनाने में गड़बड़ हुई:', error);
+    console.error('❌ Error creating sitemap:', error);
   }
 }
 
