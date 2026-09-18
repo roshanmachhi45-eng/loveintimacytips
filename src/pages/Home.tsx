@@ -519,9 +519,8 @@ export default function Home() {
   className="absolute inset-0 h-full w-full object-cover object-center aspect-square sm:aspect-auto"
   loading="eager"
   fetchPriority="high"
-  decoding="async"
+  decoding="sync" 
 />
-
 
                 <div
                   aria-hidden="true"
