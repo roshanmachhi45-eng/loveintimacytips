@@ -1,12 +1,12 @@
 {
-  "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!assets|images|favicon.ico).*)",
       "destination": "/index.html"
     }
   ]
 }
+
 
 
 
