@@ -510,16 +510,18 @@ export default function Home() {
 
               {/* HERO IMAGE */}
 
-              <div className="relative min-h-[330px] overflow-hidden sm:min-h-[440px] lg:min-h-[600px]">
+            <div className="relative min-h-[330px] h-[330px] sm:h-auto overflow-hidden sm:min-h-[440px] lg:min-h-[600px] bg-rose-50/30">
+<img
+  src={HERO_IMAGE}
+  alt="Couple sharing a loving moment"
+  width="600"
+  height="600"
+  className="absolute inset-0 h-full w-full object-cover object-center aspect-square sm:aspect-auto"
+  loading="eager"
+  fetchPriority="high"
+  decoding="async"
+/>
 
-                <img
-                  src={HERO_IMAGE}
-                  alt="Couple sharing a loving moment"
-                  className="absolute inset-0 h-full w-full object-cover object-center"
-                  loading="eager"
-                  fetchPriority="high"
-                  decoding="async"
-                />
 
                 <div
                   aria-hidden="true"
