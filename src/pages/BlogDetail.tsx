@@ -2015,7 +2015,7 @@ CHAT GAME
               <iframe src="/cosmic-tarot" className="w-full h-[80vh] border-0 rounded-2xl" />
             </div>
           </div>        
-         }
+       )}
      </div>
     </div>
     </>
