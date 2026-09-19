@@ -2000,26 +2000,27 @@ CHAT GAME
           </div>
         </div>
       )}
+            
+{showCalculator && (
+  <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl p-6">
+      <button
+        type="button"
+        onClick={() => setShowCalculator(false)}
+        className="absolute top-4 right-4 z-50 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold text-lg"
+      >
+        ✕
+      </button>
 
-      {showCalculator && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl p-6">
-            <button 
-              type="button" 
-              onClick={() => setShowCalculator(false)} 
-              className="absolute top-4 right-4 z-50 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold text-lg"
-            >
-              ✕
-            </button>
-            <div className="pt-6">
-              <iframe src="/love-calculator" className="w-full h-[80vh] border-0 rounded-2xl" />
-            </div>
-          </div>
-        )}
+      <div className="pt-6">
+        <iframe
+          src="/love-calculator"
+          className="w-full h-[80vh] border-0 rounded-2xl"
+        />
       </div>
-    </main>
-  );
-}
+    </div>
+  </div>
+)}
 
        
      
