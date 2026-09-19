@@ -485,6 +485,35 @@ setChatGameFinished,
   setChatAnswers([]);
   setChatGameFinished(false);
 }, [slug]);
+        /* =======================================================
+       HTML CLICK INTERCEPTOR (TOOLS POPUP FIX)
+    ======================================================= */
+    useEffect(() => {
+      const handleHtmlClick = (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        const anchor = target.closest('a');
+        if (!anchor) return;
+        
+        const href = anchor.getAttribute('href');
+        if (href) {
+          if (
+            href.includes('/tools/tarot') || 
+            href.includes('/cosmic-tarot') ||
+            href.includes('/love-calculator') || 
+            href.includes('/tools/love-calculator')
+          ) {
+            e.preventDefault(); 
+            e.stopPropagation();
+            
+            window.history.pushState({}, '', href);
+            window.dispatchEvent(new PopStateEvent('popstate')); 
+          }
+        }
+      };
+
+      document.addEventListener('click', handleHtmlClick, true);
+      return () => document.removeEventListener('click', handleHtmlClick, true);
+    }, [post]);
     
     /* =======================================================
        RESET SCROLL WHEN SLUG CHANGES
