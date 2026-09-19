@@ -2021,8 +2021,7 @@ CHAT GAME
     </div>
   </div>
 )}
-            
-    </main>
+                
   </>
   );
 }
