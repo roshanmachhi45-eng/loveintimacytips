@@ -485,8 +485,9 @@ setChatGameFinished,
   setChatAnswers([]);
   setChatGameFinished(false);
 }, [slug]);
-            /* =======================================================
-       HTML CLICK INTERCEPTOR (TOOLS POPUP FIX)
+    
+        /* =======================================================
+       HTML CLICK INTERCEPTOR (TOOLS FULL PAGE REDIRECT FIX)
     ======================================================= */
     useEffect(() => {
       const handleHtmlClick = (e: MouseEvent) => {
@@ -496,18 +497,17 @@ setChatGameFinished,
         
         const href = anchor.getAttribute('href');
         if (href) {
-          // 1. Cosmic Tarot Link Trigger
-          if (href.includes('/tools/tarot') || href.includes('/cosmic-tarot')) {
-            e.preventDefault();    // Full browser URL redirect ko rokega
-            e.stopPropagation();   // Event bypass block karega
-            setShowTarot(true);    // Direct dynamic original Tarot popup active karega
-          }
-          
-          // 2. Love Calculator Link Trigger
-          if (href.includes('/love-calculator') || href.includes('/tools/love-calculator')) {
-            e.preventDefault();    // Redirect hone se bachaega
+          if (
+            href.includes('/tools/tarot') || 
+            href.includes('/cosmic-tarot') ||
+            href.includes('/love-calculator') || 
+            href.includes('/tools/love-calculator')
+          ) {
+            e.preventDefault(); 
             e.stopPropagation();
-            setShowCalculator(true); // Direct dynamic original Calculator popup active karega
+            
+            // Yeh window navigation React Router ko crash kiye bina page load karegi
+            window.location.href = href;
           }
         }
       };
@@ -515,7 +515,6 @@ setChatGameFinished,
       document.addEventListener('click', handleHtmlClick, true);
       return () => document.removeEventListener('click', handleHtmlClick, true);
     }, [post]);
-
     
     /* =======================================================
        RESET SCROLL WHEN SLUG CHANGES
