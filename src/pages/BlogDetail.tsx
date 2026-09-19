@@ -478,18 +478,22 @@ const [
 chatGameFinished,
 setChatGameFinished,
 ] = useState(false);
+const [showTarot, setShowTarot] = useState(false);
+const [showCalculator, setShowCalculator] = useState(false);
     
     useEffect(() => {
   setChatGameStarted(false);
   setCurrentChatQuestion(0);
   setChatAnswers([]);
   setChatGameFinished(false);
+  setShowTarot(false);
+  setShowCalculator(false);  
 }, [slug]);
     
         /* =======================================================
        HTML CLICK INTERCEPTOR (TOOLS FULL PAGE REDIRECT FIX)
     ======================================================= */
-    useEffect(() => {
+   useEffect(() => {
       const handleHtmlClick = (e: MouseEvent) => {
         const target = e.target as HTMLElement;
         const anchor = target.closest('a');
@@ -497,17 +501,18 @@ setChatGameFinished,
         
         const href = anchor.getAttribute('href');
         if (href) {
-          if (
-            href.includes('/tools/tarot') || 
-            href.includes('/cosmic-tarot') ||
-            href.includes('/love-calculator') || 
-            href.includes('/tools/love-calculator')
-          ) {
-            e.preventDefault(); 
+          // 1. Cosmic Tarot Link Event Trigger
+          if (href.includes('/tools/tarot') || href.includes('/cosmic-tarot')) {
+            e.preventDefault();
             e.stopPropagation();
-            
-            // Yeh window navigation React Router ko crash kiye bina page load karegi
-            window.location.href = href;
+            setShowTarot(true); // Tool dynamic popup mode mein khulega
+          }
+          
+          // 2. Love Calculator Link Event Trigger
+          if (href.includes('/love-calculator') || href.includes('/tools/love-calculator')) {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowCalculator(true); // Calculator overlay active hoga
           }
         }
       };
@@ -1978,8 +1983,43 @@ CHAT GAME
                     )}
                 </div>
             </div>
-        </>
-    );
+    {/* DYNAMIC TOOLS MODAL OVERLAYS */}
+      {showTarot && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl p-6">
+            <button 
+              type="button" 
+              onClick={() => setShowTarot(false)} 
+              className="absolute top-4 right-4 z-50 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold text-lg"
+            >
+              ✕
+            </button>
+            <div className="pt-6">
+              <iframe src="/cosmic-tarot" className="w-full h-[80vh] border-0 rounded-2xl" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCalculator && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl p-6">
+            <button 
+              type="button" 
+              onClick={() => setShowCalculator(false)} 
+              className="absolute top-4 right-4 z-50 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold text-lg"
+            >
+              ✕
+            </button>
+            <div className="pt-6">
+              <iframe src="/cosmic-tarot" className="w-full h-[80vh] border-0 rounded-2xl" />
+            </div>
+          </div>        
+         }
+     </div>
+    </div>
+    </>
+  );
 }
 
 
