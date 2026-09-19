@@ -485,7 +485,7 @@ setChatGameFinished,
   setChatAnswers([]);
   setChatGameFinished(false);
 }, [slug]);
-        /* =======================================================
+            /* =======================================================
        HTML CLICK INTERCEPTOR (TOOLS POPUP FIX)
     ======================================================= */
     useEffect(() => {
@@ -496,17 +496,18 @@ setChatGameFinished,
         
         const href = anchor.getAttribute('href');
         if (href) {
-          if (
-            href.includes('/tools/tarot') || 
-            href.includes('/cosmic-tarot') ||
-            href.includes('/love-calculator') || 
-            href.includes('/tools/love-calculator')
-          ) {
-            e.preventDefault(); 
+          // 1. Cosmic Tarot Link Trigger
+          if (href.includes('/tools/tarot') || href.includes('/cosmic-tarot')) {
+            e.preventDefault();    // Full browser URL redirect ko rokega
+            e.stopPropagation();   // Event bypass block karega
+            setShowTarot(true);    // Direct dynamic original Tarot popup active karega
+          }
+          
+          // 2. Love Calculator Link Trigger
+          if (href.includes('/love-calculator') || href.includes('/tools/love-calculator')) {
+            e.preventDefault();    // Redirect hone se bachaega
             e.stopPropagation();
-            
-            window.history.pushState({}, '', href);
-            window.dispatchEvent(new PopStateEvent('popstate')); 
+            setShowCalculator(true); // Direct dynamic original Calculator popup active karega
           }
         }
       };
@@ -514,6 +515,7 @@ setChatGameFinished,
       document.addEventListener('click', handleHtmlClick, true);
       return () => document.removeEventListener('click', handleHtmlClick, true);
     }, [post]);
+
     
     /* =======================================================
        RESET SCROLL WHEN SLUG CHANGES
