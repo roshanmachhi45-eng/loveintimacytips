@@ -2012,7 +2012,7 @@ CHAT GAME
               ✕
             </button>
             <div className="pt-6">
-              <iframe src="/cosmic-tarot" className="w-full h-[80vh] border-0 rounded-2xl" />
+              <iframe src="/love-calculator" className="w-full h-[80vh] border-0 rounded-2xl" />
             </div>
           </div>
         )}
