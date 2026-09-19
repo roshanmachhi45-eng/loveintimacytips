@@ -134,11 +134,7 @@ export default function App() {
             <Route
               path="/cosmic-tarot"
               element={<CosmicTarot />}
-            />   
-            <Route path="/tools/tarot" element={<CosmicTarot />} />
-            <Route path="/love-calculator" element={<CosmicTarot />} />
-            <Route path="/tools/love-calculator" element={<CosmicTarot />} />
-            
+            />                           
             {/* =========================================
                 BLOG LISTING
 
