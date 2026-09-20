@@ -1,4 +1,3 @@
-
 import {
     useEffect,
     useLayoutEffect,
@@ -8,6 +7,7 @@ import {
 
 import {
     Link,
+    useNavigate,
     useParams,
 } from 'react-router-dom';
 
@@ -36,28 +36,16 @@ import {
 
 import { BRAND } from '../lib/brand';
 
-/* =========================================================
-   TYPES
-========================================================= */
-
 interface TocItem {
     id: string;
     text: string;
     level: 2 | 3;
 }
 
-/* =========================================================
-   CONSTANTS
-========================================================= */
-
 const DEFAULT_BLOG_IMAGE =
     '/images/blogs/default.webp';
 
 const TOC_SCROLL_OFFSET = 110;
-
-/* =========================================================
-   DATE
-========================================================= */
 
 function formatDate(
     dateStr: string | null | undefined
@@ -81,10 +69,6 @@ function formatDate(
         }
     );
 }
-
-/* =========================================================
-   IMAGE HELPERS
-========================================================= */
 
 function resolveBlogImage(
     src: string | null | undefined
@@ -148,7 +132,6 @@ function getLocalImageFallback(
             return `/images/blogs/${filename}`;
         }
     } catch {
-        // Not an absolute URL.
     }
 
     const filename =
@@ -168,23 +151,6 @@ function getLocalImageFallback(
 
     return DEFAULT_BLOG_IMAGE;
 }
-
-/* =========================================================
-   TOC
-========================================================= */
-
-/*
- * blogApi.ts already creates IDs for H1/H2/H3.
- *
- * Example:
- *
- * <h2 id="why-communication-matters">
- *
- * Therefore we DO NOT create new IDs here.
- *
- * We simply read the IDs already present
- * inside the rendered article.
- */
 
 function getTocFromArticle(
     container: HTMLElement
@@ -227,10 +193,6 @@ function getTocFromArticle(
         );
 }
 
-/* =========================================================
-   EXACT TOC SCROLL
-========================================================= */
-
 function scrollToHeading(
     id: string
 ): void {
@@ -246,13 +208,6 @@ function scrollToHeading(
 
         return;
     }
-
-    /*
-     * Search ONLY inside the current article.
-     *
-     * This prevents another element somewhere
-     * else on the page from being selected.
-     */
 
     const headings =
         Array.from(
@@ -278,18 +233,6 @@ function scrollToHeading(
         return;
     }
 
-    /*
-     * Calculate exact document position.
-     *
-     * We intentionally do NOT use:
-     *
-     * - href="#..."
-     * - URL hash
-     * - scrollIntoView()
-     *
-     * This avoids unwanted browser navigation.
-     */
-
     const rect =
         target.getBoundingClientRect();
 
@@ -308,15 +251,7 @@ function scrollToHeading(
     });
 }
 
-/* =========================================================
-   FORCE PAGE TOP
-========================================================= */
-
 function forcePageTop(): void {
-    /*
-     * Disable browser scroll restoration.
-     */
-
     try {
         if (
             'scrollRestoration' in
@@ -326,7 +261,6 @@ function forcePageTop(): void {
                 'manual';
         }
     } catch {
-        // Ignore unsupported browsers.
     }
 
     window.scrollTo({
@@ -335,10 +269,6 @@ function forcePageTop(): void {
         behavior: 'auto',
     });
 }
-
-/* =========================================================
-   BLOG DETAIL
-========================================================= */
 
 function addHeadingIds(html: string): string {
     if (!html.trim()) {
@@ -351,7 +281,6 @@ function addHeadingIds(html: string): string {
     const usedIds = new Set<string>();
 
     doc.querySelectorAll('h1, h2, h3, h4').forEach((heading, index) => {
-        // Keep an ID if Contentful already provides one
         if (heading.id) {
             let existingId = heading.id.trim();
 
@@ -403,6 +332,8 @@ function addHeadingIds(html: string): string {
 }
 
 export default function BlogDetail() {
+    const navigate = useNavigate();
+
     const { slug } =
         useParams<{
             slug: string;
@@ -440,10 +371,6 @@ export default function BlogDetail() {
         setTocItems,
     ] = useState<TocItem[]>([]);
 
-    /*
-     * TOC is open by default.
-     */
-
     const [
         tocOpen,
         setTocOpen,
@@ -455,84 +382,107 @@ export default function BlogDetail() {
     ] = useState<string | null>(
         null
     );
-/* =======================================================
-CHAT GAME STATE
-======================================================= */
 
     const [
-chatGameStarted,
-setChatGameStarted,
-] = useState(false);
+        chatGameStarted,
+        setChatGameStarted,
+    ] = useState(false);
 
-const [
-currentChatQuestion,
-setCurrentChatQuestion,
-] = useState(0);
+    const [
+        currentChatQuestion,
+        setCurrentChatQuestion,
+    ] = useState(0);
 
-const [
-chatAnswers,
-setChatAnswers,
-] = useState<string[]>([]);
+    const [
+        chatAnswers,
+        setChatAnswers,
+    ] = useState<string[]>([]);
 
-const [
-chatGameFinished,
-setChatGameFinished,
-] = useState(false);
-const [showTarot, setShowTarot] = useState(false);
-const [showCalculator, setShowCalculator] = useState(false);
-    
+    const [
+        chatGameFinished,
+        setChatGameFinished,
+    ] = useState(false);
+
     useEffect(() => {
-  setChatGameStarted(false);
-  setCurrentChatQuestion(0);
-  setChatAnswers([]);
-  setChatGameFinished(false);
-  setShowTarot(false);
-  setShowCalculator(false);  
-}, [slug]);
-    
-        /* =======================================================
-       HTML CLICK INTERCEPTOR (TOOLS FULL PAGE REDIRECT FIX)
-    ======================================================= */
-   useEffect(() => {
-      const handleHtmlClick = (e: MouseEvent) => {
-        const target = e.target as HTMLElement;
-        const anchor = target.closest('a');
-        if (!anchor) return;
-        
-        const href = anchor.getAttribute('href');
-        if (href) {
-          // 1. Cosmic Tarot Link Event Trigger
-          if (href.includes('/tools/tarot') || href.includes('/cosmic-tarot')) {
-            e.preventDefault();
-            e.stopPropagation();
-            setShowTarot(true); // Tool dynamic popup mode mein khulega
-          }
-          
-          // 2. Love Calculator Link Event Trigger
-          if (href.includes('/love-calculator') || href.includes('/tools/love-calculator')) {
-            e.preventDefault();
-            e.stopPropagation();
-            setShowCalculator(true); // Calculator overlay active hoga
-          }
-        }
-      };
+        setChatGameStarted(false);
+        setCurrentChatQuestion(0);
+        setChatAnswers([]);
+        setChatGameFinished(false);
+    }, [slug]);
 
-      document.addEventListener('click', handleHtmlClick, true);
-      return () => document.removeEventListener('click', handleHtmlClick, true);
-    }, [post]);
-    
-    /* =======================================================
-       RESET SCROLL WHEN SLUG CHANGES
-    ======================================================= */
+    useEffect(() => {
+        const handleHtmlClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const anchor = target.closest('a');
+
+            if (!anchor) {
+                return;
+            }
+
+            const href = anchor.getAttribute('href');
+
+            if (!href) {
+                return;
+            }
+
+            if (
+                href.includes('/tools/tarot') ||
+                href.includes('/cosmic-tarot') ||
+                href.includes('/cosmic-love-tarot')
+            ) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                navigate('/');
+
+                window.setTimeout(() => {
+                    window.dispatchEvent(
+                        new CustomEvent(
+                            'loveons:open-cosmic-tarot'
+                        )
+                    );
+                }, 400);
+
+                return;
+            }
+
+            if (
+                href.includes('/tools/love-calculator') ||
+                href.includes('/love-calculator')
+            ) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                navigate('/');
+
+                window.setTimeout(() => {
+                    window.dispatchEvent(
+                        new CustomEvent(
+                            'loveons:open-calculator'
+                        )
+                    );
+                }, 400);
+
+                return;
+            }
+        };
+
+        document.addEventListener(
+            'click',
+            handleHtmlClick,
+            true
+        );
+
+        return () => {
+            document.removeEventListener(
+                'click',
+                handleHtmlClick,
+                true
+            );
+        };
+    }, [navigate, post]);
 
     useLayoutEffect(() => {
-        /*
-         * Remove any old hash immediately.
-         *
-         * We intentionally do NOT create hashes
-         * when clicking the TOC.
-         */
-
         if (
             window.location.hash
         ) {
@@ -545,14 +495,6 @@ const [showCalculator, setShowCalculator] = useState(false);
         }
 
         forcePageTop();
-
-        /*
-         * React Router/browser restoration can happen
-         * after the first layout pass.
-         *
-         * Therefore force page top again
-         * on the next frames.
-         */
 
         const frame1 =
             window.requestAnimationFrame(
@@ -573,10 +515,6 @@ const [showCalculator, setShowCalculator] = useState(false);
             );
         };
     }, [slug]);
-
-    /* =======================================================
-       LOAD ARTICLE
-    ======================================================= */
 
     useEffect(() => {
         let cancelled = false;
@@ -600,11 +538,6 @@ const [showCalculator, setShowCalculator] = useState(false);
             setTocItems([]);
             setActiveTocId(null);
 
-            /*
-             * Every new article starts with
-             * TOC open.
-             */
-
             setTocOpen(true);
 
             try {
@@ -626,10 +559,6 @@ const [showCalculator, setShowCalculator] = useState(false);
                 }
 
                 setPost(data);
-
-                /*
-                 * Related articles.
-                 */
 
                 try {
                     const relatedData =
@@ -683,10 +612,6 @@ const [showCalculator, setShowCalculator] = useState(false);
         };
     }, [slug]);
 
-    /* =======================================================
-       PREPARE IMAGE
-    ======================================================= */
-
     useEffect(() => {
         if (!post) {
             setImageSrc(
@@ -709,10 +634,6 @@ const [showCalculator, setShowCalculator] = useState(false);
         setImageFallbackTried(false);
     }, [post]);
 
-    /* =======================================================
-       BUILD TOC
-    ======================================================= */
-
     useEffect(() => {
         if (!post) {
             setTocItems([]);
@@ -733,10 +654,6 @@ const [showCalculator, setShowCalculator] = useState(false);
                 document.getElementById(
                     'blog-article-content'
                 );
-
-            /*
-             * The article may not have been mounted yet.
-             */
 
             if (!container) {
                 attempts += 1;
@@ -772,14 +689,6 @@ const [showCalculator, setShowCalculator] = useState(false);
                 );
             }
 
-            /*
-             * After article HTML is mounted,
-             * force page back to top.
-             *
-             * This prevents browser restoration
-             * from opening the article at the end.
-             */
-
             forcePageTop();
 
             window.requestAnimationFrame(
@@ -809,10 +718,6 @@ const [showCalculator, setShowCalculator] = useState(false);
             }
         };
     }, [post]);
-
-    /* =======================================================
-       ACTIVE TOC HEADING
-    ======================================================= */
 
     useEffect(() => {
         if (
@@ -926,68 +831,59 @@ const [showCalculator, setShowCalculator] = useState(false);
         };
     }, [tocItems]);
 
-    /* =======================================================
-CHAT GAME LOGIC
-======================================================= */
-
     const startChatGame = () => {
-  setChatGameStarted(true);
-  setCurrentChatQuestion(0);
-  setChatAnswers([]);
-  setChatGameFinished(false);
-};
+        setChatGameStarted(true);
+        setCurrentChatQuestion(0);
+        setChatAnswers([]);
+        setChatGameFinished(false);
+    };
 
-const handleChatAnswer = (
-  option: {
-    text: string;
-    nextId: number | string;
-  }
-) => {
-  setChatAnswers((previousAnswers) => [
-    ...previousAnswers,
-    option.text,
-  ]);
+    const handleChatAnswer = (
+        option: {
+            text: string;
+            nextId: number | string;
+        }
+    ) => {
+        setChatAnswers((previousAnswers) => [
+            ...previousAnswers,
+            option.text,
+        ]);
 
-  if (
-    !post?.chatGameData?.questions ||
-    post.chatGameData.questions.length === 0
-  ) {
-    setChatGameFinished(true);
-    return;
-  }
+        if (
+            !post?.chatGameData?.questions ||
+            post.chatGameData.questions.length === 0
+        ) {
+            setChatGameFinished(true);
+            return;
+        }
 
-  if (option.nextId === "end") {
-    setChatGameFinished(true);
-    return;
-  }
+        if (option.nextId === "end") {
+            setChatGameFinished(true);
+            return;
+        }
 
-  const nextQuestionIndex =
-    post.chatGameData.questions.findIndex(
-      (question) =>
-        question.id === Number(option.nextId)
-    );
+        const nextQuestionIndex =
+            post.chatGameData.questions.findIndex(
+                (question) =>
+                    question.id === Number(option.nextId)
+            );
 
-  if (nextQuestionIndex === -1) {
-    setChatGameFinished(true);
-    return;
-  }
+        if (nextQuestionIndex === -1) {
+            setChatGameFinished(true);
+            return;
+        }
 
-  setCurrentChatQuestion(
-    nextQuestionIndex
-  );
-};
+        setCurrentChatQuestion(
+            nextQuestionIndex
+        );
+    };
 
-const restartChatGame = () => {
-  setCurrentChatQuestion(0);
-  setChatAnswers([]);
-  setChatGameFinished(false);
-  setChatGameStarted(true);
-};
-  
-    
-    /* =======================================================
-       IMAGE ERROR
-    ======================================================= */
+    const restartChatGame = () => {
+        setCurrentChatQuestion(0);
+        setChatAnswers([]);
+        setChatGameFinished(false);
+        setChatGameStarted(true);
+    };
 
     const handleImageError =
         () => {
@@ -1037,20 +933,12 @@ const restartChatGame = () => {
             }
         };
 
-    /* =======================================================
-       SEO IMAGE
-    ======================================================= */
-
     const seoImage =
         useMemo(() => {
             return resolveBlogImage(
                 post?.image_url
             );
         }, [post]);
-
-    /* =======================================================
-       CANONICAL URL
-    ======================================================= */
 
     const canonicalUrl =
         useMemo(() => {
@@ -1062,10 +950,6 @@ const restartChatGame = () => {
 
             return `${BRAND.domain}/blog/${post.slug}`;
         }, [post, slug]);
-
-    /* =======================================================
-       STRUCTURED DATA
-    ======================================================= */
 
     const structuredData =
         useMemo(() => {
@@ -1149,10 +1033,6 @@ const restartChatGame = () => {
             canonicalUrl,
         ]);
 
-    /* =======================================================
-       LOADING
-    ======================================================= */
-
     if (loading) {
         return (
             <div className="flex min-h-screen items-center justify-center pt-20">
@@ -1160,10 +1040,6 @@ const restartChatGame = () => {
             </div>
         );
     }
-
-    /* =======================================================
-       ERROR
-    ======================================================= */
 
     if (error || !post) {
         return (
@@ -1183,16 +1059,8 @@ const restartChatGame = () => {
         );
     }
 
-    /* =======================================================
-       PAGE
-    ======================================================= */
-
     return (
         <>
-            {/* ===================================================
-                SEO
-            =================================================== */}
-
             <Seo
                 title={
                     post.meta_title ||
@@ -1203,13 +1071,9 @@ const restartChatGame = () => {
                     post.excerpt
                 }
                 path={`/blog/${post.slug}`}
-                ogImage={seoImage}    
+                ogImage={seoImage}
                 type="article"
-              />
-
-            {/* ===================================================
-                ARTICLE STRUCTURED DATA
-            =================================================== */}
+            />
 
             {structuredData && (
                 <script
@@ -1223,16 +1087,8 @@ const restartChatGame = () => {
                 />
             )}
 
-            {/* ===================================================
-                PAGE
-            =================================================== */}
-
             <div className="min-h-screen pb-12 pt-14">
                 <div className="mx-auto max-w-2xl px-4">
-
-                    {/* =================================================
-                        BACK TO HOME
-                    ================================================= */}
 
                     <Link
                         to="/"
@@ -1253,10 +1109,6 @@ const restartChatGame = () => {
                     </Link>
 
                     <article>
-
-                        {/* =================================================
-                            FEATURED IMAGE
-                        ================================================= */}
 
                         <div
                             className="
@@ -1337,10 +1189,6 @@ const restartChatGame = () => {
                             )}
                         </div>
 
-                        {/* =================================================
-                            TITLE
-                        ================================================= */}
-
                         <h1
                             className="
                                 mb-3
@@ -1353,10 +1201,6 @@ const restartChatGame = () => {
                         >
                             {post.title}
                         </h1>
-
-                        {/* =================================================
-                            EXCERPT
-                        ================================================= */}
 
                         {post.excerpt && (
                             <p
@@ -1371,10 +1215,6 @@ const restartChatGame = () => {
                             </p>
                         )}
 
-                        {/* =================================================
-                            META
-                        ================================================= */}
-
                         <div
                             className="
                                 mb-6
@@ -1386,11 +1226,11 @@ const restartChatGame = () => {
                                 text-gray-400
                             "
                         >
-                          <span className="flex items-center gap-2">
-                                <img 
-                                    src="/images/rocksy-avatar.webp" 
-                                    alt="Rocksy" 
-                                    className="h-5 w-5 rounded-full object-cover border border-rose-100 shadow-sm" 
+                            <span className="flex items-center gap-2">
+                                <img
+                                    src="/images/rocksy-avatar.webp"
+                                    alt="Rocksy"
+                                    className="h-5 w-5 rounded-full object-cover border border-rose-100 shadow-sm"
                                 />
                                 {post.author || 'Rocksy'}
                             </span>
@@ -1413,194 +1253,186 @@ const restartChatGame = () => {
                                 </span>
                             )}
                         </div>
-                       
-{post.tags?.length > 0 && (
-  <div className="mt-8 flex flex-wrap gap-2">
-    {post.tags.map((tag) => (
-      <span
-        key={tag}
-        className="rounded-full bg-rose-50 px-3 py-1 text-xs font-medium text-rose-500"
-      >
-        #{tag}
-      </span>
-    ))}
-  </div>
-)}
-                                                                                             
-{/* =================================================
-CHAT GAME
-================================================= */}
-{post.enableChatGame &&
-  post.chatGameData?.questions &&
-  post.chatGameData.questions.length > 0 && (
-    <section
-      className="
-        mb-6
-        rounded-2xl
-        border
-        border-rose-100
-        bg-rose-50/40
-        p-5
-        sm:p-6
-      "
-    >
-      {!chatGameStarted ? (
-        <div className="text-center">
-          <h2 className="mb-2 text-xl font-bold text-gray-800">
-            Let's Play a Quick Game ✨
-          </h2>
 
-          <p className="mb-5 text-sm leading-6 text-gray-600">
-            Answer a few quick questions and explore the topic.
-          </p>
+                        {post.tags?.length > 0 && (
+                            <div className="mt-8 flex flex-wrap gap-2">
+                                {post.tags.map((tag) => (
+                                    <span
+                                        key={tag}
+                                        className="rounded-full bg-rose-50 px-3 py-1 text-xs font-medium text-rose-500"
+                                    >
+                                        #{tag}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
 
-          <button
-            type="button"
-            onClick={startChatGame}
-            className="
-              rounded-full
-              border-0
-              bg-gradient-to-r
-              from-rose-500
-              to-pink-500
-              px-5
-              py-2.5
-              text-sm
-              font-semibold
-              text-white
-              shadow-md
-              transition
-              hover:scale-105
-              hover:shadow-lg
-            "
-          >
-            Start Game
-          </button>
-        </div>
-      ) : chatGameFinished ? (
-        <div className="text-center">
-          <h2 className="mb-5 text-xl font-bold text-gray-800">
-            🎉 Great Job! Keep Exploring
-          </h2>
+                        {post.enableChatGame &&
+                            post.chatGameData?.questions &&
+                            post.chatGameData.questions.length > 0 && (
+                                <section
+                                    className="
+                                        mb-6
+                                        rounded-2xl
+                                        border
+                                        border-rose-100
+                                        bg-rose-50/40
+                                        p-5
+                                        sm:p-6
+                                    "
+                                >
+                                    {!chatGameStarted ? (
+                                        <div className="text-center">
+                                            <h2 className="mb-2 text-xl font-bold text-gray-800">
+                                                Let's Play a Quick Game ✨
+                                            </h2>
 
-          <div className="flex flex-wrap justify-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                document
-                  .getElementById("blog-article-content")
-                  ?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                  });
-              }}
-              className="
-                rounded-full
-                border-0
-                bg-gradient-to-r
-                from-rose-500
-                to-pink-500
-                px-5
-                py-2.5
-                text-sm
-                font-semibold
-                text-white
-                shadow-md
-                transition
-                hover:scale-105
-                hover:shadow-lg
-              "
-            >
-              Continue Reading ↓
-            </button>
+                                            <p className="mb-5 text-sm leading-6 text-gray-600">
+                                                Answer a few quick questions and explore the topic.
+                                            </p>
 
-            <button
-              type="button"
-              onClick={restartChatGame}
-              className="
-                rounded-full
-                border-0
-                bg-gradient-to-r
-                from-rose-500
-                to-pink-500
-                px-5
-                py-2.5
-                text-sm
-                font-semibold
-                text-white
-                shadow-md
-                transition
-                hover:scale-105
-                hover:shadow-lg
-              "
-            >
-              Play Again
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-rose-500">
-            Question {currentChatQuestion + 1} of{" "}
-            {post.chatGameData.questions.length}
-          </p>
+                                            <button
+                                                type="button"
+                                                onClick={startChatGame}
+                                                className="
+                                                    rounded-full
+                                                    border-0
+                                                    bg-gradient-to-r
+                                                    from-rose-500
+                                                    to-pink-500
+                                                    px-5
+                                                    py-2.5
+                                                    text-sm
+                                                    font-semibold
+                                                    text-white
+                                                    shadow-md
+                                                    transition
+                                                    hover:scale-105
+                                                    hover:shadow-lg
+                                                "
+                                            >
+                                                Start Game
+                                            </button>
+                                        </div>
+                                    ) : chatGameFinished ? (
+                                        <div className="text-center">
+                                            <h2 className="mb-5 text-xl font-bold text-gray-800">
+                                                🎉 Great Job! Keep Exploring
+                                            </h2>
 
-          <h2 className="mb-5 text-lg font-bold leading-7 text-gray-800">
-            {
-              post.chatGameData.questions[
-                currentChatQuestion
-              ]?.question
-            }
-          </h2>
+                                            <div className="flex flex-wrap justify-center gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        document
+                                                            .getElementById("blog-article-content")
+                                                            ?.scrollIntoView({
+                                                                behavior: "smooth",
+                                                                block: "start",
+                                                            });
+                                                    }}
+                                                    className="
+                                                        rounded-full
+                                                        border-0
+                                                        bg-gradient-to-r
+                                                        from-rose-500
+                                                        to-pink-500
+                                                        px-5
+                                                        py-2.5
+                                                        text-sm
+                                                        font-semibold
+                                                        text-white
+                                                        shadow-md
+                                                        transition
+                                                        hover:scale-105
+                                                        hover:shadow-lg
+                                                    "
+                                                >
+                                                    Continue Reading ↓
+                                                </button>
 
-          <div className="space-y-3">
-            {post.chatGameData.questions[
-              currentChatQuestion
-            ]?.options?.map(
-              (
-                option: {
-                  text: string;
-                  nextId: number | string;
-                },
-                index: number
-              ) => (
-                <button
-                  key={`${option.nextId}-${index}`}
-                  type="button"
-                  onClick={() =>
-                    handleChatAnswer(option)
-                  }
-                  className="
-                    w-full
-                    rounded-xl
-                    border
-                    border-rose-100
-                    bg-white
-                    px-4
-                    py-3
-                    text-left
-                    text-sm
-                    font-medium
-                    text-gray-700
-                    transition
-                    hover:border-rose-300
-                    hover:bg-rose-50
-                  "
-                >
-                  {option.text}
-                </button>
-              )
-            )}
-          </div>
-        </div>
-      )}
-    </section>
-  )}
+                                                <button
+                                                    type="button"
+                                                    onClick={restartChatGame}
+                                                    className="
+                                                        rounded-full
+                                                        border-0
+                                                        bg-gradient-to-r
+                                                        from-rose-500
+                                                        to-pink-500
+                                                        px-5
+                                                        py-2.5
+                                                        text-sm
+                                                        font-semibold
+                                                        text-white
+                                                        shadow-md
+                                                        transition
+                                                        hover:scale-105
+                                                        hover:shadow-lg
+                                                    "
+                                                >
+                                                    Play Again
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-rose-500">
+                                                Question {currentChatQuestion + 1} of{" "}
+                                                {post.chatGameData.questions.length}
+                                            </p>
 
-                    
-                        {/* =================================================
-                            TABLE OF CONTENTS
-                        ================================================= */}
+                                            <h2 className="mb-5 text-lg font-bold leading-7 text-gray-800">
+                                                {
+                                                    post.chatGameData.questions[
+                                                        currentChatQuestion
+                                                    ]?.question
+                                                }
+                                            </h2>
+
+                                            <div className="space-y-3">
+                                                {post.chatGameData.questions[
+                                                    currentChatQuestion
+                                                ]?.options?.map(
+                                                    (
+                                                        option: {
+                                                            text: string;
+                                                            nextId: number | string;
+                                                        },
+                                                        index: number
+                                                    ) => (
+                                                        <button
+                                                            key={`${option.nextId}-${index}`}
+                                                            type="button"
+                                                            onClick={() =>
+                                                                handleChatAnswer(option)
+                                                            }
+                                                            className="
+                                                                w-full
+                                                                rounded-xl
+                                                                border
+                                                                border-rose-100
+                                                                bg-white
+                                                                px-4
+                                                                py-3
+                                                                text-left
+                                                                text-sm
+                                                                font-medium
+                                                                text-gray-700
+                                                                transition
+                                                                hover:border-rose-300
+                                                                hover:bg-rose-50
+                                                            "
+                                                        >
+                                                            {option.text}
+                                                        </button>
+                                                    )
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </section>
+                            )}
 
                         {tocItems.length > 0 && (
                             <aside
@@ -1613,28 +1445,28 @@ CHAT GAME
                                     bg-[#FFF0F5]
                                     shadow-sm
                                 "
-                             >
-                               <button
-                                 type="button"
-                                 onClick={() => {
-                                   setTocOpen(
-                                     (current) =>
-                                        !current
-                                  );
-                                }}
-                                aria-expanded={tocOpen}
-                                  className="
-                                    flex
-                                    h-12
-                                    w-full
-                                    items-center
-                                    justify-between
-                                    gap-3
-                                    px-4
-                                    text-left
-                                 "
-                               >                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
-                               <span className="flex items-center gap-2">
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setTocOpen(
+                                            (current) =>
+                                                !current
+                                        );
+                                    }}
+                                    aria-expanded={tocOpen}
+                                    className="
+                                        flex
+                                        h-12
+                                        w-full
+                                        items-center
+                                        justify-between
+                                        gap-3
+                                        px-4
+                                        text-left
+                                    "
+                                >
+                                    <span className="flex items-center gap-2">
                                         <BookOpen className="h-4 w-4 text-rose-500" />
 
                                         <span className="font-display text-sm font-bold text-gray-800">
@@ -1650,20 +1482,19 @@ CHAT GAME
                                 </button>
 
                                 {tocOpen && (
-                                      
-                                <nav
-                                  className="
-                                  max-h-48
-                                  overflow-y-auto
-                                  border-t
-                                  border-[#FFC0CB]
-                                  px-3
-                                  py-3
-                                "
-                             >
-                                 <ol className="space-y-1">
-                                                                                                                                                                                                                                                                                                                                                                         {tocItems.map(
-                                            (item) => (
+                                    <nav
+                                        className="
+                                            max-h-48
+                                            overflow-y-auto
+                                            border-t
+                                            border-[#FFC0CB]
+                                            px-3
+                                            py-3
+                                        "
+                                    >
+                                        <ol className="space-y-1">
+                                            {tocItems.map(
+                                                (item) => (
                                                     <li
                                                         key={
                                                             item.id
@@ -1717,26 +1548,11 @@ CHAT GAME
                             </aside>
                         )}
 
-                        {/* =================================================
-                            TEXT TO SPEECH
-                            
-                            IMPORTANT:
-                            BlogTTS reads ONLY the element whose
-                            ID is "blog-article-content".
-
-                            Therefore TOC, tags, related articles
-                            and footer are NOT part of TTS reading.
-                        ================================================= */}
-
                         <div className="mb-5 flex w-fit justify-start">
                             <BlogTTS
                                 contentId="blog-article-content"
                             />
                         </div>
-
-                        {/* =================================================
-                            ARTICLE CONTENT
-                        ================================================= */}
 
                         <div
                             id="blog-article-content"
@@ -1782,7 +1598,6 @@ CHAT GAME
 
                                 [&_h4]:mb-2
                                 [&_h4]:mt-6
-                                [&_h4]:scroll-mt-28
                                 [&_h4]:font-display
                                 [&_h4]:text-base
                                 [&_h4]:font-bold
@@ -1827,51 +1642,97 @@ CHAT GAME
 
                                 [&_hr]:my-8
                                 [&_hr]:border-rose-100
-                              "                                 
-                             >
-          {post.content && typeof post.content === 'object' ? (
-            <div className="rich-text-content">
-              {post.content.content?.map((block: any, idx: number) => {
-                if (block.nodeType === 'embedded-asset-block') {
-                  const asset = block.data?.target?.fields;
-                  const imageUrl = asset?.file?.url || asset?.file?.['en-US']?.url;
-                  const altText = asset?.title || asset?.title?.['en-US'] || 'blog image';
-                  if (!imageUrl) return null;
-                  return (
-                    <img 
-                      key={idx}
-                      src={imageUrl.startsWith('//') ? `https:${imageUrl}` : imageUrl} 
-                      alt={altText} 
-                      style={{ maxWidth: '100%', height: 'auto', display: 'block', margin: '25px auto', borderRadius: '8px' }} 
-                    />
-                  );
-                }
-                if (block.nodeType.startsWith('heading-')) {
-                  const HeadingTag = `h${block.nodeType.split('-')[1]}` as any;
-                  const text = block.content?.map((c: any) => c.value).join('') || '';
-                  const headingId = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                  return <HeadingTag key={idx} id={headingId}>{text}</HeadingTag>;
-                }
-                if (block.nodeType === 'paragraph') {
-                  const text = block.content?.map((c: any) => c.value).join('') || '';
-                  return <p key={idx}>{text}</p>;
-                }
-                return null;
-              })}
-            </div>
-          ) : (
-            <div
-              dangerouslySetInnerHTML={{
-                __html: addHeadingIds(post.content || ''),
-              }}
-            />
-          )}
-        </div>
+                            "
+                        >
+                            {post.content && typeof post.content === 'object' ? (
+                                <div className="rich-text-content">
+                                    {post.content.content?.map((block: any, idx: number) => {
+                                        if (block.nodeType === 'embedded-asset-block') {
+                                            const asset = block.data?.target?.fields;
+                                            const imageUrl = asset?.file?.url || asset?.file?.['en-US']?.url;
+                                            const altText = asset?.title || asset?.title?.['en-US'] || 'blog image';
 
-                                                                                                                                           
-                        {/* =================================================
-                            TAGS
-                        ================================================= */}
+                                            if (!imageUrl) {
+                                                return null;
+                                            }
+
+                                            return (
+                                                <img
+                                                    key={idx}
+                                                    src={
+                                                        imageUrl.startsWith('//')
+                                                            ? `https:${imageUrl}`
+                                                            : imageUrl
+                                                    }
+                                                    alt={altText}
+                                                    style={{
+                                                        maxWidth: '100%',
+                                                        height: 'auto',
+                                                        display: 'block',
+                                                        margin: '25px auto',
+                                                        borderRadius: '8px',
+                                                    }}
+                                                />
+                                            );
+                                        }
+
+                                        if (block.nodeType.startsWith('heading-')) {
+                                            const HeadingTag =
+                                                `h${block.nodeType.split('-')[1]}` as any;
+
+                                            const text =
+                                                block.content
+                                                    ?.map((c: any) => c.value)
+                                                    .join('') || '';
+
+                                            const headingId =
+                                                text
+                                                    .toLowerCase()
+                                                    .replace(
+                                                        /[^a-z0-9]+/g,
+                                                        '-'
+                                                    )
+                                                    .replace(
+                                                        /(^-|-$)/g,
+                                                        ''
+                                                    );
+
+                                            return (
+                                                <HeadingTag
+                                                    key={idx}
+                                                    id={headingId}
+                                                >
+                                                    {text}
+                                                </HeadingTag>
+                                            );
+                                        }
+
+                                        if (block.nodeType === 'paragraph') {
+                                            const text =
+                                                block.content
+                                                    ?.map((c: any) => c.value)
+                                                    .join('') || '';
+
+                                            return (
+                                                <p key={idx}>
+                                                    {text}
+                                                </p>
+                                            );
+                                        }
+
+                                        return null;
+                                    })}
+                                </div>
+                            ) : (
+                                <div
+                                    dangerouslySetInnerHTML={{
+                                        __html: addHeadingIds(
+                                            post.content || ''
+                                        ),
+                                    }}
+                                />
+                            )}
+                        </div>
 
                         {post.tags &&
                             post.tags.length >
@@ -1907,21 +1768,17 @@ CHAT GAME
                                 </div>
                             )}
                     </article>
-           {/* =================================================
-            SHARE ARTICLE AT THE END
-            ================================================= */}
-            <div className="pt-6 mt-8 border-t border-gray-100 flex justify-end">
-            <BlogShare title={post.title} slug={post.slug} />
-            </div>
 
-                   {/* =================================================
-                   COMMENTS
-                   ================================================= */}
-                   <BlogComments articleSlug={post.slug} />
+                    <div className="pt-6 mt-8 border-t border-gray-100 flex justify-end">
+                        <BlogShare
+                            title={post.title}
+                            slug={post.slug}
+                        />
+                    </div>
 
-                    {/* =================================================
-                        RELATED ARTICLES
-                    ================================================= */}
+                    <BlogComments
+                        articleSlug={post.slug}
+                    />
 
                     {related.length > 0 && (
                         <section
@@ -1983,47 +1840,8 @@ CHAT GAME
                     )}
                 </div>
             </div>
-    {/* DYNAMIC TOOLS MODAL OVERLAYS */}
-      {showTarot && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl p-6">
-            <button 
-              type="button" 
-              onClick={() => setShowTarot(false)} 
-              className="absolute top-4 right-4 z-50 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold text-lg"
-            >
-              ✕
-            </button>
-            <div className="pt-6">
-              <iframe src="/cosmic-tarot" className="w-full h-[80vh] border-0 rounded-2xl" />
-            </div>
-          </div>
-        </div>
-      )}
-            
-{showCalculator && (
-  <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl p-6">
-      <button
-        type="button"
-        onClick={() => setShowCalculator(false)}
-        className="absolute top-4 right-4 z-50 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition text-gray-700 font-bold text-lg"
-      >
-        ✕
-      </button>
-
-      <div className="pt-6">
-        <iframe
-          src="/love-calculator"
-          className="w-full h-[80vh] border-0 rounded-2xl"
-        />
-      </div>
-    </div>
-  </div>
-)}
-                
-  </>
-  );
+        </>
+    );
 }
 
        
