@@ -433,7 +433,7 @@ export default function BlogDetail() {
                 e.preventDefault();
                 e.stopPropagation();
 
-                navigate('/');
+                
 
                 window.setTimeout(() => {
                     window.dispatchEvent(
@@ -453,7 +453,7 @@ export default function BlogDetail() {
                 e.preventDefault();
                 e.stopPropagation();
 
-                navigate('/');
+                
 
                 window.setTimeout(() => {
                     window.dispatchEvent(
