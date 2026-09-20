@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   Calculator,
@@ -66,6 +67,8 @@ export default function Home() {
 
   const [activeTool, setActiveTool] =
     useState<ActiveTool>(null);
+  
+  const navigate = useNavigate();
 
   // =====================================================
   // NAVBAR → LOVE CALCULATOR
@@ -349,52 +352,72 @@ export default function Home() {
   // CLOSE LOVE CALCULATOR
   // =====================================================
 
-  const closeCalculator = () => {
-    if (loading) return;
+const closeCalculator = () => {
+  if (loading) return;
 
-    setActiveTool(null);
-    setResult(null);
-    setValidationError('');
+  setActiveTool(null);
+  setResult(null);
+  setValidationError('');
 
-    window.setTimeout(() => {
-      document
-        .getElementById('tools')
-        ?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-    }, 50);
-  };
+  const raw = sessionStorage.getItem('loveons:tool-return');
+
+  if (raw) {
+    try {
+      const data = JSON.parse(raw);
+
+      if (data.path?.startsWith('/blog/')) {
+        navigate(data.path);
+        return;
+      }
+    } catch {
+      // Ignore invalid saved data
+    }
+  }
+
+  window.setTimeout(() => {
+    document
+      .getElementById('tools')
+      ?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+  }, 50);
+};
 
   // =====================================================
   // CLOSE COSMIC LOVE TAROT
   // =====================================================
+const closeCosmicTarot = () => {
+  // अगर कोई लोडिंग स्टेट हो तो आप यहाँ 'if (loading) return;' भी जोड़ सकते हैं
 
-  const closeCosmicTarot = () => {
-    setActiveTool(null);
+  setActiveTool(null);
 
-    window.setTimeout(() => {
-      document
-        .getElementById('tools')
-        ?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-    }, 50);
-  };
+  const raw = sessionStorage.getItem('loveons:tool-return');
 
-  return (
-    <>
-      <Seo
-        title="Loveons — Build Authentic Connections Beyond the Screen"
+  if (raw) {
+    try {
+      const data = JSON.parse(raw);
 
-        description="Tired of endless swiping? Move away from algorithms and discover real-world screen-free love with our actionable guides off-app dating strategies and psychological insights."
+      if (data.path?.startsWith('/blog/')) {
+        navigate(data.path);
+        return;
+      }
+    } catch {
+      // Ignore invalid saved data
+    }
+  }
 
+  window.setTimeout(() => {
+    document
+      .getElementById('tools')
+      ?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+  }, 50);
+};
 
-        path="/"
-      />
-
-      {/* =====================================================
+     {/* =====================================================
           HERO
       ===================================================== */}
 
