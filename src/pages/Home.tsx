@@ -891,22 +891,20 @@ const closeCosmicTarot = () => {
 
               </div>
 
-              <button
-                type="button"
-                onClick={closeCosmicTarot}
-                aria-label="Close Cosmic Love Tarot"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition-all hover:border-purple-200 hover:bg-purple-50 hover:text-purple-500"
-              >
+        <button
+          type="button"
+          onClick={closeCosmicTarot}
+          aria-label="Close Cosmic Love Tarot"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border"
+        >
+          <X className="h-4 w-4" />
+        </button>
 
-                <X className="h-4 w-4" />
+      </div>
 
-              </button>
+      <CosmicTarot />
 
-            </div>
-
-            <CosmicTarot />
-
-          </div>
+      </div>
 
     </section>
 
@@ -920,6 +918,9 @@ const closeCosmicTarot = () => {
         <BlogSection />
       </section>
     )}
+
+  </> // <-- यह मुख्य Fragment को बंद कर रहा है जो ऊपर कहीं खुला था
   );
 }
+
 
