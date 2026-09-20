@@ -432,9 +432,16 @@ export default function BlogDetail() {
             ) {
                 e.preventDefault();
                 e.stopPropagation();
-
+                sessionStorage.setItem(
+               'loveons:tool-return',
+                JSON.stringify({
+                path: window.location.pathname,
+                scrollY: window.scrollY,
+             })
+          );
+                               
+                navigate('/');
                 
-
                 window.setTimeout(() => {
                     window.dispatchEvent(
                         new CustomEvent(
@@ -452,9 +459,16 @@ export default function BlogDetail() {
             ) {
                 e.preventDefault();
                 e.stopPropagation();
+                sessionStorage.setItem(
+               'loveons:tool-return',
+                JSON.stringify({
+                path: window.location.pathname,
+                scrollY: window.scrollY,
+            })
+         );
 
-                
-
+                navigate('/');
+                                                
                 window.setTimeout(() => {
                     window.dispatchEvent(
                         new CustomEvent(
