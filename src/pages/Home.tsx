@@ -908,22 +908,18 @@ const closeCosmicTarot = () => {
 
           </div>
 
-        </section>
-        </>        
-      )}
+    </section>
 
-      {/* =====================================================
-          BLOG
-          ONLY WHEN NO TOOL IS OPEN
-      ===================================================== */}
+    {/* ==============================================
+        BLOG
+        ONLY WHEN NO TOOL IS OPEN
+       ============================================== */}
 
-      {!result &&
-        !loading &&
-        activeTool === null && (
-          <section id="blog">
-            <BlogSection />
-          </section>
-        )}
-    
+    {!result && !loading && activeTool === null && (
+      <section id="blog">
+        <BlogSection />
+      </section>
+    )}
   );
-    }
+}
+
