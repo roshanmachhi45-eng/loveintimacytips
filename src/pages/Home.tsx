@@ -924,7 +924,6 @@ const closeCosmicTarot = () => {
             <BlogSection />
           </section>
         )}
-
-    </>
+    
   );
     }
