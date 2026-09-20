@@ -67,7 +67,7 @@ export default function Home() {
 
   const [activeTool, setActiveTool] =
     useState<ActiveTool>(null);
-  
+
   const navigate = useNavigate();
 
   // =====================================================
@@ -89,39 +89,42 @@ export default function Home() {
           });
       }, 50);
     };
-    const handleOpenCosmicTarot = () => {
-  setActiveTool('cosmic-tarot');
 
-  window.setTimeout(() => {
-    document
-      .getElementById('cosmic-tarot')
-      ?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-  }, 100);
-};
-    
+    const handleOpenCosmicTarot = () => {
+      setActiveTool('cosmic-tarot');
+
+      window.setTimeout(() => {
+        document
+          .getElementById('cosmic-tarot')
+          ?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+      }, 100);
+    };
+
     window.addEventListener(
       'loveons:open-calculator',
       handleOpenCalculator
     );
-    window.addEventListener(
-     'loveons:open-cosmic-tarot',
-     handleOpenCosmicTarot
- );
-    return () => {
-  window.removeEventListener(
-    'loveons:open-calculator',
-    handleOpenCalculator
-  );
 
-  window.removeEventListener(
-    'loveons:open-cosmic-tarot',
-    handleOpenCosmicTarot
-  );          
- };
- }, []);
+    window.addEventListener(
+      'loveons:open-cosmic-tarot',
+      handleOpenCosmicTarot
+    );
+
+    return () => {
+      window.removeEventListener(
+        'loveons:open-calculator',
+        handleOpenCalculator
+      );
+
+      window.removeEventListener(
+        'loveons:open-cosmic-tarot',
+        handleOpenCosmicTarot
+      );
+    };
+  }, []);
 
   // =====================================================
   // UPDATE PERSON 1
@@ -352,72 +355,83 @@ export default function Home() {
   // CLOSE LOVE CALCULATOR
   // =====================================================
 
-const closeCalculator = () => {
-  if (loading) return;
+  const closeCalculator = () => {
+    if (loading) return;
 
-  setActiveTool(null);
-  setResult(null);
-  setValidationError('');
+    setActiveTool(null);
+    setResult(null);
+    setValidationError('');
 
-  const raw = sessionStorage.getItem('loveons:tool-return');
+    const raw = sessionStorage.getItem(
+      'loveons:tool-return'
+    );
 
-  if (raw) {
-    try {
-      const data = JSON.parse(raw);
+    if (raw) {
+      try {
+        const data = JSON.parse(raw);
 
-      if (data.path?.startsWith('/blog/')) {
-        navigate(data.path);
-        return;
+        if (data.path?.startsWith('/blog/')) {
+          navigate(data.path);
+          return;
+        }
+      } catch {
+        // Ignore invalid saved data
       }
-    } catch {
-      // Ignore invalid saved data
     }
-  }
 
-  window.setTimeout(() => {
-    document
-      .getElementById('tools')
-      ?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-  }, 50);
-};
+    window.setTimeout(() => {
+      document
+        .getElementById('tools')
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+    }, 50);
+  };
 
   // =====================================================
   // CLOSE COSMIC LOVE TAROT
   // =====================================================
-const closeCosmicTarot = () => {
-  // अगर कोई लोडिंग स्टेट हो तो आप यहाँ 'if (loading) return;' भी जोड़ सकते हैं
 
-  setActiveTool(null);
+  const closeCosmicTarot = () => {
+    setActiveTool(null);
 
-  const raw = sessionStorage.getItem('loveons:tool-return');
+    const raw = sessionStorage.getItem(
+      'loveons:tool-return'
+    );
 
-  if (raw) {
-    try {
-      const data = JSON.parse(raw);
+    if (raw) {
+      try {
+        const data = JSON.parse(raw);
 
-      if (data.path?.startsWith('/blog/')) {
-        navigate(data.path);
-        return;
+        if (data.path?.startsWith('/blog/')) {
+          navigate(data.path);
+          return;
+        }
+      } catch {
+        // Ignore invalid saved data
       }
-    } catch {
-      // Ignore invalid saved data
     }
-  }
 
-  window.setTimeout(() => {
-    document
-      .getElementById('tools')
-      ?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-  }, 50);
-};
+    window.setTimeout(() => {
+      document
+        .getElementById('tools')
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+    }, 50);
+  };
 
-     {/* =====================================================
+  return (
+    <>
+      <Seo
+        title="Loveons — Build Authentic Connections Beyond the Screen"
+        description="Tired of endless swiping? Move away from algorithms and discover real-world screen-free love with our actionable guides off-app dating strategies and psychological insights."
+        path="/"
+      />
+
+      {/* =====================================================
           HERO
       ===================================================== */}
 
@@ -441,11 +455,9 @@ const closeCosmicTarot = () => {
             <div className="grid items-stretch lg:grid-cols-2">
 
               {/* HERO TEXT */}
-               <div className="flex flex-col justify-center px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16 xl:px-16 bg-[url('/images/heart-bg.webp')] bg-no-repeat bg-cover bg-center">
 
+              <div className="flex flex-col justify-center px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16 xl:px-16 bg-[url('/images/heart-bg.webp')] bg-no-repeat bg-cover bg-center">
 
-                   
-                              
                 <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-rose-100 bg-white/80 px-3.5 py-2 text-xs font-semibold text-rose-500 shadow-sm">
 
                   <Sparkles className="h-3.5 w-3.5" />
@@ -464,14 +476,12 @@ const closeCosmicTarot = () => {
 
                   <span className="mt-1 block bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">
                     Connections Beyond the Screen
-
                   </span>
 
                 </h1>
 
                 <p className="mt-5 max-w-xl text-base leading-7 text-slate-500 sm:text-lg">
                   Tired of endless swiping? Move away from algorithms and discover real-world screen-free love with our actionable guides off-app dating strategies and psychological insights.
-
                 </p>
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -533,17 +543,18 @@ const closeCosmicTarot = () => {
 
               {/* HERO IMAGE */}
 
-            <div className="relative min-h-[330px] h-[330px] sm:h-auto overflow-hidden sm:min-h-[440px] lg:min-h-[600px] bg-rose-50/30">
-<img
-  src={HERO_IMAGE}
-  alt="Couple sharing a loving moment"
-  width="600"
-  height="600"
-  className="absolute inset-0 h-full w-full object-cover object-center aspect-square sm:aspect-auto"
-  loading="eager"
-  fetchPriority="high"
-  decoding="sync" 
-/>
+              <div className="relative min-h-[330px] h-[330px] sm:h-auto overflow-hidden sm:min-h-[440px] lg:min-h-[600px] bg-rose-50/30">
+
+                <img
+                  src={HERO_IMAGE}
+                  alt="Couple sharing a loving moment"
+                  width="600"
+                  height="600"
+                  className="absolute inset-0 h-full w-full object-cover object-center aspect-square sm:aspect-auto"
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="sync"
+                />
 
                 <div
                   aria-hidden="true"
@@ -722,76 +733,77 @@ const closeCosmicTarot = () => {
       ===================================================== */}
 
       {activeTool === 'love-calculator' && (
-              <>
-          <Seo 
+        <>
+          <Seo
             title="Free Online Love Calculator - Test Your Relationship Compatibility"
             description="Calculate the love percentage between you and your partner instantly. Get accurate relationship insights based on names and love compatibility."
             path="/love-calculator"
           />
-        <section
-          id="calculator"
-          className="scroll-mt-24 px-4 pb-10 sm:px-6 lg:px-8"
-        >
 
-          <div className="mx-auto max-w-md">
+          <section
+            id="calculator"
+            className="scroll-mt-24 px-4 pb-10 sm:px-6 lg:px-8"
+          >
 
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mx-auto max-w-md">
 
-              <div>
+              <div className="mb-4 flex items-center justify-between">
 
-                <div className="flex items-center gap-2">
+                <div>
 
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50">
+                  <div className="flex items-center gap-2">
 
-                    <Calculator className="h-4 w-4 text-rose-500" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50">
+
+                      <Calculator className="h-4 w-4 text-rose-500" />
+
+                    </div>
+
+                    <h2 className="font-display text-xl font-bold text-slate-900">
+                      Love Calculator
+                    </h2>
 
                   </div>
 
-                  <h2 className="font-display text-xl font-bold text-slate-900">
-                    Love Calculator
-                  </h2>
+                  <p className="mt-1 pl-11 text-xs text-slate-400">
+                    Enter your details to explore your connection.
+                  </p>
 
                 </div>
 
-                <p className="mt-1 pl-11 text-xs text-slate-400">
-                  Enter your details to explore your connection.
-                </p>
+                <button
+                  type="button"
+                  onClick={closeCalculator}
+                  disabled={loading}
+                  aria-label="Close Love Calculator"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition-all hover:border-rose-200 hover:bg-rose-50 hover:text-rose-500 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+
+                  <X className="h-4 w-4" />
+
+                </button>
 
               </div>
 
-              <button
-                type="button"
-                onClick={closeCalculator}
-                disabled={loading}
-                aria-label="Close Love Calculator"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition-all hover:border-rose-200 hover:bg-rose-50 hover:text-rose-500 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-
-                <X className="h-4 w-4" />
-
-              </button>
+              <InputCard
+                person1={person1}
+                person2={person2}
+                experience={experience}
+                onChangePerson1={updatePerson1}
+                onChangePerson2={updatePerson2}
+                onChangeExperience={(value) => {
+                  setExperience(value);
+                  setValidationError('');
+                }}
+                onGenerate={handleGenerate}
+                loading={loading}
+                validationError={validationError}
+              />
 
             </div>
 
-            <InputCard
-              person1={person1}
-              person2={person2}
-              experience={experience}
-              onChangePerson1={updatePerson1}
-              onChangePerson2={updatePerson2}
-              onChangeExperience={(value) => {
-                setExperience(value);
-                setValidationError('');
-              }}
-              onGenerate={handleGenerate}
-              loading={loading}
-              validationError={validationError}
-            />
-
-          </div>
-
-        </section>
-         </>       
+          </section>
+        </>
       )}
 
       {/* =====================================================
@@ -854,73 +866,79 @@ const closeCosmicTarot = () => {
       ===================================================== */}
 
       {activeTool === 'cosmic-tarot' && (
-              <>
-          <Seo 
+        <>
+          <Seo
             title="Cosmic Love Tarot - Free Daily Romantic Tarot Reading"
             description="Discover your daily cosmic love tarot reading. Get deep spiritual messages about your romantic energy and relationship destiny."
             path="/cosmic-love-tarot"
           />
-        <section
-          id="cosmic-tarot"
-          className="scroll-mt-24 px-4 pb-12 sm:px-6 lg:px-8"
-        >
 
-          <div className="mx-auto max-w-4xl">
+          <section
+            id="cosmic-tarot"
+            className="scroll-mt-24 px-4 pb-12 sm:px-6 lg:px-8"
+          >
 
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mx-auto max-w-4xl">
 
-              <div>
+              <div className="mb-4 flex items-center justify-between">
 
-                <div className="flex items-center gap-2">
+                <div>
 
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50">
+                  <div className="flex items-center gap-2">
 
-                    <Sparkles className="h-4 w-4 text-purple-500" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50">
+
+                      <Sparkles className="h-4 w-4 text-purple-500" />
+
+                    </div>
+
+                    <h2 className="font-display text-xl font-bold text-slate-900 sm:text-2xl">
+                      Cosmic Love Tarot
+                    </h2>
 
                   </div>
 
-                  <h2 className="font-display text-xl font-bold text-slate-900 sm:text-2xl">
-                    Cosmic Love Tarot
-                  </h2>
+                  <p className="mt-1 pl-11 text-xs text-slate-400 sm:text-sm">
+                    Discover today&apos;s Cosmic Love Tarot reading.
+                  </p>
 
                 </div>
 
-                <p className="mt-1 pl-11 text-xs text-slate-400 sm:text-sm">
-                  Discover today&apos;s Cosmic Love Tarot reading.
-                </p>
+                <button
+                  type="button"
+                  onClick={closeCosmicTarot}
+                  aria-label="Close Cosmic Love Tarot"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition-all hover:border-purple-200 hover:bg-purple-50 hover:text-purple-500"
+                >
+
+                  <X className="h-4 w-4" />
+
+                </button>
 
               </div>
 
-        <button
-          type="button"
-          onClick={closeCosmicTarot}
-          aria-label="Close Cosmic Love Tarot"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border"
-        >
-          <X className="h-4 w-4" />
-        </button>
+              <CosmicTarot />
 
-      </div>
+            </div>
 
-      <CosmicTarot />
+          </section>
+        </>
+      )}
 
-      </div>
+      {/* =====================================================
+          BLOG
+          ONLY WHEN NO TOOL IS OPEN
+      ===================================================== */}
 
-    </section>
+      {!result &&
+        !loading &&
+        activeTool === null && (
+          <section id="blog">
+            <BlogSection />
+          </section>
+        )}
 
-    {/* ==============================================
-        BLOG
-        ONLY WHEN NO TOOL IS OPEN
-       ============================================== */}
-
-    {!result && !loading && activeTool === null && (
-      <section id="blog">
-        <BlogSection />
-      </section>
-    )}
-
-  </> // <-- यह मुख्य Fragment को बंद कर रहा है जो ऊपर कहीं खुला था
+    </>
   );
-}
-
+          }
 
