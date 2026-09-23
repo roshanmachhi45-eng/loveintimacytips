@@ -954,15 +954,18 @@ function getAssetUrl(
         ? rawUrl
         : `https://${rawUrl}`;
 
-  return {
-    url: fullUrl,
+  const optimizedUrl =
+  `${fullUrl}?w=800&q=75&fm=webp`;
 
-    alt:
-      asset?.fields
-        ?.description ||
-      asset?.fields?.title ||
-      null,
-  };
+return {
+  url: optimizedUrl,
+
+  alt:
+    asset?.fields
+      ?.description ||
+    asset?.fields?.title ||
+    null,
+};                                    
 }
 
 /* =========================================================
