@@ -100,14 +100,21 @@ export default async function handler(
       })
       .filter(Boolean)
       .join('');
+    const toolUrls = `
+  <url>
+    <loc>${SITE_URL}/tools/love-calculator</loc>
+  </url>
+  <url>
+    <loc>${SITE_URL}/tools/tarot</loc>
+  </url>`;
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
+    <url>
     <loc>${SITE_URL}/</loc>
-  </url>${blogUrls}
-</urlset>`;
-
+  </url>${toolUrls}${blogUrls}
+</urlset>
+    
     res.setHeader(
       'Content-Type',
       'application/xml; charset=utf-8'
