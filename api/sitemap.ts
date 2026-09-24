@@ -100,19 +100,18 @@ export default async function handler(
       })
       .filter(Boolean)
       .join('');
-    const toolUrls = `
+    
+const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+    <loc>${SITE_URL}/</loc>
+    </url>
   <url>
     <loc>${SITE_URL}/tools/love-calculator</loc>
   </url>
   <url>
     <loc>${SITE_URL}/tools/tarot</loc>
-  </url>`;
-
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    <url>
-    <loc>${SITE_URL}/</loc>
-  </url>${toolUrls}${blogUrls}
+  </url>${blogUrls}  
 </urlset>
     
     res.setHeader(
