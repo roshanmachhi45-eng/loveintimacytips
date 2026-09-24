@@ -1,15 +1,29 @@
 {
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "loveons.com"
+        }
+      ],
+      "destination": "https://loveons.com*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/sitemap.xml",
       "destination": "/api/sitemap"
     },
     {
-      "source": "/((?!assets|images|favicon.ico).*)",
+      "source": "/((?!api|assets|images|favicon.ico|_next).*)" ,
       "destination": "/index.html"
     }
   ]
 }
+
 
 
 
