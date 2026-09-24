@@ -737,7 +737,7 @@ export default function Home() {
           <Seo
             title="Free Online Love Calculator - Test Your Relationship Compatibility"
             description="Calculate the love percentage between you and your partner instantly. Get accurate relationship insights based on names and love compatibility."
-            path="/love-calculator"
+            path="/tools/love-calculator"
           />
 
           <section
@@ -870,7 +870,7 @@ export default function Home() {
           <Seo
             title="Cosmic Love Tarot - Free Daily Romantic Tarot Reading"
             description="Discover your daily cosmic love tarot reading. Get deep spiritual messages about your romantic energy and relationship destiny."
-            path="/cosmic-love-tarot"
+            path="/tools/tarot"
           />
 
           <section
