@@ -16,8 +16,10 @@ export default async function handler(
   try {
     const spaceId = process.env.CONTENTFUL_SPACE_ID;
     const accessToken = process.env.CONTENTFUL_ACCESS_TOKEN;
+
     const environment =
       process.env.CONTENTFUL_ENVIRONMENT || 'master';
+
     const contentType =
       process.env.CONTENTFUL_CONTENT_TYPE || 'blogPost';
 
@@ -69,7 +71,9 @@ export default async function handler(
 
       posts.push(...items);
 
-      total = Number(data.total || posts.length);
+      total = Number(
+        data.total || posts.length
+      );
 
       if (items.length === 0) {
         break;
@@ -90,7 +94,9 @@ export default async function handler(
 
         return `
   <url>
-    <loc>${escapeXml(`${SITE_URL}/blog/${slug}`)}</loc>
+    <loc>${escapeXml(
+      `${SITE_URL}/blog/${slug}`
+    )}</loc>
     ${
       lastModified
         ? `<lastmod>${escapeXml(lastModified)}</lastmod>`
@@ -100,20 +106,20 @@ export default async function handler(
       })
       .filter(Boolean)
       .join('');
-    
-const xml = `<?xml version="1.0" encoding="UTF-8"?>
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    <url>
+  <url>
     <loc>${SITE_URL}/</loc>
-    </url>
+  </url>
   <url>
     <loc>${SITE_URL}/tools/love-calculator</loc>
   </url>
   <url>
     <loc>${SITE_URL}/tools/tarot</loc>
-  </url>${blogUrls}  
-</urlset>
-    
+  </url>${blogUrls}
+</urlset>`;
+
     res.setHeader(
       'Content-Type',
       'application/xml; charset=utf-8'
@@ -126,10 +132,13 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
 
     res.status(200).send(xml);
   } catch (error) {
-    console.error('Sitemap generation failed:', error);
+    console.error(
+      'Sitemap generation failed:',
+      error
+    );
 
     res.status(500).json({
       error: 'Failed to generate sitemap',
     });
   }
-}
+      }
