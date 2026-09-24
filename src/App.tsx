@@ -1,6 +1,4 @@
-
-import { Suspense, lazy } from 'react';
-
+import { Suspense, lazy, useEffect } from 'react';
 import {
   Routes,
   Route,
@@ -76,7 +74,26 @@ function PageLoader() {
     </div>
   );
 }
+function ToolRoute({
+  tool,
+}: {
+  tool: 'love-calculator' | 'cosmic-tarot';
+}) {
+  useEffect(() => {
+    const eventName =
+      tool === 'love-calculator'
+        ? 'loveons:open-calculator'
+        : 'loveons:open-cosmic-tarot';
 
+    const timer = window.setTimeout(() => {
+      window.dispatchEvent(new Event(eventName));
+    }, 50);
+
+    return () => window.clearTimeout(timer);
+  }, [tool]);
+
+  return <Home />;
+}
 
 export default function App() {
   return (
@@ -96,7 +113,15 @@ export default function App() {
               path="/"
               element={<Home />}
             />
+<Route
+  path="/tools/love-calculator"
+  element={<ToolRoute tool="love-calculator" />}
+/>
 
+<Route
+  path="/tools/tarot"
+  element={<ToolRoute tool="cosmic-tarot" />}
+/>
 
             {/* EXISTING PAGES */}
 
