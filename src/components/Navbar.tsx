@@ -12,9 +12,7 @@ import {
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
-
-import { auth, signInWithGoogle, logoutUser } from '../firebase';
-import { onAuthStateChanged, User, getRedirectResult } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import type { SignInResult } from '../lib/firebase';
 const CATEGORIES = [
     'Off-App Dating',
@@ -41,30 +39,52 @@ export default function Navbar() {
     const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) {
-          setUser(result.user);
-          setAuthError(null);
-        }
-      })
-      .catch((error) => {
-        console.error('Redirect Login Error:', error);
-        setAuthError(error?.message || 'Google sign-in failed');
-      })
-      .finally(() => {
-        setAuthLoading(false);
-      });
+  let unsubscribe: (() => void) | undefined;
+  let cancelled = false;
 
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        setAuthLoading(false);
+  const initializeAuth = async () => {
+    try {
+      const { auth } = await import('../firebase');
+      const { onAuthStateChanged, getRedirectResult } = await import('firebase/auth');
+
+      const result = await getRedirectResult(auth);
+
+      if (!cancelled && result?.user) {
+        setUser(result.user);
         setAuthError(null);
       }
-    });
-    return () => unsubscribe();
-  }, []);
+
+      if (cancelled) return;
+
+      unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        if (cancelled) return;
+
+        setUser(currentUser);
+
+        if (currentUser) {
+          setAuthLoading(false);
+          setAuthError(null);
+        }
+      });
+    } catch (error: any) {
+      if (!cancelled) {
+        console.error('Firebase Auth Init Error:', error);
+        setAuthError(error?.message || 'Google sign-in failed');
+      }
+    } finally {
+      if (!cancelled) {
+        setAuthLoading(false);
+      }
+    }
+  };
+
+  initializeAuth();
+
+  return () => {
+    cancelled = true;
+    unsubscribe?.();
+  };
+}, []);
            
   // Desktop and mobile categories use separate states.
   const [
@@ -181,14 +201,20 @@ const handleLogin = async () => {
   setAuthError(null);
 
   try {
+    const { signInWithGoogle } = await import('../firebase');
     await signInWithGoogle();
   } catch (error: any) {
-    console.error("Google Login Error:", error);
-
+    console.error('Google Login Error:', error);
+    setAuthError(error?.message || 'Google sign-in failed');
     setAuthLoading(false);
-    setAuthError(
-      error?.message || "Google sign-in failed"
-    );
+  }
+};
+  const handleLogout = async () => {
+  try {
+    const { logoutUser } = await import('../firebase');
+    await logoutUser();
+  } catch (error) {
+    console.error('Google Logout Error:', error);
   }
 };
 
@@ -504,7 +530,7 @@ return (
       <span className="text-xs font-medium text-gray-700 max-w-[80px] truncate">
         {user.displayName || 'User'}
       </span>
-      <button onClick={logoutUser} title="Logout" className="text-gray-400 hover:text-rose-600 ml-1 transition">
+      <button onClick={handleLogout} title="Logout" className="text-gray-400 hover:text-rose-600 ml-1 transition">
         <LogOut className="h-3.5 w-3.5" />
       </button>
     </div>
@@ -1398,7 +1424,7 @@ return (
                         <p className="text-xs text-gray-400 truncate max-w-[150px]">{user.email}</p>
                       </div>
                     </div>
-                    <button onClick={logoutUser} className="p-2 text-gray-400 hover:text-rose-600 transition">
+                    <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-rose-600 transition">
                       <LogOut className="h-5 w-5" />
                     </button>
                   </div>
