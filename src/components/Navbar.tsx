@@ -37,6 +37,22 @@ export default function Navbar() {
     const [user, setUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(false);
     const [authError, setAuthError] = useState<string | null>(null);
+      // विंडो वापस फोकस होने पर लोडिंग स्टेट फिक्स करने के लिए
+  useEffect(() => {
+    const handleWindowFocus = () => {
+      if (authLoading) {
+        setTimeout(() => {
+          setAuthLoading(false);
+        }, 1500);
+      }
+    };
+
+    window.addEventListener('focus', handleWindowFocus);
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus);
+    };
+  }, [authLoading]);
+
 
   useEffect(() => {
   let unsubscribe: (() => void) | undefined;
