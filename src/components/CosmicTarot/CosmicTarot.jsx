@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styles from "./CosmicTarot.module.css";
 
 const TAROT_CARDS = [
@@ -338,6 +338,23 @@ export default function CosmicTarot() {
     ],
     []
   );
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+
+  const sharedName = params.get("name");
+  const sharedBirthDate = params.get("birth");
+
+  if (!sharedName || !sharedBirthDate) {
+    return;
+  }
+
+  const [sharedYear, sharedMonth, sharedDay] = sharedBirthDate.split("-");
+
+  setName(sharedName);
+  setYear(sharedYear || "");
+  setMonth(sharedMonth || "");
+  setDay(sharedDay || "");
+}, []);
 
   function generateReading() {
     if (!name.trim() || !birthDate || hasReading || isShuffling) {
@@ -381,6 +398,63 @@ export default function CosmicTarot() {
       }, 1100);
     }, 2200);
   }
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+
+  const sharedName = params.get("name");
+  const sharedBirthDate = params.get("birth");
+
+  if (!sharedName || !sharedBirthDate) {
+    return;
+  }
+
+  const [sharedYear, sharedMonth, sharedDay] = sharedBirthDate.split("-");
+
+  if (!sharedYear || !sharedMonth || !sharedDay) {
+    return;
+  }
+
+  const sharedSeed = createSeed(
+    sharedName,
+    sharedBirthDate,
+    todayKey
+  );
+
+  const cardIndex = seededIndex(
+    sharedSeed,
+    TAROT_CARDS.length,
+    0
+  );
+
+  const profileIndex = seededIndex(
+    sharedSeed,
+    PARTNER_PROFILES.length,
+    1
+  );
+
+  const monthIndex = getBirthMonth(sharedBirthDate);
+
+  const secretIndex =
+    (monthIndex +
+      seededIndex(sharedSeed, LOVE_SECRETS.length, 2)) %
+    LOVE_SECRETS.length;
+
+  setName(sharedName);
+  setYear(sharedYear);
+  setMonth(sharedMonth);
+  setDay(sharedDay);
+
+  setResult({
+    card: TAROT_CARDS[cardIndex],
+    secret: LOVE_SECRETS[secretIndex],
+    profile: PARTNER_PROFILES[profileIndex],
+    seed: sharedSeed,
+    readingDate: todayDisplay,
+    todayKey,
+  });
+
+  setHasReading(true);
+}, [todayKey, todayDisplay]);
 
   function resetReading() {
     setResult(null);
@@ -422,11 +496,17 @@ Discover your own reading on Loveons.`;
   }
 
   function getShareUrl() {
-    if (typeof window === "undefined") {
-      return "";
-    }
+  if (typeof window === "undefined" || !result) {
+    return "";
+  }
 
-    return window.location.href;
+  const params = new URLSearchParams();
+
+  params.set("name", name.trim());
+  params.set("birth", birthDate);
+  params.set("date", result.todayKey);
+
+  return `${window.location.origin}/tools/tarot?${params.toString()}`;
   }
 
   function openShareUrl(url) {
