@@ -414,6 +414,7 @@ window.history.replaceState(
 
   const sharedName = params.get("name");
   const sharedBirthDate = params.get("birth");
+  const sharedDate = params.get("date");
 
   if (!sharedName || !sharedBirthDate) {
     return;
@@ -425,11 +426,8 @@ window.history.replaceState(
     return;
   }
 
-  const sharedSeed = createSeed(
-    sharedName,
-    sharedBirthDate,
-    todayKey
-  );
+  const readingKey = sharedDate || todayKey;
+  const sharedSeed = createSeed(sharedName, sharedBirthDate, readingKey);
 
   const cardIndex = seededIndex(
     sharedSeed,
@@ -460,8 +458,8 @@ window.history.replaceState(
     secret: LOVE_SECRETS[secretIndex],
     profile: PARTNER_PROFILES[profileIndex],
     seed: sharedSeed,
-    readingDate: todayDisplay,
-    todayKey,
+    readingDate: sharedDate || todayDisplay,
+    todayKey: readingKey,
   });
 
   setHasReading(true);
