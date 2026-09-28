@@ -3,35 +3,35 @@ import { createElement } from "react";
 const TAROT_CARDS = [
   {
     name: "The Lovers' Embrace",
-    symbol: "♡",
+    symbol: "LOVE"
     theme: "Romantic Alignment",
     reading:
       "Your heart is opening to a deeper kind of connection. Trust what feels genuine and allow love to grow naturally.",
   },
   {
     name: "The Cosmic Mirror",
-    symbol: "✦",
+    symbol: "MIRROR"
     theme: "Inner Reflection",
     reading:
       "Love begins with knowing yourself. The energy around you encourages honesty, self-reflection, and emotional clarity.",
   },
   {
     name: "The Eternal Star",
-    symbol: "☆",
+    symbol: "STAR"
     theme: "Hope & Clarity",
     reading:
       "A hopeful energy surrounds your love life. Keep your heart open and let clarity guide your next emotional step.",
   },
   {
     name: "The Forest Oracle",
-    symbol: "☾",
+    symbol: "MOON"
     theme: "Patient Growth",
     reading:
       "Some connections need time to unfold. Patience, consistency, and emotional understanding can create something lasting.",
   },
   {
     name: "The Phoenix Heart",
-    symbol: "♢",
+    symbol: "HEART"
     theme: "Emotional Renewal",
     reading:
       "A new emotional chapter is beginning. Release old patterns and give yourself permission to experience love differently.",
