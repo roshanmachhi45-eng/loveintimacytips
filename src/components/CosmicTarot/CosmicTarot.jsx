@@ -388,6 +388,17 @@ export default function CosmicTarot() {
         readingDate: todayDisplay,
         todayKey,
       });
+const shareParams = new URLSearchParams();
+
+shareParams.set("name", name.trim());
+shareParams.set("birth", birthDate);
+shareParams.set("date", todayKey);
+
+window.history.replaceState(
+  {},
+  "",
+  `/tools/tarot?${shareParams.toString()}`
+);
 
       setIsShuffling(false);
       setIsFlipping(true);
