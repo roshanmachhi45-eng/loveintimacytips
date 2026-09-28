@@ -1,10 +1,5 @@
 import { ImageResponse } from "@vercel/og";
 import { createElement } from "react";
-
-export const config = {
-  runtime: "edge",
-};
-
 const TAROT_CARDS = [
   {
     name: "The Lovers' Embrace",
