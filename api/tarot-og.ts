@@ -118,7 +118,7 @@ const el = (
   );
 
 export default async function handler(request: Request) {
-  const url = new URL(request.url);
+  const url = new URL(req.url, "https://loveons.com");
 
   const name = url.searchParams.get("name")?.trim() || "Your";
   const birthDate = url.searchParams.get("birth") || "";
