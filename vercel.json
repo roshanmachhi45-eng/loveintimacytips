@@ -18,7 +18,7 @@
       "destination": "/api/sitemap"
     },
     {
-      "source": "/((?!api|assets|images|favicon.ico|_next).*)" ,
+      "source": "/((?!api|assets|images|favicon.ico|_next|loveons-logo.svg).*)",
       "destination": "/index.html"
     }
   ]
