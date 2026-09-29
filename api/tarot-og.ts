@@ -167,12 +167,7 @@ export default {
             alignItems: "center",
             gap: "12px",
           },
-          [
-            el("img", {
-              src: "https://www.loveons.com/images/loveons-logo.svg",
-              width: "48",
-              height: "48",
-            }),
+          [        
             el(
               "div",
               {
