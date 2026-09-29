@@ -18,6 +18,10 @@
       "destination": "/api/sitemap"
     },
     {
+      "source": "/share/tarot",
+      "destination": "/api/tarot-share"
+    },
+    {
       "source": "/((?!api|assets|images|favicon.ico|_next|loveons-logo.svg).*)",
       "destination": "/index.html"
     }
