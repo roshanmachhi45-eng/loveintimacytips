@@ -117,7 +117,8 @@ const el = (
     ...(Array.isArray(children) ? children : children !== undefined ? [children] : [])
   );
 
-export default async function handler(request: Request) {
+export default {
+  async fetch(request: Request) {
   const url = new URL(request.url, "https://loveons.com");
 
   const name = url.searchParams.get("name")?.trim() || "Your";
@@ -146,7 +147,8 @@ export default async function handler(request: Request) {
 
   const header = el(
     "div",
-    {
+      },
+};
       width: "100%",
       display: "flex",
       justifyContent: "space-between",
