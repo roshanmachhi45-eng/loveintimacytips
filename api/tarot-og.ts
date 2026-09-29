@@ -169,7 +169,7 @@ export default {
           },
           [
             el("img", {
-              src: "https://loveons.com/loveons-logo.svg",
+              src: "https://www.loveons.com/images/loveons-logo.svg",
               width: "48",
               height: "48",
             }),
