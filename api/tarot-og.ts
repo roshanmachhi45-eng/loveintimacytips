@@ -1,37 +1,38 @@
 import { ImageResponse } from "@vercel/og";
 import { createElement } from "react";
+
 const TAROT_CARDS = [
   {
     name: "The Lovers' Embrace",
-    symbol: "LOVE"
+    symbol: "LOVE",
     theme: "Romantic Alignment",
     reading:
       "Your heart is opening to a deeper kind of connection. Trust what feels genuine and allow love to grow naturally.",
   },
   {
     name: "The Cosmic Mirror",
-    symbol: "MIRROR"
+    symbol: "MIRROR",
     theme: "Inner Reflection",
     reading:
       "Love begins with knowing yourself. The energy around you encourages honesty, self-reflection, and emotional clarity.",
   },
   {
     name: "The Eternal Star",
-    symbol: "STAR"
+    symbol: "STAR",
     theme: "Hope & Clarity",
     reading:
       "A hopeful energy surrounds your love life. Keep your heart open and let clarity guide your next emotional step.",
   },
   {
     name: "The Forest Oracle",
-    symbol: "MOON"
+    symbol: "MOON",
     theme: "Patient Growth",
     reading:
       "Some connections need time to unfold. Patience, consistency, and emotional understanding can create something lasting.",
   },
   {
     name: "The Phoenix Heart",
-    symbol: "HEART"
+    symbol: "HEART",
     theme: "Emotional Renewal",
     reading:
       "A new emotional chapter is beginning. Release old patterns and give yourself permission to experience love differently.",
@@ -114,217 +115,322 @@ const el = (
   createElement(
     type,
     { style },
-    ...(Array.isArray(children) ? children : children !== undefined ? [children] : [])
+    ...(Array.isArray(children)
+      ? children
+      : children !== undefined
+        ? [children]
+        : [])
   );
 
 export default {
   async fetch(request: Request) {
-  const url = new URL(request.url, "https://loveons.com");
+    const url = new URL(request.url, "https://loveons.com");
 
-  const name = url.searchParams.get("name")?.trim() || "Your";
-  const birthDate = url.searchParams.get("birth") || "";
+    const name = url.searchParams.get("name")?.trim() || "Your";
+    const birthDate = url.searchParams.get("birth") || "";
 
-  const date =
-    url.searchParams.get("date") ||
-    new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Asia/Kolkata",
-    }).format(new Date());
+    const date =
+      url.searchParams.get("date") ||
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+      }).format(new Date());
 
-  const seed = createSeed(name, birthDate, date);
+    const seed = createSeed(name, birthDate, date);
 
-  const cardIndex = seededIndex(seed, TAROT_CARDS.length, 0);
+    const cardIndex = seededIndex(seed, TAROT_CARDS.length, 0);
 
-  const monthIndex = getBirthMonth(birthDate);
+    const monthIndex = getBirthMonth(birthDate);
 
-  const secretIndex =
-    (monthIndex + seededIndex(seed, LOVE_SECRETS.length, 2)) %
-    LOVE_SECRETS.length;
+    const secretIndex =
+      (monthIndex + seededIndex(seed, LOVE_SECRETS.length, 2)) %
+      LOVE_SECRETS.length;
 
-  const card = TAROT_CARDS[cardIndex];
-  const secret = LOVE_SECRETS[secretIndex];
+    const card = TAROT_CARDS[cardIndex];
+    const secret = LOVE_SECRETS[secretIndex];
 
-  const dateText = getDateText(date);
-  const header = el(
-  "div",
-    {
-      width: "100%",
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: "34px",
-    },
-    [
-      el(
-        "div",
-        {
-          display: "flex",
-          fontSize: "26px",
-          fontWeight: 700,
-          letterSpacing: "2px",
-        },
-        "LOVEONS"
-      ),
+    const dateText = getDateText(date);
 
-      el(
-        "div",
-        {
-          display: "flex",
-          fontSize: "22px",
-          opacity: 0.8,
-        },
-        "COSMIC LOVE TAROT"
-      ),
-    ]
-  );
+    const header = el(
+      "div",
+      {
+        width: "100%",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: "28px",
+      },
+      [
+        el(
+          "div",
+          {
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+          },
+          [
+            el("img", {
+              src: "https://loveons.com/loveons-logo.svg",
+              width: "48",
+              height: "48",
+            }),
+            el(
+              "div",
+              {
+                display: "flex",
+                fontSize: "27px",
+                fontWeight: 700,
+                letterSpacing: "1.5px",
+                color: "#5b315f",
+              },
+              "LOVEONS"
+            ),
+          ]
+        ),
 
-  const tarotCard = el(
-    "div",
-    {
-      width: "330px",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: "28px",
-      background:
-        "linear-gradient(145deg, #f7d9ff 0%, #d7b6ff 100%)",
-      color: "#28133e",
-      padding: "30px",
-    },
-    [
-      el(
-        "div",
-        {
-          display: "flex",
-          fontSize: "92px",
-          marginBottom: "12px",
-        },
-        card.symbol
-      ),
+        el(
+          "div",
+          {
+            display: "flex",
+            fontSize: "19px",
+            fontWeight: 600,
+            letterSpacing: "1.5px",
+            color: "#8b5f8e",
+          },
+          "COSMIC LOVE TAROT"
+        ),
+      ]
+    );
 
-      el(
-        "div",
-        {
-          display: "flex",
-          textAlign: "center",
-          fontSize: "30px",
-          fontWeight: 700,
-          lineHeight: 1.15,
-        },
-        card.name
-      ),
+    const tarotCard = el(
+      "div",
+      {
+        width: "320px",
+        height: "385px",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: "30px",
+        background:
+          "linear-gradient(145deg, #fff9fc 0%, #f8e9f5 48%, #eadcf7 100%)",
+        color: "#4d2852",
+        padding: "28px",
+        border: "2px solid rgba(255,255,255,0.9)",
+        boxShadow: "0 18px 45px rgba(92, 50, 105, 0.18)",
+      },
+      [
+        el(
+          "div",
+          {
+            display: "flex",
+            width: "185px",
+            height: "185px",
+            borderRadius: "50%",
+            alignItems: "center",
+            justifyContent: "center",
+            background:
+              "linear-gradient(145deg, #f6c9df 0%, #e7c9f5 100%)",
+            border: "8px solid rgba(255,255,255,0.75)",
+            boxShadow: "0 10px 30px rgba(128, 76, 142, 0.15)",
+            fontSize: "29px",
+            fontWeight: 700,
+            letterSpacing: "2px",
+            color: "#693d6f",
+          },
+          card.symbol
+        ),
 
-      el(
-        "div",
-        {
-          display: "flex",
-          marginTop: "18px",
-          fontSize: "20px",
-          opacity: 0.75,
-        },
-        card.theme
-      ),
-    ]
-  );
+        el(
+          "div",
+          {
+            display: "flex",
+            textAlign: "center",
+            fontSize: "27px",
+            fontWeight: 700,
+            lineHeight: 1.15,
+            marginTop: "22px",
+          },
+          card.name
+        ),
 
-  const reading = el(
-    "div",
-    {
-      flex: 1,
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "center",
-    },
-    [
-      el(
-        "div",
-        {
-          display: "flex",
-          fontSize: "24px",
-          opacity: 0.75,
-          marginBottom: "10px",
-        },
-        dateText
-      ),
+        el(
+          "div",
+          {
+            display: "flex",
+            marginTop: "12px",
+            fontSize: "17px",
+            fontWeight: 600,
+            color: "#946b96",
+            letterSpacing: "0.5px",
+          },
+          card.theme
+        ),
+      ]
+    );
 
-      el(
-        "div",
-        {
-          display: "flex",
-          fontSize: "42px",
-          fontWeight: 700,
-          marginBottom: "22px",
-        },
-        `${name}'s Cosmic Tarot`
-      ),
+    const reading = el(
+      "div",
+      {
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        paddingLeft: "4px",
+      },
+      [
+        el(
+          "div",
+          {
+            display: "flex",
+            fontSize: "19px",
+            fontWeight: 600,
+            color: "#9a6c91",
+            marginBottom: "8px",
+          },
+          dateText
+        ),
 
-      el(
-        "div",
-        {
-          display: "flex",
-          fontSize: "25px",
-          lineHeight: 1.35,
-          marginBottom: "22px",
-          maxWidth: "680px",
-        },
-        card.reading
-      ),
+        el(
+          "div",
+          {
+            display: "flex",
+            fontSize: "38px",
+            fontWeight: 700,
+            color: "#48264d",
+            marginBottom: "17px",
+            lineHeight: 1.1,
+          },
+          `${name}'s Cosmic Tarot`
+        ),
 
-      el(
-        "div",
-        {
-          display: "flex",
-          fontSize: "22px",
-          lineHeight: 1.35,
-          opacity: 0.82,
-          maxWidth: "680px",
-        },
-        secret
-      ),
-    ]
-  );
+        el(
+          "div",
+          {
+            display: "flex",
+            fontSize: "23px",
+            lineHeight: 1.32,
+            fontWeight: 500,
+            color: "#56385b",
+            marginBottom: "18px",
+            maxWidth: "690px",
+          },
+          card.reading
+        ),
 
-  const body = el(
-    "div",
-    {
-      width: "100%",
-      display: "flex",
-      flex: 1,
-      gap: "42px",
-    },
-    [tarotCard, reading]
-  );
+        el(
+          "div",
+          {
+            display: "flex",
+            fontSize: "19px",
+            lineHeight: 1.32,
+            color: "#765878",
+            maxWidth: "690px",
+            paddingTop: "14px",
+            borderTop: "1px solid rgba(119, 77, 123, 0.18)",
+          },
+          secret
+        ),
+      ]
+    );
 
-  const footer = el(
-    "div",
-    {
-      display: "flex",
-      marginTop: "22px",
-      fontSize: "19px",
-      opacity: 0.65,
-    },
-    "A personalized cosmic reading from Loveons"
-  );
+    const body = el(
+      "div",
+      {
+        width: "100%",
+        display: "flex",
+        flex: 1,
+        gap: "42px",
+      },
+      [tarotCard, reading]
+    );
 
-  const image = el(
-    "div",
-    {
-      width: "1200px",
-      height: "630px",
-      display: "flex",
-      flexDirection: "column",
-      background:
-        "linear-gradient(135deg, #120b24 0%, #24113d 50%, #4b1d55 100%)",
-      color: "white",
-      padding: "54px",
-      fontFamily: "sans-serif",
-    },
-    [header, body, footer]
-  );
+    const footer = el(
+      "div",
+      {
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        marginTop: "14px",
+      },
+      [
+        el(
+          "div",
+          {
+            display: "flex",
+            fontSize: "16px",
+            fontWeight: 600,
+            color: "#815d7e",
+            marginBottom: "5px",
+          },
+          "A personalized cosmic reading from Loveons"
+        ),
+
+        el(
+          "div",
+          {
+            display: "flex",
+            fontSize: "11px",
+            color: "#9a7c96",
+            textAlign: "center",
+          },
+          "This tool is for entertainment purposes only and is not intended as professional advice."
+        ),
+      ]
+    );
+
+    const image = el(
+      "div",
+      {
+        width: "1200px",
+        height: "630px",
+        display: "flex",
+        flexDirection: "column",
+        background:
+          "linear-gradient(135deg, #fff8fb 0%, #fcecf5 48%, #eee4f8 100%)",
+        color: "#4d2852",
+        padding: "38px 52px 24px 52px",
+        fontFamily: "sans-serif",
+        position: "relative",
+      },
+      [
+        el(
+          "div",
+          {
+            position: "absolute",
+            top: "-170px",
+            right: "-120px",
+            width: "430px",
+            height: "430px",
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle, rgba(218,174,224,0.38) 0%, rgba(218,174,224,0) 70%)",
+          }
+        ),
+
+        el(
+          "div",
+          {
+            position: "absolute",
+            bottom: "-210px",
+            left: "-130px",
+            width: "480px",
+            height: "480px",
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle, rgba(244,190,211,0.32) 0%, rgba(244,190,211,0) 70%)",
+          }
+        ),
+
+        header,
+        body,
+        footer,
+      ]
+    );
 
     return new ImageResponse(image, {
-    width: 1200,
-    height: 630,
-  });
+      width: 1200,
+      height: 630,
+    });
   },
 };
