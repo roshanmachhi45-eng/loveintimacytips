@@ -454,6 +454,7 @@ window.history.replaceState(
   setDay(sharedDay);
 
   setResult({
+    name: sharedName,
     card: TAROT_CARDS[cardIndex],
     secret: LOVE_SECRETS[secretIndex],
     profile: PARTNER_PROFILES[profileIndex],
