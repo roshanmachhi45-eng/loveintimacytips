@@ -144,11 +144,9 @@ export default {
   const secret = LOVE_SECRETS[secretIndex];
 
   const dateText = getDateText(date);
-
   const header = el(
-    "div",
-      },
-};
+  "div",
+    {
       width: "100%",
       display: "flex",
       justifyContent: "space-between",
@@ -324,8 +322,9 @@ export default {
     [header, body, footer]
   );
 
-  return new ImageResponse(image, {
+    return new ImageResponse(image, {
     width: 1200,
     height: 630,
   });
-    }
+  },
+};
