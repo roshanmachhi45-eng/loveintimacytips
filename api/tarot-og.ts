@@ -160,11 +160,6 @@ export default {
         marginBottom: "28px",
       },
       [
-        el("img", {
-  src: "https://www.loveons.com/images/logo.png",
-  width: "48",
-  height: "48",
-}),
         el(
           "div",
           {
