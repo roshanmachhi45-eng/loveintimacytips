@@ -279,7 +279,7 @@ export default async function handler(request: Request) {
           opacity: 0.82,
           maxWidth: "680px",
         },
-        `✦ ${secret}`
+        secret
       ),
     ]
   );
