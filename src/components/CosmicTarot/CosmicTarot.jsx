@@ -381,6 +381,7 @@ export default function CosmicTarot() {
 
     window.setTimeout(() => {
       setResult({
+        name: name.trim(),
         card,
         secret,
         profile,
