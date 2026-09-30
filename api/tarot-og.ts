@@ -169,15 +169,15 @@ export default {
           },
           [
 el(
-  "img",
+  "div",
   {
-    src: "https://www.loveons.com/images/loveons-logo-card.png",
-    width: 70,
-    height: 70,
-    style: {
-      objectFit: "contain",
-    },
-  }
+    display: "flex",
+    fontSize: "27px",
+    fontWeight: 700,
+    letterSpacing: "1.5px",
+    color: "#5b315f",
+  },
+  "LOVEONS"
 ),
             
           ]
