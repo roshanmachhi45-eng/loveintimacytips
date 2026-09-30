@@ -167,18 +167,19 @@ export default {
             alignItems: "center",
             gap: "12px",
           },
-          [        
-            el(
-              "div",
-              {
-                display: "flex",
-                fontSize: "27px",
-                fontWeight: 700,
-                letterSpacing: "1.5px",
-                color: "#5b315f",
-              },
-              "LOVEONS"
-            ),
+          [
+el(
+  "img",
+  {
+    src: "https://www.loveons.com/images/loveons-logo-card.png",
+    width: 70,
+    height: 70,
+    style: {
+      objectFit: "contain",
+    },
+  }
+),
+            
           ]
         ),
 
