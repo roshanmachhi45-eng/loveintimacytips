@@ -745,7 +745,7 @@ For entertainment and self-reflection only.`
             </strong>
 
             <small>
-              A personalized reading for {name.trim()}
+              A personalized reading for {result.name.trim()}
             </small>
           </div>
         )}
