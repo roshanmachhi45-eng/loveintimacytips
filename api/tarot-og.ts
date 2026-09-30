@@ -121,6 +121,23 @@ const el = (
         ? [children]
         : [])
   );
+async function getLogoDataUri() {
+  try {
+    const response = await fetch(
+      "https://www.loveons.com/images/loveons-logo-card.png"
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    return `data:image/png;base64,${buffer.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
 
 export default {
   async fetch(request: Request) {
@@ -149,6 +166,7 @@ export default {
     const secret = LOVE_SECRETS[secretIndex];
 
     const dateText = getDateText(date);
+    const logoDataUri = await getLogoDataUri();
 
     const header = el(
       "div",
@@ -172,12 +190,21 @@ el(
   "div",
   {
     display: "flex",
-    fontSize: "27px",
-    fontWeight: 700,
-    letterSpacing: "1.5px",
-    color: "#5b315f",
+    alignItems: "center",
+    width: "70px",
+    height: "70px",
   },
-  "LOVEONS"
+  logoDataUri
+    ? el(
+        "img",
+        {
+          width: 70,
+          height: 70,
+          objectFit: "contain",
+        },
+        logoDataUri
+      )
+    : "LOVEONS"
 ),
             
           ]
