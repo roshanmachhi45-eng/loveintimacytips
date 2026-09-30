@@ -121,6 +121,7 @@ const el = (
         ? [children]
         : [])
   );
+
 async function getLogoDataUri() {
   try {
     const response = await fetch(
@@ -168,6 +169,29 @@ export default {
     const dateText = getDateText(date);
     const logoDataUri = await getLogoDataUri();
 
+    const logoElement = logoDataUri
+      ? createElement("img", {
+          src: logoDataUri,
+          width: 70,
+          height: 70,
+          style: {
+            objectFit: "contain",
+          },
+        })
+      : el(
+          "div",
+          {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "27px",
+            fontWeight: 700,
+            letterSpacing: "1.5px",
+            color: "#5b315f",
+          },
+          "LOVEONS"
+        );
+
     const header = el(
       "div",
       {
@@ -184,30 +208,10 @@ export default {
             display: "flex",
             alignItems: "center",
             gap: "12px",
+            width: "70px",
+            height: "70px",
           },
-          [
-el(
-  "div",
-  {
-    display: "flex",
-    alignItems: "center",
-    width: "70px",
-    height: "70px",
-  },
-  logoDataUri
-    ? el(
-        "img",
-        {
-          width: 70,
-          height: 70,
-          objectFit: "contain",
-        },
-        logoDataUri
-      )
-    : "LOVEONS"
-),
-            
-          ]
+          [logoElement]
         ),
 
         el(
