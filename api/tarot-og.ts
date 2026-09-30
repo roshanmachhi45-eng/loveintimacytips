@@ -169,11 +169,319 @@ export default {
     const dateText = getDateText(date);
     const logoDataUri = await getLogoDataUri();
 
-    const logoElement = logoDataUri
+    /*
+     * ------------------------------------------------------------
+     * BRAND HEADER
+     * ------------------------------------------------------------
+     */
+
+    const brandLogo = logoDataUri
       ? createElement("img", {
           src: logoDataUri,
-          width: 70,
-          height: 70,
+          width: 48,
+          height: 48,
+          style: {
+            objectFit: "contain",
+            borderRadius: "14px",
+          },
+        })
+      : el(
+          "div",
+          {
+            display: "flex",
+            width: "48px",
+            height: "48px",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "14px",
+            background: "#f5c4d9",
+            color: "#5a315f",
+            fontSize: "17px",
+            fontWeight: 700,
+          },
+          "L"
+        );
+
+    const brand = el(
+      "div",
+      {
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+      },
+      [
+        el(
+          "div",
+          {
+            display: "flex",
+            width: "58px",
+            height: "58px",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "18px",
+            background: "rgba(255,255,255,0.82)",
+            border: "1px solid rgba(255,255,255,0.95)",
+            boxShadow: "0 8px 22px rgba(93,49,105,0.10)",
+          },
+          [brandLogo]
+        ),
+
+        el(
+          "div",
+          {
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          },
+          [
+            el(
+              "div",
+              {
+                display: "flex",
+                fontSize: "25px",
+                fontWeight: 700,
+                letterSpacing: "-0.4px",
+                color: "#4d2852",
+              },
+              "Loveons.com"
+            ),
+
+            el(
+              "div",
+              {
+                display: "flex",
+                marginTop: "3px",
+                fontSize: "12px",
+                fontWeight: 500,
+                letterSpacing: "1.5px",
+                color: "#966c96",
+              },
+              "LOVE • INTIMACY • CONNECTION"
+            ),
+          ]
+        ),
+      ]
+    );
+
+    const headerTitle = el(
+      "div",
+      {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "13px 20px",
+        borderRadius: "999px",
+        background: "rgba(255,255,255,0.62)",
+        border: "1px solid rgba(255,255,255,0.82)",
+        boxShadow: "0 7px 20px rgba(96,54,108,0.06)",
+      },
+      [
+        el(
+          "div",
+          {
+            display: "flex",
+            fontSize: "16px",
+            fontWeight: 700,
+            letterSpacing: "2px",
+            color: "#754978",
+          },
+          "COSMIC LOVE TAROT"
+        ),
+      ]
+    );
+
+    const header = el(
+      "div",
+      {
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: "20px",
+      },
+      [brand, headerTitle]
+    );
+
+    /*
+     * ------------------------------------------------------------
+     * MINI TAROT CARD HELPER
+     * ------------------------------------------------------------
+     */
+
+    const createMiniCard = (
+      miniCard: (typeof TAROT_CARDS)[number],
+      rotate: string,
+      offsetY: number,
+      opacity = 1
+    ) => {
+      return el(
+        "div",
+        {
+          position: "absolute",
+          width: "104px",
+          height: "148px",
+          top: `${offsetY}px`,
+          left: "50%",
+          marginLeft: "-52px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: "18px",
+          background:
+            "linear-gradient(145deg, #fffafd 0%, #f5e5f4 55%, #e9ddf7 100%)",
+          border: "2px solid rgba(255,255,255,0.95)",
+          boxShadow: "0 12px 28px rgba(87,47,99,0.18)",
+          color: "#55315c",
+          transform: rotate,
+          opacity,
+        },
+        [
+          el(
+            "div",
+            {
+              display: "flex",
+              width: "62px",
+              height: "62px",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "50%",
+              background:
+                "linear-gradient(145deg, #f5c7df 0%, #e4c9f3 100%)",
+              border: "4px solid rgba(255,255,255,0.82)",
+              fontSize: "12px",
+              fontWeight: 700,
+              letterSpacing: "0.8px",
+              color: "#704773",
+            },
+            miniCard.symbol
+          ),
+
+          el(
+            "div",
+            {
+              display: "flex",
+              textAlign: "center",
+              fontSize: "12px",
+              fontWeight: 700,
+              lineHeight: 1.05,
+              marginTop: "10px",
+              paddingLeft: "7px",
+              paddingRight: "7px",
+            },
+            miniCard.name.replace("The ", "")
+          ),
+        ]
+      );
+    };
+
+    /*
+     * ------------------------------------------------------------
+     * TAROT SPREAD
+     * ------------------------------------------------------------
+     */
+
+    const otherCards = TAROT_CARDS.filter(
+      (_, index) => index !== cardIndex
+    );
+
+    const miniPositions = [
+      {
+        left: "17%",
+        top: "58px",
+        rotate: "rotate(-14deg)",
+      },
+      {
+        left: "32%",
+        top: "30px",
+        rotate: "rotate(-7deg)",
+      },
+      {
+        left: "68%",
+        top: "30px",
+        rotate: "rotate(7deg)",
+      },
+      {
+        left: "83%",
+        top: "58px",
+        rotate: "rotate(14deg)",
+      },
+    ];
+
+    const miniCards = otherCards.map((miniCard, index) => {
+      const position = miniPositions[index];
+
+      return el(
+        "div",
+        {
+          position: "absolute",
+          width: "104px",
+          height: "148px",
+          left: position.left,
+          top: position.top,
+          marginLeft: "-52px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: "18px",
+          background:
+            "linear-gradient(145deg, #fffafd 0%, #f5e5f4 55%, #e9ddf7 100%)",
+          border: "2px solid rgba(255,255,255,0.96)",
+          boxShadow: "0 14px 30px rgba(87,47,99,0.18)",
+          color: "#55315c",
+          transform: position.rotate,
+        },
+        [
+          el(
+            "div",
+            {
+              display: "flex",
+              width: "58px",
+              height: "58px",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "50%",
+              background:
+                "linear-gradient(145deg, #f4c7df 0%, #e4c8f2 100%)",
+              border: "4px solid rgba(255,255,255,0.85)",
+              fontSize: "10px",
+              fontWeight: 700,
+              letterSpacing: "0.6px",
+              color: "#704773",
+            },
+            miniCard.symbol
+          ),
+
+          el(
+            "div",
+            {
+              display: "flex",
+              textAlign: "center",
+              fontSize: "11px",
+              fontWeight: 700,
+              lineHeight: 1.05,
+              marginTop: "9px",
+              paddingLeft: "7px",
+              paddingRight: "7px",
+            },
+            miniCard.name.replace("The ", "")
+          ),
+        ]
+      );
+    });
+
+    /*
+     * ------------------------------------------------------------
+     * MAIN / SELECTED TAROT CARD
+     * ------------------------------------------------------------
+     */
+
+    const mainLogo = logoDataUri
+      ? createElement("img", {
+          src: logoDataUri,
+          width: 108,
+          height: 108,
           style: {
             objectFit: "contain",
           },
@@ -182,89 +490,52 @@ export default {
           "div",
           {
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "27px",
-            fontWeight: 700,
-            letterSpacing: "1.5px",
-            color: "#5b315f",
+            fontSize: "38px",
+            fontWeight: 800,
+            color: "#ffffff",
           },
-          "LOVEONS"
+          "L"
         );
 
-    const header = el(
+    const mainTarotCard = el(
       "div",
       {
-        width: "100%",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: "28px",
-      },
-      [
-        el(
-          "div",
-          {
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            width: "70px",
-            height: "70px",
-          },
-          [logoElement]
-        ),
-
-        el(
-          "div",
-          {
-            display: "flex",
-            fontSize: "19px",
-            fontWeight: 600,
-            letterSpacing: "1.5px",
-            color: "#8b5f8e",
-          },
-          "COSMIC LOVE TAROT"
-        ),
-      ]
-    );
-
-    const tarotCard = el(
-      "div",
-      {
-        width: "320px",
-        height: "385px",
+        position: "absolute",
+        width: "190px",
+        height: "285px",
+        left: "50%",
+        top: "40px",
+        marginLeft: "-95px",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: "30px",
+        borderRadius: "28px",
         background:
-          "linear-gradient(145deg, #fff9fc 0%, #f8e9f5 48%, #eadcf7 100%)",
+          "linear-gradient(150deg, #fffafd 0%, #f8e5f2 50%, #e8d9f5 100%)",
+        border: "3px solid rgba(255,255,255,0.96)",
+        boxShadow:
+          "0 20px 48px rgba(79,42,92,0.25), 0 0 0 8px rgba(255,255,255,0.20)",
         color: "#4d2852",
-        padding: "28px",
-        border: "2px solid rgba(255,255,255,0.9)",
-        boxShadow: "0 18px 45px rgba(92, 50, 105, 0.18)",
+        zIndex: 10,
       },
       [
         el(
           "div",
           {
             display: "flex",
-            width: "185px",
-            height: "185px",
-            borderRadius: "50%",
+            width: "126px",
+            height: "126px",
             alignItems: "center",
             justifyContent: "center",
+            borderRadius: "50%",
             background:
-              "linear-gradient(145deg, #f6c9df 0%, #e7c9f5 100%)",
-            border: "8px solid rgba(255,255,255,0.75)",
-            boxShadow: "0 10px 30px rgba(128, 76, 142, 0.15)",
-            fontSize: "29px",
-            fontWeight: 700,
-            letterSpacing: "2px",
-            color: "#693d6f",
+              "linear-gradient(145deg, #f4b9d6 0%, #e1c0ef 100%)",
+            border: "7px solid rgba(255,255,255,0.92)",
+            boxShadow:
+              "0 10px 30px rgba(109,60,123,0.20), inset 0 0 0 2px rgba(255,255,255,0.35)",
           },
-          card.symbol
+          [mainLogo]
         ),
 
         el(
@@ -272,10 +543,13 @@ export default {
           {
             display: "flex",
             textAlign: "center",
-            fontSize: "27px",
-            fontWeight: 700,
-            lineHeight: 1.15,
-            marginTop: "22px",
+            fontSize: "20px",
+            fontWeight: 800,
+            lineHeight: 1.05,
+            marginTop: "15px",
+            paddingLeft: "13px",
+            paddingRight: "13px",
+            color: "#4d2852",
           },
           card.name
         ),
@@ -284,13 +558,193 @@ export default {
           "div",
           {
             display: "flex",
-            marginTop: "12px",
-            fontSize: "17px",
-            fontWeight: 600,
-            color: "#946b96",
-            letterSpacing: "0.5px",
+            marginTop: "7px",
+            fontSize: "11px",
+            fontWeight: 700,
+            letterSpacing: "0.8px",
+            color: "#94638f",
+            textAlign: "center",
           },
-          card.theme
+          card.theme.toUpperCase()
+        ),
+      ]
+    );
+
+    const spreadBadge = el(
+      "div",
+      {
+        position: "absolute",
+        left: "50%",
+        bottom: "8px",
+        marginLeft: "-72px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "144px",
+        height: "30px",
+        borderRadius: "999px",
+        background: "rgba(255,255,255,0.74)",
+        border: "1px solid rgba(255,255,255,0.9)",
+        color: "#80567e",
+        fontSize: "11px",
+        fontWeight: 700,
+        letterSpacing: "1px",
+      },
+      "TODAY'S CARD"
+    );
+
+    const tarotSpread = el(
+      "div",
+      {
+        position: "relative",
+        width: "450px",
+        height: "345px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        marginLeft: "-8px",
+      },
+      [
+        el(
+          "div",
+          {
+            position: "absolute",
+            left: "20px",
+            right: "20px",
+            top: "8px",
+            bottom: "10px",
+            borderRadius: "42px",
+            background:
+              "radial-gradient(circle at center, rgba(255,255,255,0.52) 0%, rgba(255,255,255,0) 72%)",
+          }
+        ),
+
+        ...miniCards,
+
+        mainTarotCard,
+
+        spreadBadge,
+      ]
+    );
+
+    /*
+     * ------------------------------------------------------------
+     * RIGHT SIDE READING
+     * ------------------------------------------------------------
+     */
+
+    const readingHeader = el(
+      "div",
+      {
+        display: "flex",
+        flexDirection: "column",
+        marginBottom: "16px",
+      },
+      [
+        el(
+          "div",
+          {
+            display: "flex",
+            fontSize: "15px",
+            fontWeight: 700,
+            letterSpacing: "1.7px",
+            color: "#9b6b96",
+            marginBottom: "7px",
+          },
+          dateText.toUpperCase()
+        ),
+
+        el(
+          "div",
+          {
+            display: "flex",
+            fontSize: "38px",
+            fontWeight: 800,
+            lineHeight: 1.05,
+            letterSpacing: "-0.8px",
+            color: "#48264d",
+          },
+          `${name}'s Cosmic Tarot`
+        ),
+      ]
+    );
+
+    const readingBox = el(
+      "div",
+      {
+        display: "flex",
+        flexDirection: "column",
+        padding: "19px 22px",
+        borderRadius: "22px",
+        background: "rgba(255,255,255,0.57)",
+        border: "1px solid rgba(255,255,255,0.88)",
+        boxShadow: "0 10px 25px rgba(91,50,102,0.07)",
+      },
+      [
+        el(
+          "div",
+          {
+            display: "flex",
+            fontSize: "12px",
+            fontWeight: 800,
+            letterSpacing: "1.5px",
+            color: "#a06a94",
+            marginBottom: "9px",
+          },
+          "TODAY'S LOVE MESSAGE"
+        ),
+
+        el(
+          "div",
+          {
+            display: "flex",
+            fontSize: "21px",
+            lineHeight: 1.35,
+            fontWeight: 500,
+            color: "#56385b",
+          },
+          card.reading
+        ),
+      ]
+    );
+
+    const secretBox = el(
+      "div",
+      {
+        display: "flex",
+        flexDirection: "column",
+        marginTop: "13px",
+        padding: "16px 21px",
+        borderRadius: "20px",
+        background:
+          "linear-gradient(135deg, rgba(246,215,230,0.75) 0%, rgba(231,214,244,0.75) 100%)",
+        border: "1px solid rgba(255,255,255,0.72)",
+      },
+      [
+        el(
+          "div",
+          {
+            display: "flex",
+            alignItems: "center",
+            fontSize: "11px",
+            fontWeight: 800,
+            letterSpacing: "1.5px",
+            color: "#8a5b85",
+            marginBottom: "7px",
+          },
+          "✦  LOVE SECRET  ✦"
+        ),
+
+        el(
+          "div",
+          {
+            display: "flex",
+            fontSize: "17px",
+            lineHeight: 1.3,
+            fontWeight: 500,
+            color: "#69466b",
+          },
+          secret
         ),
       ]
     );
@@ -302,63 +756,17 @@ export default {
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
-        paddingLeft: "4px",
+        paddingLeft: "2px",
+        paddingRight: "2px",
       },
-      [
-        el(
-          "div",
-          {
-            display: "flex",
-            fontSize: "19px",
-            fontWeight: 600,
-            color: "#9a6c91",
-            marginBottom: "8px",
-          },
-          dateText
-        ),
-
-        el(
-          "div",
-          {
-            display: "flex",
-            fontSize: "38px",
-            fontWeight: 700,
-            color: "#48264d",
-            marginBottom: "17px",
-            lineHeight: 1.1,
-          },
-          `${name}'s Cosmic Tarot`
-        ),
-
-        el(
-          "div",
-          {
-            display: "flex",
-            fontSize: "23px",
-            lineHeight: 1.32,
-            fontWeight: 500,
-            color: "#56385b",
-            marginBottom: "18px",
-            maxWidth: "690px",
-          },
-          card.reading
-        ),
-
-        el(
-          "div",
-          {
-            display: "flex",
-            fontSize: "19px",
-            lineHeight: 1.32,
-            color: "#765878",
-            maxWidth: "690px",
-            paddingTop: "14px",
-            borderTop: "1px solid rgba(119, 77, 123, 0.18)",
-          },
-          secret
-        ),
-      ]
+      [readingHeader, readingBox, secretBox]
     );
+
+    /*
+     * ------------------------------------------------------------
+     * MAIN BODY
+     * ------------------------------------------------------------
+     */
 
     const body = el(
       "div",
@@ -366,29 +774,37 @@ export default {
         width: "100%",
         display: "flex",
         flex: 1,
-        gap: "42px",
+        alignItems: "center",
+        gap: "34px",
       },
-      [tarotCard, reading]
+      [tarotSpread, reading]
     );
+
+    /*
+     * ------------------------------------------------------------
+     * FOOTER
+     * ------------------------------------------------------------
+     */
 
     const footer = el(
       "div",
       {
         width: "100%",
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
-        marginTop: "14px",
+        justifyContent: "space-between",
+        marginTop: "8px",
+        paddingTop: "8px",
+        borderTop: "1px solid rgba(120,77,123,0.12)",
       },
       [
         el(
           "div",
           {
             display: "flex",
-            fontSize: "16px",
+            fontSize: "13px",
             fontWeight: 600,
             color: "#815d7e",
-            marginBottom: "5px",
           },
           "A personalized cosmic reading from Loveons"
         ),
@@ -398,13 +814,19 @@ export default {
           {
             display: "flex",
             fontSize: "11px",
+            fontWeight: 500,
             color: "#9a7c96",
-            textAlign: "center",
           },
-          "This tool is for entertainment purposes only and is not intended as professional advice."
+          "Loveons.com  •  For entertainment purposes only"
         ),
       ]
     );
+
+    /*
+     * ------------------------------------------------------------
+     * FINAL 1200 × 630 IMAGE
+     * ------------------------------------------------------------
+     */
 
     const image = el(
       "div",
@@ -414,43 +836,69 @@ export default {
         display: "flex",
         flexDirection: "column",
         background:
-          "linear-gradient(135deg, #fff8fb 0%, #fcecf5 48%, #eee4f8 100%)",
+          "linear-gradient(135deg, #fff8fb 0%, #fcecf5 43%, #eee4f8 100%)",
         color: "#4d2852",
-        padding: "38px 52px 24px 52px",
+        padding: "30px 48px 20px 48px",
         fontFamily: "sans-serif",
         position: "relative",
+        overflow: "hidden",
       },
       [
+        /*
+         * Background glow — top right
+         */
         el(
           "div",
           {
             position: "absolute",
-            top: "-170px",
+            top: "-190px",
             right: "-120px",
-            width: "430px",
-            height: "430px",
+            width: "520px",
+            height: "520px",
             borderRadius: "50%",
             background:
-              "radial-gradient(circle, rgba(218,174,224,0.38) 0%, rgba(218,174,224,0) 70%)",
+              "radial-gradient(circle, rgba(214,172,226,0.40) 0%, rgba(214,172,226,0) 70%)",
           }
         ),
 
+        /*
+         * Background glow — bottom left
+         */
         el(
           "div",
           {
             position: "absolute",
-            bottom: "-210px",
-            left: "-130px",
-            width: "480px",
-            height: "480px",
+            bottom: "-250px",
+            left: "-160px",
+            width: "560px",
+            height: "560px",
             borderRadius: "50%",
             background:
-              "radial-gradient(circle, rgba(244,190,211,0.32) 0%, rgba(244,190,211,0) 70%)",
+              "radial-gradient(circle, rgba(246,187,211,0.35) 0%, rgba(246,187,211,0) 70%)",
+          }
+        ),
+
+        /*
+         * Small decorative glow behind tarot spread
+         */
+        el(
+          "div",
+          {
+            position: "absolute",
+            left: "35px",
+            top: "160px",
+            width: "420px",
+            height: "350px",
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 72%)",
           }
         ),
 
         header,
+
         body,
+
         footer,
       ]
     );
