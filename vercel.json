@@ -22,6 +22,10 @@
       "destination": "/api/tarot-share"
     },
     {
+      "source": "/share/love-calculator",
+      "destination": "/api/love-share"
+    }
+    {
       "source": "/((?!api|assets|images|favicon.ico|_next|loveons-logo.svg).*)",
       "destination": "/index.html"
     }

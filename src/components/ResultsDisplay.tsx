@@ -11,6 +11,8 @@ import type { RecommendationResult } from '../lib/recommendations';
 
 interface ResultsDisplayProps {
   result: RecommendationResult;
+  person1Name: string;
+  person2Name: string;
   onReset: () => void;
 }
 
@@ -38,6 +40,8 @@ function handleImgError(
 
 export default function ResultsDisplay({
   result,
+  person1Name,
+  person2Name,
   onReset,
 }: ResultsDisplayProps) {
   const [displayScore, setDisplayScore] = useState(0);
@@ -85,11 +89,18 @@ For entertainment purposes only. Loveons results are not scientific.`;
    * Current page URL
    */
   const getShareUrl = () => {
-    if (typeof window !== 'undefined') {
-      return window.location.href;
+    if (typeof window === 'undefined') {
+      return 'https://loveons.com/share/love-calculator';
     }
 
-    return 'https://loveons.com';
+    const params = new URLSearchParams({
+      name: person1Name.trim(),
+      partner: person2Name.trim(),
+      score: String(result.score),
+      summary: result.summary,
+    });
+
+    return `${window.location.origin}/share/love-calculator?${params.toString()}`;
   };
 
   /*

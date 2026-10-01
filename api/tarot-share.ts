@@ -1,3 +1,5 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")
@@ -32,7 +34,7 @@ function getDateText(dateKey: string) {
   }).format(date);
 }
 
-export default function handler(req: any, res: any) {
+export default function handler(req: VercelRequest, res: VercelResponse) {
   const name =
     typeof req.query?.name === "string"
       ? req.query.name.trim()
@@ -50,8 +52,12 @@ export default function handler(req: any, res: any) {
           timeZone: "Asia/Kolkata",
         }).format(new Date());
 
-  const safeName = escapeHtml(name);
+  const card = typeof req.query?.card === "string" ? req.query.card.trim().slice(0, 80) : "Your Cosmic Card";
+  const reading = typeof req.query?.reading === "string" ? req.query.reading.trim().slice(0, 240) : "A personalized cosmic love message awaits you.";
+  const secret = typeof req.query?.secret === "string" ? req.query.secret.trim().slice(0, 240) : "Trust your heart and let genuine connection unfold naturally.";
+  const theme = typeof req.query?.theme === "string" ? req.query.theme.trim().slice(0, 80) : "Cosmic Love Energy";
   const dateText = getDateText(date);
+  const shareParams = new URLSearchParams({ name, birth, date, card, reading, secret, theme });
 
   const resultUrl =
     `https://www.loveons.com/tools/tarot` +
@@ -60,13 +66,10 @@ export default function handler(req: any, res: any) {
     `&date=${encodeURIComponent(date)}`;
 
   const imageUrl =
-    `https://www.loveons.com/api/tarot-og` +
-    `?name=${encodeURIComponent(name)}` +
-    `&birth=${encodeURIComponent(birth)}` +
-    `&date=${encodeURIComponent(date)}`;
+    `https://www.loveons.com/api/tarot-og?${shareParams.toString()}`;
 
-  const title = `Today's Cosmic Tarot • ${dateText}`;
-  const description = `A personalized cosmic reading for ${name}`;
+  const title = `${name}'s Cosmic Love Tarot • ${card}`;
+  const description = `${name}'s personalized ${card} reading for ${dateText}.`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -104,11 +107,7 @@ export default function handler(req: any, res: any) {
   />
   <meta
     property="og:url"
-    content="https://www.loveons.com/share/tarot?name=${encodeURIComponent(
-      name
-    )}&birth=${encodeURIComponent(
-      birth
-    )}&date=${encodeURIComponent(date)}"
+    content="https://www.loveons.com/share/tarot?${shareParams.toString()}"
   />
 
   <meta name="twitter:card" content="summary_large_image" />
@@ -127,11 +126,7 @@ export default function handler(req: any, res: any) {
 
   <link
     rel="canonical"
-    href="https://www.loveons.com/share/tarot?name=${encodeURIComponent(
-      name
-    )}&birth=${encodeURIComponent(
-      birth
-    )}&date=${encodeURIComponent(date)}"
+    href="https://www.loveons.com/share/tarot?${shareParams.toString()}"
   />
 
   <meta

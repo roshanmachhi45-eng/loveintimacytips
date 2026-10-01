@@ -77,6 +77,11 @@ export default function Home() {
   useEffect(() => {
     const handleOpenCalculator = () => {
       setActiveTool('love-calculator');
+
+      if (new URLSearchParams(window.location.search).has('score')) {
+        return;
+      }
+
       setResult(null);
       setValidationError('');
 
@@ -124,6 +129,29 @@ export default function Home() {
         handleOpenCosmicTarot
       );
     };
+  }, []);
+
+  useEffect(() => {
+    const sharedParams = new URLSearchParams(window.location.search);
+    const sharedScore = Number(sharedParams.get('score'));
+    const sharedName = sharedParams.get('name');
+    const sharedPartner = sharedParams.get('partner');
+    const sharedSummary = sharedParams.get('summary');
+
+    if (!Number.isFinite(sharedScore) || !sharedName || !sharedPartner || !sharedSummary) {
+      return;
+    }
+
+    setPerson1((previous) => ({ ...previous, name: sharedName }));
+    setPerson2((previous) => ({ ...previous, name: sharedPartner }));
+    setResult({
+      score: Math.max(0, Math.min(100, Math.round(sharedScore))),
+      summary: sharedSummary,
+      tips: [],
+      activities: [],
+      images: [],
+    });
+    setActiveTool('love-calculator');
   }, []);
 
   // =====================================================
@@ -848,6 +876,8 @@ export default function Home() {
               {result && (
                 <ResultsDisplay
                   result={result}
+                  person1Name={person1.name}
+                  person2Name={person2.name}
                   onReset={() => {
                     handleReset();
                     setActiveTool(null);

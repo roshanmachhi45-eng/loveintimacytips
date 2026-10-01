@@ -878,11 +878,16 @@ export default {
         )) %
       LOVE_SECRETS.length;
 
-    const card =
-      TAROT_CARDS[cardIndex];
+    const baseCard = TAROT_CARDS[cardIndex];
+    const card = {
+      ...baseCard,
+      name: url.searchParams.get("card")?.trim().slice(0, 80) || baseCard.name,
+      theme: url.searchParams.get("theme")?.trim().slice(0, 80) || baseCard.theme,
+      reading: url.searchParams.get("reading")?.trim().slice(0, 240) || baseCard.reading,
+    };
 
     const secret =
-      LOVE_SECRETS[secretIndex];
+      url.searchParams.get("secret")?.trim().slice(0, 240) || LOVE_SECRETS[secretIndex];
 
     const dateText =
       getDateText(date);

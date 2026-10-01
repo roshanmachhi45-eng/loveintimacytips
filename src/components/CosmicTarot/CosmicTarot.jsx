@@ -516,8 +516,12 @@ Discover your own reading on Loveons.`;
   params.set("name", name.trim());
   params.set("birth", birthDate);
   params.set("date", result.todayKey);
+  params.set("card", result.card.name);
+  params.set("theme", result.card.theme);
+  params.set("reading", result.card.reading);
+  params.set("secret", result.secret);
 
-  return `${window.location.origin}/tools/tarot?${params.toString()}`;
+  return `${window.location.origin}/share/tarot?${params.toString()}`;
   }
 
   function openShareUrl(url) {
@@ -1004,7 +1008,7 @@ For entertainment and self-reflection only.`
                 className={styles.pinterestResultButton}
                 onClick={() => {
                   if (!result) return;
-                  const pinUrl = `https://www.pinterest.com/pin/create/button/?url=${encodeURIComponent(window.location.href)}`;
+                  const pinUrl = `https://www.pinterest.com/pin/create/button/?url=${encodeURIComponent(getShareUrl())}`;
                   window.open(pinUrl, "_blank", "noopener,noreferrer");
                 }}
               >
