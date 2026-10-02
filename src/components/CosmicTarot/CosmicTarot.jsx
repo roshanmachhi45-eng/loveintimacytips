@@ -524,6 +524,15 @@ Discover your own reading on Loveons.`;
   return `${window.location.origin}/share/tarot?${params.toString()}`;
   }
 
+  function getShareImageUrl() {
+    const shareUrl = getShareUrl();
+    const imageOrigin = window.location.protocol === "https:"
+      ? window.location.origin
+      : "https://www.loveons.com";
+
+    return `${imageOrigin}/api/tarot-og${new URL(shareUrl).search}`;
+  }
+
   function openShareUrl(url) {
     window.open(url, "_blank", "noopener,noreferrer");
   }
@@ -534,6 +543,7 @@ Discover your own reading on Loveons.`;
     }
 
     const url = encodeURIComponent(getShareUrl());
+    const imageUrl = encodeURIComponent(getShareImageUrl());
 
     const description = encodeURIComponent(
       `${name.trim()}'s Cosmic Love Tarot · ${result.readingDate}
@@ -556,7 +566,7 @@ For entertainment and self-reflection only.`
     );
 
     openShareUrl(
-      `https://www.pinterest.com/pin/create/button/?url=${url}&description=${description}`
+      `https://www.pinterest.com/pin/create/button/?url=${url}&media=${imageUrl}&description=${description}`
     );
   }
 
@@ -1006,11 +1016,7 @@ For entertainment and self-reflection only.`
               <button
                 type="button"
                 className={styles.pinterestResultButton}
-                onClick={() => {
-                  if (!result) return;
-                  const pinUrl = `https://www.pinterest.com/pin/create/button/?url=${encodeURIComponent(getShareUrl())}`;
-                  window.open(pinUrl, "_blank", "noopener,noreferrer");
-                }}
+                onClick={sharePinterest}
               >
                 <span className={styles.pinterestResultIcon}>
                   <PinterestIcon />

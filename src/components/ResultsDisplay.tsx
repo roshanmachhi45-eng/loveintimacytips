@@ -103,11 +103,21 @@ For entertainment purposes only. Loveons results are not scientific.`;
     return `${window.location.origin}/share/love-calculator?${params.toString()}`;
   };
 
+  const getShareImageUrl = () => {
+    const shareUrl = getShareUrl();
+    const imageOrigin = window.location.protocol === 'https:'
+      ? window.location.origin
+      : 'https://www.loveons.com';
+
+    return `${imageOrigin}/api/love-og${new URL(shareUrl).search}`;
+  };
+
   /*
    * Pinterest Share
    */
   const handlePinterestShare = () => {
     const url = getShareUrl();
+    const imageUrl = getShareImageUrl();
 
     const text =
       `❤️ My Loveons Love Match Score is ${result.score}%! ` +
@@ -117,6 +127,8 @@ For entertainment purposes only. Loveons results are not scientific.`;
     const pinterestUrl =
       `https://www.pinterest.com/pin/create/button/?url=${encodeURIComponent(
         url
+      )}&media=${encodeURIComponent(
+        imageUrl
       )}&description=${encodeURIComponent(text)}`;
 
     window.open(
