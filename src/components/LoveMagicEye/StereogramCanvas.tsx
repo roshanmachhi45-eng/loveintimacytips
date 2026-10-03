@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PALETTES, type ColorPalette } from './palettes';
-import { generateDepthMap, sampleDepth } from './depthMap';
 import type { MagicEyeConfig } from './types';
 
 interface StereogramCanvasProps {
-  config: MagicEyeConfig;
+  config: MagicEyeConfig & { faceStructure?: string; faceTone?: string; hairStyle?: string }; // नए ऑप्शंस को सपोर्ट करने के लिए
   paletteIndex: number;
   generateKey: number;
   onCanvasReady?: (dataUrl: string) => void;
@@ -12,9 +11,8 @@ interface StereogramCanvasProps {
 
 const CANVAS_W = 400;
 const CANVAS_H = 600;
-const PATTERN_W = 80;
-const MAX_DEPTH = 0.35;
-const EYE_SEP = PATTERN_W;
+const PATTERN_W = 72; // 90s स्टाइल स्टीरियोग्राम के लिए बेस्ट स्ट्रिप विड्थ
+const MAX_SHIFT = 14;  // 3D गहराई का उभार तय करने के लिए पिक्सेल शिफ्ट सीमा
 
 export default function StereogramCanvas({
   config,
@@ -31,21 +29,104 @@ export default function StereogramCanvas({
 
     setRendering(true);
 
-    const palette: ColorPalette =
-      PALETTES[paletteIndex % PALETTES.length];
+    const palette: ColorPalette = PALETTES[paletteIndex % PALETTES.length];
 
     canvas.width = CANVAS_W;
     canvas.height = CANVAS_H;
     const ctx = canvas.getContext('2d')!;
 
-    // 1. Generate depth map
-    const depthCanvas = generateDepthMap({
-      width: CANVAS_W,
-      height: CANVAS_H,
-      gender: config.gender,
-      beardStyle: config.beardStyle,
-      name: config.name,
-    });
+    // ==========================================
+    // 1. IN-BUILT 3D RETRO DEPTH MAP GENERATOR 
+    // ==========================================
+    const getDepth = (x: number, y: number): number => {
+      let depth = 0;
+      const cx = CANVAS_W / 2;
+      const cy = CANVAS_H / 2 - 30; // चेहरे को थोड़ा ऊपर सेंटर करना
+
+      // यूज़र द्वारा चुने गए फेस स्ट्रक्चर (Square, Oval, Round) के हिसाब से बेस रेशियो सेट करना
+      let rx = 70;
+      let ry = 95;
+      const structure = config.faceStructure || 'Oval';
+      
+      if (structure === 'Square') { rx = 80; ry = 85; }
+      else if (structure === 'Round') { rx = 80; ry = 80; }
+
+      const dx = (x - cx) / rx;
+      const dy = (y - cy) / ry;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // मुख्य चेहरे का 3D उभार (Base Head Shape)
+      if (dist < 1) {
+        // चेहरे का गोलाकार या चौकोर 3D ढलान
+        if (structure === 'Square') {
+          depth = (1 - Math.max(Math.abs(dx), Math.abs(dy))) * 0.7;
+        } else {
+          depth = Math.cos(dist * Math.PI / 2) * 0.7;
+        }
+
+        // नाक (Nose Bridge) का 3D उभार जोड़ना
+        const noseX = Math.abs(x - cx);
+        const noseY = y - (cy - 10);
+        if (noseX < 8 && noseY > 0 && noseY < 35) {
+          depth += (1 - noseX / 8) * 0.25;
+        }
+
+        // ==========================================
+        // MALE SPECIFIC 3D FEATURES (BEARD IMPLEMENTATION)
+        // ==========================================
+        if (config.gender === 'Male' && config.beardStyle && config.beardStyle !== 'Clean Shaven') {
+          const isJawArea = dy > 0.2 && Math.abs(dx) < 0.8;
+          if (isJawArea) {
+            if (config.beardStyle === 'Full Beard') {
+              depth += 0.15; // मोटी दाढ़ी का 3D उभार
+            } else if (config.beardStyle === 'Stubble') {
+              depth += 0.05 + (Math.random() * 0.03); // हल्की दाढ़ी का खुरदरापन
+            } else if (config.beardStyle === 'Short Beard') {
+              depth += 0.1;
+            }
+          }
+        }
+      }
+
+      // ==========================================
+      // HAIR STYLE 3D IMPLEMENTATION (MALE & FEMALE)
+      // ==========================================
+      const hair = config.hairStyle || 'Straight';
+      if (hair !== 'Bald') {
+        // सिर के ऊपर बालों का क्राउन/वॉल्यूम एरिया
+        const isHairArea = dy < -0.4 && dist < 1.3;
+        const isSideHair = Math.abs(dx) > 0.6 && dy > -0.4 && dy < 0.5;
+
+        if (isHairArea || isSideHair) {
+          if (hair === 'Curly Hair' || hair === 'Curly') {
+            // घुंघराले बालों के लिए गणितीय लहरदार (Waves) टेक्सचर उभार
+            depth = Math.max(depth, 0.4) + Math.sin(x * 0.2) * Math.cos(y * 0.2) * 0.15;
+          } else if (hair === 'Straight Hair' || hair === 'Straight') {
+            // सीधे और सिल्क बालों का सॉलिड स्मूथ उभार
+            depth = Math.max(depth, 0.5) + (1 - Math.abs(dx)) * 0.1;
+          }
+        }
+      }
+
+      // ==========================================
+      // FACE TONE ADJUSTMENT (Subtle Depth Tweak)
+      // ==========================================
+      // स्किन टोन के हिसाब से रोशनी का 3D इफ़ेक्ट सेट करने के लिए थोड़ा सा डेप्थ ऑफसेट
+      if (config.faceTone === 'Fair / USA Type') depth *= 1.05;
+      if (config.faceTone === 'Dark / West Indies') depth *= 0.95;
+
+      // ==========================================
+      // 3D NAME EMBEDDING LOGIC
+      // ==========================================
+      if (config.name.trim() && y > CANVAS_H - 100 && y < CANVAS_H - 60) {
+        const nameX = x - (cx - (config.name.trim().length * 7));
+        if (nameX > 0 && nameX < config.name.trim().length * 15) {
+          depth = Math.max(depth, 0.25); // नाम को 3D की एक अलग परत पर उठाना
+        }
+      }
+
+      return Math.min(Math.max(depth, 0), 1);
+    };
 
     // 2. Fill background gradient
     const bgGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
@@ -54,7 +135,7 @@ export default function StereogramCanvas({
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-    // 3. Draw scattered stars in background
+    // 3. Draw scattered stars
     const starCount = 60;
     for (let i = 0; i < starCount; i++) {
       const sx = Math.random() * CANVAS_W;
@@ -68,7 +149,7 @@ export default function StereogramCanvas({
     }
     ctx.globalAlpha = 1;
 
-    // 4. Generate random pattern strip
+    // 4. Generate high-density pattern strip
     const patternStrip = ctx.createImageData(PATTERN_W, CANVAS_H);
     const pData = patternStrip.data;
 
@@ -87,87 +168,88 @@ export default function StereogramCanvas({
       }
     }
 
-    // 5. Create final stereogram by shifting pattern based on depth
+    // ==========================================
+    // 5. PERFECT 1990s RETRO SIRDS ALGORITHM 
+    // ==========================================
     const finalImage = ctx.createImageData(CANVAS_W, CANVAS_H);
     const fData = finalImage.data;
 
     for (let y = 0; y < CANVAS_H; y++) {
-      // Copy first pattern strip column
-      for (let x = 0; x < PATTERN_W; x++) {
-        const srcIdx = (y * PATTERN_W + x) * 4;
-        const dstIdx = (y * CANVAS_W + x) * 4;
-        fData[dstIdx] = pData[srcIdx];
-        fData[dstIdx + 1] = pData[srcIdx + 1];
-        fData[dstIdx + 2] = pData[srcIdx + 2];
-        fData[dstIdx + 3] = 255;
+      // हर हॉरिजॉन्टल लाइन के लिए पिक्सल्स की लिंक्ड लिस्ट (Constraints) बनाना
+      const same = new Int32Array(CANVAS_W);
+      for (let x = 0; x < CANVAS_W; x++) same[x] = x;
+
+      for (let x = 0; x < CANVAS_W; x++) {
+        const depth = getDepth(x, y);
+        // पिक्सेल को डेप्थ के आधार पर खिसकाना (Separation formula)
+        const sep = PATTERN_W - Math.round(depth * MAX_SHIFT);
+        const left = x - Math.round(sep / 2);
+        const right = left + sep;
+
+        if (left >= 0 && right < CANVAS_W) {
+          same[right] = left;
+        }
       }
 
-      // For remaining columns, sample from EYE_SEP pixels back,
-      // shifted by depth
-      for (let x = PATTERN_W; x < CANVAS_W; x++) {
-        const depth = sampleDepth(depthCanvas, x, y);
-        const shift = Math.round(depth * MAX_DEPTH * EYE_SEP);
-        const srcX = x - EYE_SEP + shift;
-
-        if (srcX >= 0 && srcX < CANVAS_W) {
-          const srcIdx = (y * CANVAS_W + srcX) * 4;
-          const dstIdx = (y * CANVAS_W + x) * 4;
-          fData[dstIdx] = fData[srcIdx];
-          fData[dstIdx + 1] = fData[srcIdx + 1];
-          fData[dstIdx + 2] = fData[srcIdx + 2];
-          fData[dstIdx + 3] = 255;
+      // पिक्सल्स में रंग भरना (रिफ्रेशिंग रिपीटेड लिंक्स)
+      const rowPixels = new Uint8ClampedArray(CANVAS_W * 4);
+      for (let x = 0; x < CANVAS_W; x++) {
+        if (same[x] === x) {
+          const pX = x % PATTERN_W;
+          const pIdx = (y * PATTERN_W + pX) * 4;
+          rowPixels[x * 4] = pData[pIdx];
+          rowPixels[x * 4 + 1] = pData[pIdx + 1];
+          rowPixels[x * 4 + 2] = pData[pIdx + 2];
+          rowPixels[x * 4 + 3] = 255;
+        } else {
+          const srcX = same[x];
+          rowPixels[x * 4] = rowPixels[srcX * 4];
+          rowPixels[x * 4 + 1] = rowPixels[srcX * 4 + 1];
+          rowPixels[x * 4 + 2] = rowPixels[srcX * 4 + 2];
+          rowPixels[x * 4 + 3] = 255;
         }
+      }
+
+      // फाइनल इमेज एरे में लाइन को कॉपी करना
+      for (let x = 0; x < CANVAS_W; x++) {
+        const idx = (y * CANVAS_W + x) * 4;
+        fData[idx] = rowPixels[x * 4];
+        fData[idx + 1] = rowPixels[x * 4 + 1];
+        fData[idx + 2] = rowPixels[x * 4 + 2];
+        fData[idx + 3] = 255;
       }
     }
 
-    // 6. Blit stereogram
     ctx.putImageData(finalImage, 0, 0);
 
-    // 7. Overlay glowing neon hearts at random positions
-    const heartCount = 8;
+    // 6. Overlay glowing neon hearts
+    const heartCount = 6;
     for (let i = 0; i < heartCount; i++) {
       const hx = Math.random() * CANVAS_W;
       const hy = Math.random() * CANVAS_H;
-      const hs = Math.random() * 12 + 6;
+      const hs = Math.random() * 10 + 5;
       ctx.save();
-      ctx.globalAlpha = Math.random() * 0.15 + 0.05;
+      ctx.globalAlpha = Math.random() * 0.12 + 0.04;
       ctx.shadowColor = palette.heartColor;
-      ctx.shadowBlur = 15;
+      ctx.shadowBlur = 10;
       ctx.fillStyle = palette.heartColor;
       drawHeart(ctx, hx, hy, hs);
       ctx.restore();
     }
 
-    // 8. Draw geometric connection lines (subtle)
-    ctx.strokeStyle = palette.accent;
-    ctx.lineWidth = 0.5;
-    ctx.globalAlpha = 0.08;
-    for (let i = 0; i < 15; i++) {
-      const x1 = Math.random() * CANVAS_W;
-      const y1 = Math.random() * CANVAS_H;
-      const x2 = Math.random() * CANVAS_W;
-      const y2 = Math.random() * CANVAS_H;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-
-    // 9. Draw name as translucent overlay text (part of the illusion)
+    // 7. Draw name as overlay text if needed
     if (config.name.trim()) {
       ctx.save();
-      ctx.font = 'bold 14px Arial, sans-serif';
+      ctx.font = 'bold 13px Arial, sans-serif';
       ctx.textAlign = 'center';
-      ctx.globalAlpha = 0.06;
+      ctx.globalAlpha = 0.05;
       ctx.fillStyle = palette.textColor;
-      for (let y = 30; y < CANVAS_H; y += 40) {
+      for (let y = 40; y < CANVAS_H; y += 50) {
         ctx.fillText(config.name.trim(), CANVAS_W / 2, y);
       }
       ctx.restore();
     }
 
-    // 10. Export data URL
     const dataUrl = canvas.toDataURL('image/png');
     onCanvasReady?.(dataUrl);
     setRendering(false);
@@ -195,49 +277,4 @@ export default function StereogramCanvas({
         <canvas
           ref={canvasRef}
           className="block w-full h-auto"
-          style={{ aspectRatio: '400 / 600' }}
-          aria-label="Magic Eye stereogram — relax your vision to see the hidden 3D image"
-        />
-        {rendering && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-            <div className="h-8 w-8 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-          </div>
-        )}
-      </div>
-      <p className="mt-2 text-xs font-semibold tracking-wide" style={{ color: palette.primary }}>
-        {palette.name} Pattern
-      </p>
-    </div>
-  );
-}
 
-function drawHeart(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  size: number
-) {
-  ctx.beginPath();
-  ctx.moveTo(x, y + size * 0.3);
-  ctx.bezierCurveTo(
-    x, y,
-    x - size, y,
-    x - size, y + size * 0.5
-  );
-  ctx.bezierCurveTo(
-    x - size, y + size * 0.9,
-    x, y + size * 1.1,
-    x, y + size * 1.3
-  );
-  ctx.bezierCurveTo(
-    x, y + size * 1.1,
-    x + size, y + size * 0.9,
-    x + size, y + size * 0.5
-  );
-  ctx.bezierCurveTo(
-    x + size, y,
-    x, y,
-    x, y + size * 0.3
-  );
-  ctx.fill();
-}
