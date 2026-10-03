@@ -13,49 +13,142 @@ const CANVAS_W = 400;
 const CANVAS_H = 600;
 
 /*
- * SIRDS viewing parameters.
+ * Beginner-friendly SIRDS settings.
  *
- * Larger FAR_SEPARATION:
- *   easier to establish the repeating pattern.
+ * FAR_SEPARATION = normal background spacing
+ * NEAR_SEPARATION = strongest face depth spacing
  *
- * Difference between FAR and NEAR:
- *   controls visible 3D depth.
+ * The larger difference between these values makes
+ * the hidden face much easier to perceive.
  */
-const FAR_SEPARATION = 62;
-const NEAR_SEPARATION = 38;
+const FAR_SEPARATION = 84;
+const NEAR_SEPARATION = 42;
+const DEPTH_RANGE = FAR_SEPARATION - NEAR_SEPARATION;
 
 /*
- * Depth region.
+ * The face is intentionally large.
+ * A larger hidden object is easier for first-time
+ * Magic Eye users to lock onto.
  */
-const FACE_CENTER_X = CANVAS_W / 2;
-const FACE_CENTER_Y = 275;
+const FACE_CX = 200;
+const FACE_CY = 292;
+
+/* -----------------------------
+   Utility functions
+----------------------------- */
+
+function clamp(value: number, min = 0, max = 1) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function smoothStep(value: number) {
+  const t = clamp(value);
+  return t * t * (3 - 2 * t);
+}
+
+function ellipseValue(
+  x: number,
+  y: number,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+) {
+  const dx = (x - cx) / rx;
+  const dy = (y - cy) / ry;
+
+  return dx * dx + dy * dy;
+}
 
 /*
- * Fallback palette in case a palette entry is missing.
+ * Deterministic pseudo-random generator.
+ * This keeps the generated stereogram stable for the
+ * same configuration instead of changing depth randomly.
  */
-const FALLBACK_PALETTE = {
-  name: 'Love Matrix',
-  bg: '#13091f',
-  primary: '#ec4899',
-  secondary: '#8b5cf6',
-  starColor: '#ffffff',
-  heartColor: '#f472b6',
-  textColor: '#ffffff',
-  patternColors: [
-    '#8b5cf6',
-    '#a78bfa',
-    '#ec4899',
-    '#f472b6',
-    '#c4b5fd',
-    '#ffffff',
-  ],
-};
+function createSeededRandom(seed: number) {
+  let value = seed >>> 0;
 
-/*
- * ----------------------------------------------------------
- * MAIN COMPONENT
- * ----------------------------------------------------------
- */
+  return () => {
+    value += 0x6d2b79f5;
+
+    let t = value;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* -----------------------------
+   Union-Find / equivalence class
+----------------------------- */
+
+class DisjointSet {
+  parent: Int32Array;
+  rank: Uint8Array;
+
+  constructor(size: number) {
+    this.parent = new Int32Array(size);
+    this.rank = new Uint8Array(size);
+
+    for (let i = 0; i < size; i += 1) {
+      this.parent[i] = i;
+    }
+  }
+
+  find(value: number) {
+    let root = value;
+
+    while (this.parent[root] !== root) {
+      root = this.parent[root];
+    }
+
+    while (this.parent[value] !== value) {
+      const next = this.parent[value];
+      this.parent[value] = root;
+      value = next;
+    }
+
+    return root;
+  }
+
+  union(a: number, b: number) {
+    let rootA = this.find(a);
+    let rootB = this.find(b);
+
+    if (rootA === rootB) return;
+
+    if (this.rank[rootA] < this.rank[rootB]) {
+      const temp = rootA;
+      rootA = rootB;
+      rootB = temp;
+    }
+
+    this.parent[rootB] = rootA;
+
+    if (this.rank[rootA] === this.rank[rootB]) {
+      this.rank[rootA] += 1;
+    }
+  }
+}
+
+/* -----------------------------
+   Palette helpers
+----------------------------- */
+
+function hexToRgb(hex: string) {
+  const clean = hex.replace('#', '');
+
+  return {
+    r: parseInt(clean.slice(0, 2), 16),
+    g: parseInt(clean.slice(2, 4), 16),
+    b: parseInt(clean.slice(4, 6), 16),
+  };
+}
+
+/* -----------------------------
+   Main component
+----------------------------- */
 
 export default function StereogramCanvas({
   config,
@@ -64,1282 +157,940 @@ export default function StereogramCanvas({
   onCanvasReady,
 }: StereogramCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  const [rendering, setRendering] =
-    useState(false);
-
-  /*
-   * --------------------------------------------------------
-   * RENDER SIRDS
-   * --------------------------------------------------------
-   */
+  const [rendering, setRendering] = useState(false);
 
   const render = useCallback(() => {
-    const canvas =
-      canvasRef.current;
+    const canvas = canvasRef.current;
 
-    if (!canvas) {
-      return;
-    }
+    if (!canvas) return;
+
+    const palette: ColorPalette =
+      PALETTES[paletteIndex % PALETTES.length];
+
+    canvas.width = CANVAS_W;
+    canvas.height = CANVAS_H;
+
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) return;
 
     setRendering(true);
 
     /*
-     * Give React/browser a chance to paint the loading
-     * state before the CPU-heavy stereogram generation.
+     * ------------------------------------------
+     * SAFE CONFIG NORMALIZATION
+     * ------------------------------------------
      */
-    window.requestAnimationFrame(() => {
-      try {
-        /*
-         * --------------------------------------------------
-         * SAFE PALETTE
-         * --------------------------------------------------
-         */
 
-        const paletteCount =
-          Array.isArray(PALETTES)
-            ? PALETTES.length
-            : 0;
+    const gender = config.gender;
 
-        const rawIndex =
-          Number.isFinite(paletteIndex)
-            ? Math.floor(paletteIndex)
-            : 0;
+    const faceTone = config.faceTone;
 
-        const safeIndex =
-          paletteCount > 0
-            ? ((rawIndex % paletteCount) +
-                paletteCount) %
-              paletteCount
-            : 0;
+    const faceStructure = config.faceStructure;
 
-        const palette:
-          | ColorPalette
-          | typeof FALLBACK_PALETTE =
-          paletteCount > 0
-            ? PALETTES[safeIndex] ??
-              FALLBACK_PALETTE
-            : FALLBACK_PALETTE;
+    const hairStyle = config.hairStyle;
 
-        /*
-         * --------------------------------------------------
-         * SAFE CONFIG
-         * --------------------------------------------------
-         */
+    const beardStyle = config.beardStyle;
 
-        const gender =
-          config.gender === 'male'
-            ? 'male'
-            : 'female';
+    const name = config.name.trim();
 
-        const faceStructure =
-          config.faceStructure === 'round' ||
-          config.faceStructure === 'square'
-            ? config.faceStructure
-            : 'oval';
+    /*
+     * ------------------------------------------
+     * FACE GEOMETRY
+     * ------------------------------------------
+     */
 
-        const faceTone =
-          config.faceTone === 'dark' ||
-          config.faceTone === 'fair'
-            ? config.faceTone
-            : 'wheatish';
+    let faceRx = 128;
+    let faceRy = 174;
 
-        const hairStyle =
-          config.hairStyle === 'bald' ||
-          config.hairStyle === 'curly'
-            ? config.hairStyle
-            : 'straight';
+    if (faceStructure === 'round') {
+      faceRx = 136;
+      faceRy = 160;
+    }
 
-        const beardStyle =
-          config.beardStyle === 'stubble' ||
-          config.beardStyle === 'short' ||
-          config.beardStyle === 'full'
-            ? config.beardStyle
-            : 'clean';
+    if (faceStructure === 'square') {
+      faceRx = 137;
+      faceRy = 170;
+    }
 
-        const partnerName =
-          typeof config.name === 'string'
-            ? config.name
-                .trim()
-                .slice(0, 24)
-            : '';
+    /*
+     * ------------------------------------------
+     * NAME MASK
+     * ------------------------------------------
+     *
+     * Name is embedded into depth, NOT painted
+     * as visible text over the stereogram.
+     */
 
-        /*
-         * --------------------------------------------------
-         * CANVAS
-         * --------------------------------------------------
-         */
+    const nameCanvas = document.createElement('canvas');
 
-        canvas.width = CANVAS_W;
-        canvas.height = CANVAS_H;
+    nameCanvas.width = CANVAS_W;
+    nameCanvas.height = CANVAS_H;
 
-        const ctx =
-          canvas.getContext('2d');
+    const nameCtx = nameCanvas.getContext('2d');
 
-        if (!ctx) {
-          setRendering(false);
-          return;
-        }
+    if (nameCtx && name) {
+      nameCtx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
-        /*
-         * --------------------------------------------------
-         * BACKGROUND
-         * --------------------------------------------------
-         */
+      nameCtx.fillStyle = '#ffffff';
 
-        const background =
-          typeof palette.bg === 'string'
-            ? palette.bg
-            : FALLBACK_PALETTE.bg;
+      nameCtx.font =
+        '700 24px Arial, Helvetica, sans-serif';
 
-        ctx.fillStyle =
-          background;
+      nameCtx.textAlign = 'center';
+      nameCtx.textBaseline = 'middle';
 
-        ctx.fillRect(
-          0,
-          0,
-          CANVAS_W,
-          CANVAS_H,
+      nameCtx.fillText(
+        name.slice(0, 18),
+        CANVAS_W / 2,
+        CANVAS_H - 55,
+      );
+    }
+
+    const namePixels =
+      nameCtx?.getImageData(
+        0,
+        0,
+        CANVAS_W,
+        CANVAS_H,
+      ).data ?? null;
+
+    /*
+     * ------------------------------------------
+     * DEPTH MAP
+     * ------------------------------------------
+     *
+     * This is the most important part.
+     *
+     * Background = low depth
+     * Face = medium depth
+     * Nose / lips / center features = high depth
+     *
+     * Strong separation is intentionally used so
+     * beginners can perceive the face more easily.
+     */
+
+    const getDepth = (x: number, y: number) => {
+      let depth = 0.035;
+
+      const dx = (x - FACE_CX) / faceRx;
+      const dy = (y - FACE_CY) / faceRy;
+
+      const distance = Math.sqrt(
+        dx * dx + dy * dy,
+      );
+
+      /*
+       * Main face volume
+       */
+      if (distance < 1) {
+        const normalized =
+          clamp(1 - distance);
+
+        const faceVolume =
+          0.40 +
+          smoothStep(normalized) * 0.30;
+
+        depth = Math.max(depth, faceVolume);
+      }
+
+      /*
+       * ----------------------------------------
+       * FACE OUTER CONTOUR
+       * ----------------------------------------
+       */
+
+      const contourDistance =
+        Math.abs(distance - 0.94);
+
+      if (contourDistance < 0.10) {
+        const contourStrength =
+          1 -
+          contourDistance / 0.10;
+
+        depth = Math.max(
+          depth,
+          0.48 +
+            smoothStep(contourStrength) * 0.15,
+        );
+      }
+
+      /*
+       * ----------------------------------------
+       * FOREHEAD
+       * ----------------------------------------
+       */
+
+      const forehead = ellipseValue(
+        x,
+        y,
+        FACE_CX,
+        FACE_CY - 65,
+        82,
+        70,
+      );
+
+      if (forehead < 1) {
+        depth = Math.max(
+          depth,
+          0.58 +
+            (1 - forehead) * 0.10,
+        );
+      }
+
+      /*
+       * ----------------------------------------
+       * CHEEKS
+       * ----------------------------------------
+       */
+
+      const leftCheek = ellipseValue(
+        x,
+        y,
+        FACE_CX - 53,
+        FACE_CY + 20,
+        54,
+        65,
+      );
+
+      const rightCheek = ellipseValue(
+        x,
+        y,
+        FACE_CX + 53,
+        FACE_CY + 20,
+        54,
+        65,
+      );
+
+      if (leftCheek < 1) {
+        depth = Math.max(
+          depth,
+          0.60 +
+            (1 - leftCheek) * 0.12,
+        );
+      }
+
+      if (rightCheek < 1) {
+        depth = Math.max(
+          depth,
+          0.60 +
+            (1 - rightCheek) * 0.12,
+        );
+      }
+
+      /*
+       * ----------------------------------------
+       * EYE SOCKETS
+       *
+       * Slightly lower than cheeks.
+       * This creates facial relief.
+       * ----------------------------------------
+       */
+
+      const leftEye = ellipseValue(
+        x,
+        y,
+        FACE_CX - 47,
+        FACE_CY - 22,
+        27,
+        13,
+      );
+
+      const rightEye = ellipseValue(
+        x,
+        y,
+        FACE_CX + 47,
+        FACE_CY - 22,
+        27,
+        13,
+      );
+
+      if (leftEye < 1) {
+        depth = Math.min(
+          depth,
+          0.47 +
+            leftEye * 0.04,
+        );
+      }
+
+      if (rightEye < 1) {
+        depth = Math.min(
+          depth,
+          0.47 +
+            rightEye * 0.04,
+        );
+      }
+
+      /*
+       * ----------------------------------------
+       * EYEBROWS
+       * ----------------------------------------
+       */
+
+      const leftBrow = ellipseValue(
+        x,
+        y,
+        FACE_CX - 47,
+        FACE_CY - 44,
+        34,
+        7,
+      );
+
+      const rightBrow = ellipseValue(
+        x,
+        y,
+        FACE_CX + 47,
+        FACE_CY - 44,
+        34,
+        7,
+      );
+
+      if (leftBrow < 1) {
+        depth = Math.max(
+          depth,
+          0.68,
+        );
+      }
+
+      if (rightBrow < 1) {
+        depth = Math.max(
+          depth,
+          0.68,
+        );
+      }
+
+      /*
+       * ----------------------------------------
+       * NOSE
+       * ----------------------------------------
+       *
+       * Strongest facial protrusion.
+       */
+
+      const noseBridge = ellipseValue(
+        x,
+        y,
+        FACE_CX,
+        FACE_CY - 2,
+        15,
+        58,
+      );
+
+      if (noseBridge < 1) {
+        depth = Math.max(
+          depth,
+          0.70 +
+            (1 - noseBridge) * 0.20,
+        );
+      }
+
+      const noseTip = ellipseValue(
+        x,
+        y,
+        FACE_CX,
+        FACE_CY + 30,
+        25,
+        18,
+      );
+
+      if (noseTip < 1) {
+        depth = Math.max(
+          depth,
+          0.92 +
+            (1 - noseTip) * 0.06,
+        );
+      }
+
+      /*
+       * ----------------------------------------
+       * NOSE SIDES
+       * ----------------------------------------
+       */
+
+      const leftNostril = ellipseValue(
+        x,
+        y,
+        FACE_CX - 11,
+        FACE_CY + 35,
+        8,
+        6,
+      );
+
+      const rightNostril = ellipseValue(
+        x,
+        y,
+        FACE_CX + 11,
+        FACE_CY + 35,
+        8,
+        6,
+      );
+
+      if (leftNostril < 1) {
+        depth = Math.min(depth, 0.52);
+      }
+
+      if (rightNostril < 1) {
+        depth = Math.min(depth, 0.52);
+      }
+
+      /*
+       * ----------------------------------------
+       * MOUTH AREA
+       * ----------------------------------------
+       */
+
+      const mouthShadow = ellipseValue(
+        x,
+        y,
+        FACE_CX,
+        FACE_CY + 79,
+        43,
+        13,
+      );
+
+      if (mouthShadow < 1) {
+        depth = Math.min(
+          depth,
+          0.52,
+        );
+      }
+
+      const upperLip = ellipseValue(
+        x,
+        y,
+        FACE_CX,
+        FACE_CY + 70,
+        34,
+        8,
+      );
+
+      if (upperLip < 1) {
+        depth = Math.max(
+          depth,
+          0.70,
+        );
+      }
+
+      const lowerLip = ellipseValue(
+        x,
+        y,
+        FACE_CX,
+        FACE_CY + 87,
+        32,
+        10,
+      );
+
+      if (lowerLip < 1) {
+        depth = Math.max(
+          depth,
+          0.74,
+        );
+      }
+
+      /*
+       * ----------------------------------------
+       * CHIN
+       * ----------------------------------------
+       */
+
+      const chin = ellipseValue(
+        x,
+        y,
+        FACE_CX,
+        FACE_CY + 125,
+        57,
+        38,
+      );
+
+      if (chin < 1) {
+        depth = Math.max(
+          depth,
+          0.67 +
+            (1 - chin) * 0.10,
+        );
+      }
+
+      /*
+       * ----------------------------------------
+       * JAW
+       * ----------------------------------------
+       */
+
+      if (gender === 'male') {
+        const jawLeft = ellipseValue(
+          x,
+          y,
+          FACE_CX - 82,
+          FACE_CY + 72,
+          43,
+          80,
         );
 
-        /*
-         * --------------------------------------------------
-         * NAME DEPTH MAP
-         * --------------------------------------------------
-         *
-         * The partner's name is rendered onto a hidden
-         * offscreen canvas and converted into depth.
-         *
-         * This means the name becomes part of the
-         * stereogram instead of being simply painted on top.
-         */
+        const jawRight = ellipseValue(
+          x,
+          y,
+          FACE_CX + 82,
+          FACE_CY + 72,
+          43,
+          80,
+        );
 
-        let nameDepthMap:
-          | Uint8ClampedArray
-          | null = null;
-
-        let nameMapWidth = 0;
-        let nameMapHeight = 0;
-        let nameMapX = 0;
-        let nameMapY = 0;
-
-        if (partnerName.length > 0) {
-          const nameCanvas =
-            document.createElement(
-              'canvas',
-            );
-
-          const nameCtx =
-            nameCanvas.getContext(
-              '2d',
-            );
-
-          if (nameCtx) {
-            nameCanvas.width =
-              CANVAS_W;
-
-            nameCanvas.height = 100;
-
-            nameCtx.clearRect(
-              0,
-              0,
-              CANVAS_W,
-              100,
-            );
-
-            nameCtx.font =
-              '700 34px Arial, sans-serif';
-
-            nameCtx.textAlign =
-              'center';
-
-            nameCtx.textBaseline =
-              'middle';
-
-            nameCtx.fillStyle =
-              '#ffffff';
-
-            nameCtx.fillText(
-              partnerName,
-              CANVAS_W / 2,
-              50,
-            );
-
-            const nameImage =
-              nameCtx.getImageData(
-                0,
-                0,
-                CANVAS_W,
-                100,
-              );
-
-            nameDepthMap =
-              nameImage.data;
-
-            nameMapWidth =
-              CANVAS_W;
-
-            nameMapHeight =
-              100;
-
-            nameMapX = 0;
-
-            nameMapY =
-              CANVAS_H - 125;
-          }
+        if (jawLeft < 1) {
+          depth = Math.max(
+            depth,
+            0.62,
+          );
         }
 
+        if (jawRight < 1) {
+          depth = Math.max(
+            depth,
+            0.62,
+          );
+        }
+      } else {
         /*
-         * --------------------------------------------------
-         * DEPTH MAP
-         * --------------------------------------------------
-         *
-         * This is the hidden 3D object.
-         *
-         * Values:
-         *
-         * 0 = far/background
-         * 1 = closest/strongest depth
+         * Female jaw is intentionally softer.
          */
+        const softJaw = ellipseValue(
+          x,
+          y,
+          FACE_CX,
+          FACE_CY + 75,
+          112,
+          108,
+        );
 
-        const getDepth = (
-          x: number,
-          y: number,
-        ): number => {
-          /*
-           * ----------------------------------------------
-           * FACE SIZE
-           * ----------------------------------------------
-           */
+        if (softJaw < 1) {
+          depth = Math.max(
+            depth,
+            0.56 +
+              (1 - softJaw) * 0.08,
+          );
+        }
+      }
 
-          let rx = 78;
-          let ry = 104;
+      /*
+       * ----------------------------------------
+       * HAIR
+       * ----------------------------------------
+       */
 
-          if (
-            faceStructure ===
-            'round'
-          ) {
-            rx = 88;
-            ry = 88;
-          }
+      if (hairStyle !== 'bald') {
+        const hairTop = ellipseValue(
+          x,
+          y,
+          FACE_CX,
+          FACE_CY - 128,
+          faceRx * 0.95,
+          62,
+        );
 
-          if (
-            faceStructure ===
-            'square'
-          ) {
-            rx = 88;
-            ry = 91;
-          }
+        const sideHairLeft =
+          ellipseValue(
+            x,
+            y,
+            FACE_CX - 112,
+            FACE_CY - 30,
+            30,
+            130,
+          );
 
-          /*
-           * ----------------------------------------------
-           * NORMALIZED FACE COORDINATES
-           * ----------------------------------------------
-           */
+        const sideHairRight =
+          ellipseValue(
+            x,
+            y,
+            FACE_CX + 112,
+            FACE_CY - 30,
+            30,
+            130,
+          );
 
-          const dx =
-            (x - FACE_CENTER_X) /
-            rx;
+        if (hairTop < 1) {
+          if (hairStyle === 'curly') {
+            const curlWave =
+              Math.sin(x * 0.18) *
+              Math.cos(y * 0.11);
 
-          const dy =
-            (y - FACE_CENTER_Y) /
-            ry;
-
-          const distance =
-            Math.sqrt(
-              dx * dx +
-                dy * dy,
-            );
-
-          let depth = 0;
-
-          /*
-           * ----------------------------------------------
-           * MAIN FACE VOLUME
-           * ----------------------------------------------
-           */
-
-          if (distance < 1) {
-            if (
-              faceStructure ===
-              'square'
-            ) {
-              /*
-               * Square face:
-               * stronger planar structure.
-               */
-              const edge =
-                Math.max(
-                  Math.abs(dx),
-                  Math.abs(dy),
-                );
-
-              depth =
-                (1 - edge) *
-                0.86;
-            } else {
-              /*
-               * Oval/Round:
-               * smooth spherical surface.
-               */
-              depth =
-                Math.cos(
-                  distance *
-                    Math.PI *
-                    0.5,
-                ) * 0.86;
-            }
-
-            /*
-             * ------------------------------------------
-             * FOREHEAD
-             * ------------------------------------------
-             */
-
-            if (
-              dy < -0.2 &&
-              dy > -0.75
-            ) {
-              depth +=
-                (1 -
-                  Math.abs(dx)) *
-                0.035;
-            }
-
-            /*
-             * ------------------------------------------
-             * EYES
-             * ------------------------------------------
-             *
-             * Eye sockets are slightly recessed.
-             */
-
-            const eyeY =
-              y -
-              (FACE_CENTER_Y - 22);
-
-            if (
-              eyeY > -7 &&
-              eyeY < 9 &&
-              Math.abs(dx) > 0.22 &&
-              Math.abs(dx) < 0.67
-            ) {
-              depth -= 0.09;
-            }
-
-            /*
-             * ------------------------------------------
-             * NOSE BRIDGE
-             * ------------------------------------------
-             */
-
-            const noseX =
-              Math.abs(
-                x -
-                  FACE_CENTER_X,
-              );
-
-            const noseY =
-              y -
-              (FACE_CENTER_Y - 12);
-
-            if (
-              noseX < 7 &&
-              noseY > -18 &&
-              noseY < 30
-            ) {
-              depth +=
-                (1 -
-                  noseX / 7) *
-                0.25;
-            }
-
-            /*
-             * NOSE TIP
-             */
-
-            if (
-              noseX < 10 &&
-              noseY > 14 &&
-              noseY < 39
-            ) {
-              depth +=
-                (1 -
-                  noseX / 10) *
-                0.15;
-            }
-
-            /*
-             * ------------------------------------------
-             * CHEEKBONES
-             * ------------------------------------------
-             */
-
-            const cheekY =
-              y -
-              (FACE_CENTER_Y + 7);
-
-            if (
-              cheekY > -7 &&
-              cheekY < 29 &&
-              Math.abs(dx) > 0.28 &&
-              Math.abs(dx) < 0.75
-            ) {
-              depth += 0.075;
-            }
-
-            /*
-             * ------------------------------------------
-             * MOUTH AREA
-             * ------------------------------------------
-             */
-
-            const mouthY =
-              y -
-              (FACE_CENTER_Y + 34);
-
-            if (
-              mouthY > -7 &&
-              mouthY < 8 &&
-              Math.abs(dx) < 0.30
-            ) {
-              depth -= 0.045;
-            }
-
-            /*
-             * ------------------------------------------
-             * CHIN
-             * ------------------------------------------
-             */
-
-            const chinY =
-              y -
-              (FACE_CENTER_Y + 61);
-
-            if (
-              chinY > -13 &&
-              chinY < 20 &&
-              Math.abs(dx) < 0.46
-            ) {
-              depth += 0.10;
-            }
-
-            /*
-             * ------------------------------------------
-             * MALE JAW
-             * ------------------------------------------
-             */
-
-            if (
-              gender === 'male'
-            ) {
-              if (
-                dy > 0.20 &&
-                dy < 0.88 &&
-                Math.abs(dx) >
-                  0.40
-              ) {
-                depth += 0.065;
-              }
-            }
-
-            /*
-             * ------------------------------------------
-             * FEMALE CHEEK / JAW
-             * ------------------------------------------
-             */
-
-            if (
-              gender ===
-              'female'
-            ) {
-              if (
-                dy > 0.10 &&
-                dy < 0.72 &&
-                Math.abs(dx) >
-                  0.48
-              ) {
-                depth += 0.035;
-              }
-            }
-
-            /*
-             * ------------------------------------------
-             * MALE BEARD
-             * ------------------------------------------
-             */
-
-            if (
-              gender ===
-                'male' &&
-              beardStyle !==
-                'clean'
-            ) {
-              const beardArea =
-                dy > 0.20 &&
-                dy < 0.82 &&
-                Math.abs(dx) <
-                  0.82;
-
-              if (beardArea) {
-                if (
-                  beardStyle ===
-                  'stubble'
-                ) {
-                  const grain =
-                    Math.sin(
-                      x * 1.73 +
-                        y * 0.91,
-                    ) *
-                    Math.cos(
-                      y * 1.31,
-                    );
-
-                  depth +=
-                    0.035 +
-                    Math.max(
-                      grain,
-                      0,
-                    ) *
-                      0.025;
-                }
-
-                if (
-                  beardStyle ===
-                  'short'
-                ) {
-                  depth +=
-                    0.085;
-                }
-
-                if (
-                  beardStyle ===
-                  'full'
-                ) {
-                  depth +=
-                    0.145;
-                }
-              }
-            }
-          }
-
-          /*
-           * ----------------------------------------------
-           * HAIR VOLUME
-           * ----------------------------------------------
-           */
-
-          if (
-            hairStyle !==
-            'bald'
-          ) {
-            /*
-             * Top hair.
-             */
-
-            const topHair =
-              dy < -0.55 &&
-              dy > -1.35 &&
-              Math.abs(dx) <
-                1.18;
-
-            /*
-             * Side hair.
-             */
-
-            const sideHair =
-              Math.abs(dx) >
-                0.70 &&
-              Math.abs(dx) <
-                1.25 &&
-              dy > -0.55 &&
-              dy < 0.48;
-
-            if (
-              topHair ||
-              sideHair
-            ) {
-              if (
-                hairStyle ===
-                'straight'
-              ) {
-                depth =
-                  Math.max(
-                    depth,
-                    0.54,
-                  );
-
-                depth +=
-                  (1 -
-                    Math.min(
-                      Math.abs(
-                        dx,
-                      ),
-                      1,
-                    )) *
-                  0.055;
-              }
-
-              if (
-                hairStyle ===
-                'curly'
-              ) {
-                const curl =
-                  Math.sin(
-                    x * 0.24,
-                  ) *
-                  Math.cos(
-                    y * 0.20,
-                  );
-
-                depth =
-                  Math.max(
-                    depth,
-                    0.50,
-                  );
-
-                depth +=
-                  Math.max(
-                    curl,
-                    0,
-                  ) *
-                  0.12;
-              }
-            }
-          }
-
-          /*
-           * ----------------------------------------------
-           * FACE TONE
-           * ----------------------------------------------
-           *
-           * Tone subtly changes depth intensity.
-           */
-
-          if (
-            faceTone ===
-            'dark'
-          ) {
-            depth *= 0.98;
-          }
-
-          if (
-            faceTone ===
-            'fair'
-          ) {
-            depth *= 1.02;
-          }
-
-          /*
-           * ----------------------------------------------
-           * PARTNER NAME
-           * ----------------------------------------------
-           */
-
-          if (
-            nameDepthMap &&
-            y >= nameMapY &&
-            y <
-              nameMapY +
-                nameMapHeight
-          ) {
-            const localX =
-              x - nameMapX;
-
-            const localY =
-              y - nameMapY;
-
-            if (
-              localX >= 0 &&
-              localX <
-                nameMapWidth &&
-              localY >= 0 &&
-              localY <
-                nameMapHeight
-            ) {
-              const pixelIndex =
-                (localY *
-                  nameMapWidth +
-                  localX) *
-                4;
-
-              const alpha =
-                nameDepthMap[
-                  pixelIndex + 3
-                ];
-
-              if (
-                alpha > 20
-              ) {
-                depth =
-                  Math.max(
-                    depth,
-                    0.48,
-                  );
-              }
-            }
-          }
-
-          /*
-           * Keep everything in valid range.
-           */
-
-          return Math.min(
-            Math.max(
+            depth = Math.max(
               depth,
-              0,
-            ),
-            1,
-          );
-        };
-
-        /*
-         * --------------------------------------------------
-         * RANDOM COLOR SOURCE
-         * --------------------------------------------------
-         */
-
-        const sourceColors =
-          Array.isArray(
-            palette.patternColors,
-          ) &&
-          palette.patternColors
-            .length > 0
-            ? palette.patternColors
-            : FALLBACK_PALETTE.patternColors;
-
-        /*
-         * Convert hex colors into RGB once.
-         */
-
-        const rgbColors =
-          sourceColors.map(
-            (color) => {
-              if (
-                typeof color !==
-                  'string' ||
-                !/^#[0-9a-fA-F]{6}$/.test(
-                  color,
-                )
-              ) {
-                return [
-                  255,
-                  255,
-                  255,
-                ];
-              }
-
-              return [
-                parseInt(
-                  color.slice(
-                    1,
-                    3,
-                  ),
-                  16,
-                ),
-                parseInt(
-                  color.slice(
-                    3,
-                    5,
-                  ),
-                  16,
-                ),
-                parseInt(
-                  color.slice(
-                    5,
-                    7,
-                  ),
-                  16,
-                ),
-              ];
-            },
-          );
-
-        /*
-         * --------------------------------------------------
-         * FINAL SIRDS IMAGE
-         * --------------------------------------------------
-         *
-         * Each horizontal scanline is solved independently.
-         *
-         * For every point:
-         *
-         *   depth -> stereo separation
-         *   separation -> corresponding left/right pixels
-         *   corresponding pixels -> same-color constraint
-         *
-         * This is the core of a Single Image Random Dot
-         * Stereogram.
-         */
-
-        const image =
-          ctx.createImageData(
-            CANVAS_W,
-            CANVAS_H,
-          );
-
-        const imageData =
-          image.data;
-
-        /*
-         * Deterministic seed for the generated pattern.
-         *
-         * This keeps the same generated result stable while
-         * still making different generations different.
-         */
-
-        let seed =
-          2166136261;
-
-        const seedText =
-          `${partnerName}|${gender}|${faceStructure}|${faceTone}|${hairStyle}|${beardStyle}|${generateKey}|${safeIndex}`;
-
-        for (
-          let i = 0;
-          i < seedText.length;
-          i++
-        ) {
-          seed ^=
-            seedText.charCodeAt(
-              i,
+              0.57 +
+                curlWave * 0.05,
             );
-
-          seed =
-            Math.imul(
-              seed,
-              16777619,
+          } else {
+            depth = Math.max(
+              depth,
+              0.60,
             );
-        }
-
-        const random = () => {
-          seed +=
-            0x6d2b79f5;
-
-          let t = seed;
-
-          t =
-            Math.imul(
-              t ^
-                (t >>> 15),
-              t | 1,
-            );
-
-          t ^=
-            t +
-            Math.imul(
-              t ^
-                (t >>> 7),
-              t | 61,
-            );
-
-          return (
-            (t ^
-              (t >>> 14)) >>>
-            0
-          ) /
-            4294967296;
-        };
-
-        /*
-         * --------------------------------------------------
-         * PROCESS EACH ROW
-         * --------------------------------------------------
-         */
-
-        for (
-          let y = 0;
-          y < CANVAS_H;
-          y++
-        ) {
-          /*
-           * Union-Find / equivalence classes.
-           *
-           * Pixels in the same class MUST receive the
-           * same random color.
-           */
-
-          const parent =
-            new Int32Array(
-              CANVAS_W,
-            );
-
-          const rank =
-            new Uint8Array(
-              CANVAS_W,
-            );
-
-          for (
-            let x = 0;
-            x < CANVAS_W;
-            x++
-          ) {
-            parent[x] = x;
-          }
-
-          const find = (
-            value: number,
-          ): number => {
-            let current =
-              value;
-
-            while (
-              parent[current] !==
-              current
-            ) {
-              current =
-                parent[current];
-            }
-
-            /*
-             * Path compression.
-             */
-
-            let node =
-              value;
-
-            while (
-              parent[node] !==
-              node
-            ) {
-              const next =
-                parent[node];
-
-              parent[node] =
-                current;
-
-              node = next;
-            }
-
-            return current;
-          };
-
-          const union = (
-            a: number,
-            b: number,
-          ) => {
-            let rootA =
-              find(a);
-
-            let rootB =
-              find(b);
-
-            if (
-              rootA ===
-              rootB
-            ) {
-              return;
-            }
-
-            if (
-              rank[rootA] <
-              rank[rootB]
-            ) {
-              const temp =
-                rootA;
-
-              rootA =
-                rootB;
-
-              rootB =
-                temp;
-            }
-
-            parent[rootB] =
-              rootA;
-
-            if (
-              rank[rootA] ===
-              rank[rootB]
-            ) {
-              rank[rootA]++;
-            }
-          };
-
-          /*
-           * ----------------------------------------------
-           * CREATE PIXEL CONSTRAINTS
-           * ----------------------------------------------
-           */
-
-          for (
-            let x = 0;
-            x < CANVAS_W;
-            x++
-          ) {
-            const depth =
-              getDepth(
-                x,
-                y,
-              );
-
-            /*
-             * Far objects have larger repeating separation.
-             * Near objects have smaller separation.
-             */
-
-            const separation =
-              Math.round(
-                FAR_SEPARATION -
-                  depth *
-                    (FAR_SEPARATION -
-                      NEAR_SEPARATION),
-              );
-
-            /*
-             * Slight alternating correction prevents a
-             * systematic odd/even rounding bias.
-             */
-
-            const adjusted =
-              separation +
-              ((separation &
-                1) &&
-              (y & 1)
-                ? 1
-                : 0);
-
-            const left =
-              x -
-              Math.floor(
-                adjusted / 2,
-              );
-
-            const right =
-              left +
-              adjusted;
-
-            if (
-              left >= 0 &&
-              right <
-                CANVAS_W
-            ) {
-              union(
-                left,
-                right,
-              );
-            }
-          }
-
-          /*
-           * ----------------------------------------------
-           * RANDOM COLOR PER CONSTRAINT GROUP
-           * ----------------------------------------------
-           */
-
-          const rootColor =
-            new Map<
-              number,
-              number[]
-            >();
-
-          for (
-            let x = 0;
-            x < CANVAS_W;
-            x++
-          ) {
-            const root =
-              find(x);
-
-            if (
-              !rootColor.has(
-                root,
-              )
-            ) {
-              const color =
-                rgbColors[
-                  Math.floor(
-                    random() *
-                      rgbColors.length,
-                  )
-                ] ??
-                [255, 255, 255];
-
-              rootColor.set(
-                root,
-                color,
-              );
-            }
-
-            const color =
-              rootColor.get(
-                root,
-              ) ??
-              [255, 255, 255];
-
-            const index =
-              (y *
-                CANVAS_W +
-                x) *
-              4;
-
-            imageData[index] =
-              color[0];
-
-            imageData[
-              index + 1
-            ] = color[1];
-
-            imageData[
-              index + 2
-            ] = color[2];
-
-            imageData[
-              index + 3
-            ] = 255;
           }
         }
 
-        /*
-         * --------------------------------------------------
-         * PUT SIRDS ON SCREEN
-         * --------------------------------------------------
-         */
-
-        ctx.putImageData(
-          image,
-          0,
-          0,
-        );
-
-        /*
-         * --------------------------------------------------
-         * CONVERGENCE DOTS
-         * --------------------------------------------------
-         *
-         * These are NOT part of the hidden image.
-         * They help users establish the correct viewing
-         * distance/focus.
-         */
-
-        ctx.save();
-
-        ctx.fillStyle =
-          '#ffffff';
-
-        ctx.shadowColor =
-          typeof palette.primary ===
-          'string'
-            ? palette.primary
-            : '#ec4899';
-
-        ctx.shadowBlur = 5;
-
-        const dotY =
-          CANVAS_H - 18;
-
-        ctx.beginPath();
-
-        ctx.arc(
-          CANVAS_W / 2 -
-            FAR_SEPARATION /
-              2,
-          dotY,
-          3,
-          0,
-          Math.PI * 2,
-        );
-
-        ctx.fill();
-
-        ctx.beginPath();
-
-        ctx.arc(
-          CANVAS_W / 2 +
-            FAR_SEPARATION /
-              2,
-          dotY,
-          3,
-          0,
-          Math.PI * 2,
-        );
-
-        ctx.fill();
-
-        ctx.restore();
-
-        /*
-         * --------------------------------------------------
-         * VERY SUBTLE HEARTS
-         * --------------------------------------------------
-         *
-         * Do NOT paint large flat elements over the SIRDS.
-         * They would interfere with the hidden image.
-         */
-
-        const heartColor =
-          typeof palette.heartColor ===
-          'string'
-            ? palette.heartColor
-            : FALLBACK_PALETTE.heartColor;
-
-        for (
-          let i = 0;
-          i < 3;
-          i++
-        ) {
-          const hx =
-            30 +
-            random() *
-              (CANVAS_W -
-                60);
-
-          const hy =
-            35 +
-            random() *
-              (CANVAS_H -
-                90);
-
-          ctx.save();
-
-          ctx.globalAlpha =
-            0.018;
-
-          ctx.fillStyle =
-            heartColor;
-
-          drawHeart(
-            ctx,
-            hx,
-            hy,
-            6,
+        if (sideHairLeft < 1) {
+          depth = Math.max(
+            depth,
+            0.54,
           );
-
-          ctx.restore();
         }
 
-        /*
-         * --------------------------------------------------
-         * SHARE IMAGE
-         * --------------------------------------------------
-         */
-
-        const dataUrl =
-          canvas.toDataURL(
-            'image/png',
+        if (sideHairRight < 1) {
+          depth = Math.max(
+            depth,
+            0.54,
           );
+        }
+      }
+
+      /*
+       * ----------------------------------------
+       * MALE BEARD
+       * ----------------------------------------
+       */
+
+      if (gender === 'male') {
+        if (beardStyle !== 'clean') {
+          const beard = ellipseValue(
+            x,
+            y,
+            FACE_CX,
+            FACE_CY + 82,
+            88,
+            72,
+          );
+
+          if (beard < 1) {
+            if (beardStyle === 'full') {
+              depth = Math.max(
+                depth,
+                0.70,
+              );
+            } else if (beardStyle === 'short') {
+              depth = Math.max(
+                depth,
+                0.64,
+              );
+            } else if (beardStyle === 'stubble') {
+              depth = Math.max(
+                depth,
+                0.59,
+              );
+            }
+          }
+        }
+      }
+
+      /*
+       * ----------------------------------------
+       * FACE TONE
+       *
+       * Tone changes depth subtly so it
+       * influences the final matrix without
+       * destroying facial geometry.
+       * ----------------------------------------
+       */
+
+      if (faceTone === 'fair') {
+        depth *= 1.02;
+      }
+
+      if (faceTone === 'dark') {
+        depth *= 0.98;
+      }
+
+      /*
+       * ----------------------------------------
+       * NAME DEPTH EMBEDDING
+       * ----------------------------------------
+       */
+
+      if (namePixels) {
+        const pixelIndex =
+          (y * CANVAS_W + x) * 4;
+
+        if (namePixels[pixelIndex + 3] > 40) {
+          depth = Math.max(
+            depth,
+            0.66,
+          );
+        }
+      }
+
+      return clamp(depth);
+    };
+
+    /*
+     * ------------------------------------------
+     * BUILD RANDOM DOT SOURCE
+     * ------------------------------------------
+     *
+     * We intentionally use 2x2-ish visual dot
+     * grouping. This is easier for beginners to
+     * fuse than extremely fine single-pixel noise.
+     */
+
+    const random = createSeededRandom(
+      generateKey * 7919 +
+        paletteIndex * 104729 +
+        name.length * 313,
+    );
+
+    const sourcePattern =
+      new Uint8ClampedArray(
+        FAR_SEPARATION * CANVAS_H * 4,
+      );
+
+    const patternColors =
+      palette.patternColors.length > 0
+        ? palette.patternColors
+        : ['#ffffff', '#d9f7f0', '#9cebd9'];
+
+    for (
+      let y = 0;
+      y < CANVAS_H;
+      y += 1
+    ) {
+      for (
+        let x = 0;
+        x < FAR_SEPARATION;
+        x += 1
+      ) {
+        /*
+         * Create slightly larger visual dots.
+         */
+        const blockX =
+          Math.floor(x / 2);
+
+        const blockY =
+          Math.floor(y / 2);
+
+        const localSeed =
+          blockX * 92821 +
+          blockY * 68917 +
+          generateKey * 997;
+
+        const localRandom =
+          createSeededRandom(
+            localSeed,
+          )();
+
+        const randomIndex =
+          Math.floor(
+            localRandom *
+              patternColors.length,
+          );
+
+        const rgb = hexToRgb(
+          patternColors[randomIndex],
+        );
+
+        const index =
+          (y * FAR_SEPARATION + x) * 4;
+
+        sourcePattern[index] = rgb.r;
+        sourcePattern[index + 1] = rgb.g;
+        sourcePattern[index + 2] = rgb.b;
+        sourcePattern[index + 3] = 255;
+      }
+    }
+
+    /*
+     * ------------------------------------------
+     * FINAL SIRDS IMAGE
+     * ------------------------------------------
+     */
+
+    const finalImage =
+      ctx.createImageData(
+        CANVAS_W,
+        CANVAS_H,
+      );
+
+    const output = finalImage.data;
+
+    /*
+     * Use a deterministic palette selection
+     * for connected pixel groups.
+     */
+    const groupRandom =
+      createSeededRandom(
+        generateKey * 1777 +
+          paletteIndex * 9283 +
+          name.length * 31,
+      );
+
+    for (
+      let y = 0;
+      y < CANVAS_H;
+      y += 1
+    ) {
+      const sets =
+        new DisjointSet(CANVAS_W);
+
+      /*
+       * Build left/right pixel constraints.
+       */
+      for (
+        let x = 0;
+        x < CANVAS_W;
+        x += 1
+      ) {
+        const depth =
+          getDepth(x, y);
+
+        /*
+         * Strong depth-to-separation mapping.
+         */
+        const separation = Math.round(
+          FAR_SEPARATION -
+            depth * DEPTH_RANGE,
+        );
+
+        const half =
+          Math.floor(separation / 2);
+
+        const left =
+          x - half;
+
+        const right =
+          x + separation - half;
 
         if (
-          typeof onCanvasReady ===
-          'function'
+          left < 0 ||
+          right >= CANVAS_W ||
+          left === right
         ) {
-          onCanvasReady(
-            dataUrl,
+          continue;
+        }
+
+        /*
+         * Prevent pathological over-linking.
+         */
+        const leftRoot =
+          sets.find(left);
+
+        const rightRoot =
+          sets.find(right);
+
+        if (leftRoot !== rightRoot) {
+          sets.union(
+            leftRoot,
+            rightRoot,
           );
         }
-      } catch (error) {
-        /*
-         * Never let a canvas error crash the whole Loveons
-         * page.
-         */
-
-        console.error(
-          'Love Magic Eye SIRDS error:',
-          error,
-        );
-      } finally {
-        setRendering(false);
       }
-    });
+
+      /*
+       * Give every equivalence group a random
+       * source color.
+       */
+      const groupColors =
+        new Map<
+          number,
+          { r: number; g: number; b: number }
+        >();
+
+      for (
+        let x = 0;
+        x < CANVAS_W;
+        x += 1
+      ) {
+        const root =
+          sets.find(x);
+
+        if (!groupColors.has(root)) {
+          const sourceX =
+            Math.floor(
+              groupRandom() *
+                FAR_SEPARATION,
+            );
+
+          const sourceIndex =
+            (y * FAR_SEPARATION +
+              sourceX) *
+            4;
+
+          groupColors.set(root, {
+            r: sourcePattern[
+              sourceIndex
+            ],
+            g: sourcePattern[
+              sourceIndex + 1
+            ],
+            b: sourcePattern[
+              sourceIndex + 2
+            ],
+          });
+        }
+
+        const color =
+          groupColors.get(root)!;
+
+        const index =
+          (y * CANVAS_W + x) * 4;
+
+        output[index] = color.r;
+        output[index + 1] = color.g;
+        output[index + 2] = color.b;
+        output[index + 3] = 255;
+      }
+    }
+
+    /*
+     * Put stereogram into canvas.
+     */
+    ctx.putImageData(
+      finalImage,
+      0,
+      0,
+    );
+
+    /*
+     * ------------------------------------------
+     * SUBTLE EDGE VIGNETTE
+     * ------------------------------------------
+     *
+     * This does not enter the stereogram data.
+     * It only improves the visual frame.
+     */
+
+    const vignette =
+      ctx.createRadialGradient(
+        CANVAS_W / 2,
+        CANVAS_H / 2,
+        120,
+        CANVAS_W / 2,
+        CANVAS_H / 2,
+        340,
+      );
+
+    vignette.addColorStop(
+      0,
+      'rgba(255,255,255,0)',
+    );
+
+    vignette.addColorStop(
+      1,
+      'rgba(0,0,0,0.08)',
+    );
+
+    ctx.fillStyle = vignette;
+    ctx.fillRect(
+      0,
+      0,
+      CANVAS_W,
+      CANVAS_H,
+    );
+
+    /*
+     * Save generated image for sharing.
+     */
+    const dataUrl =
+      canvas.toDataURL(
+        'image/png',
+      );
+
+    onCanvasReady?.(dataUrl);
+
+    setRendering(false);
   }, [
     config,
     paletteIndex,
@@ -1347,186 +1098,95 @@ export default function StereogramCanvas({
     onCanvasReady,
   ]);
 
-  /*
-   * --------------------------------------------------------
-   * GENERATE
-   * --------------------------------------------------------
-   */
-
   useEffect(() => {
-    if (
-      generateKey > 0
-    ) {
-      render();
-    }
+    if (generateKey <= 0) return;
+
+    const frame =
+      window.requestAnimationFrame(() => {
+        render();
+      });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
   }, [
     generateKey,
     render,
   ]);
 
-  /*
-   * --------------------------------------------------------
-   * SAFE DISPLAY PALETTE
-   * --------------------------------------------------------
-   */
-
-  const paletteCount =
-    Array.isArray(PALETTES)
-      ? PALETTES.length
-      : 0;
-
-  const rawDisplayIndex =
-    Number.isFinite(
-      paletteIndex,
-    )
-      ? Math.floor(
-          paletteIndex,
-        )
-      : 0;
-
-  const safeDisplayIndex =
-    paletteCount > 0
-      ? ((rawDisplayIndex %
-          paletteCount) +
-          paletteCount) %
-        paletteCount
-      : 0;
-
-  const displayPalette =
+  const palette =
     PALETTES[
-      safeDisplayIndex
-    ] ??
-    FALLBACK_PALETTE;
-
-  const primary =
-    typeof displayPalette.primary ===
-    'string'
-      ? displayPalette.primary
-      : FALLBACK_PALETTE.primary;
-
-  const secondary =
-    typeof displayPalette.secondary ===
-    'string'
-      ? displayPalette.secondary
-      : FALLBACK_PALETTE.secondary;
-
-  const paletteName =
-    typeof displayPalette.name ===
-    'string'
-      ? displayPalette.name
-      : FALLBACK_PALETTE.name;
-
-  /*
-   * --------------------------------------------------------
-   * UI
-   * --------------------------------------------------------
-   */
+      paletteIndex % PALETTES.length
+    ];
 
   return (
     <div className="flex w-full flex-col items-center">
+      {/* Beginner convergence guide */}
+      <div className="mb-2 flex items-center justify-center gap-[72px]">
+        <span
+          className="h-3 w-3 rounded-full"
+          style={{
+            backgroundColor: '#ffffff',
+            boxShadow: `0 0 10px ${palette.primary}`,
+          }}
+          aria-hidden="true"
+        />
+
+        <span
+          className="h-3 w-3 rounded-full"
+          style={{
+            backgroundColor: '#ffffff',
+            boxShadow: `0 0 10px ${palette.primary}`,
+          }}
+          aria-hidden="true"
+        />
+      </div>
+
+      <p className="mb-3 max-w-[330px] text-center text-[11px] leading-relaxed text-slate-400">
+        Look through the pattern — not directly at
+        the dots. Relax your eyes and let the two
+        points appear to merge.
+      </p>
+
       <div
         className="relative mx-auto w-full max-w-[400px] overflow-hidden rounded-[1.5rem]"
         style={{
           boxShadow: `
-            0 0 30px ${primary}45,
-            0 0 70px ${secondary}25
+            0 0 30px ${palette.primary}35,
+            0 0 60px ${palette.secondary}18
           `,
           border:
-            `2px solid ${primary}35`,
+            `2px solid ${palette.primary}25`,
         }}
       >
         <canvas
           ref={canvasRef}
           className="block h-auto w-full"
           style={{
-            aspectRatio:
-              '400 / 600',
+            aspectRatio: '400 / 600',
           }}
         />
 
         {rendering && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/25 backdrop-blur-[2px]">
-            <div className="h-9 w-9 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[2px]">
+            <div
+              className="h-9 w-9 animate-spin rounded-full border-2 border-white/30 border-t-white"
+              aria-label="Generating stereogram"
+            />
           </div>
         )}
       </div>
 
       <p
-        className="mt-2 text-center font-mono text-xs uppercase tracking-[0.18em]"
+        className="mt-3 text-xs font-mono uppercase tracking-[0.22em]"
         style={{
-          color: primary,
+          color: palette.primary,
         }}
       >
-        {paletteName}{' '}
-        Matrix Engine
-      </p>
-
-      <p className="mt-2 max-w-[340px] px-4 text-center text-[11px] leading-relaxed text-slate-400">
-        Look through the pattern,
-        not directly at the dots.
-        Relax your eyes and let the
-        hidden 3D image appear.
+        {palette.name} Matrix Engine
       </p>
     </div>
   );
-}
-
-/*
- * ----------------------------------------------------------
- * HEART
- * ----------------------------------------------------------
- */
-
-function drawHeart(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  size: number,
-) {
-  ctx.beginPath();
-
-  ctx.moveTo(
-    x,
-    y + size * 0.3,
-  );
-
-  ctx.bezierCurveTo(
-    x,
-    y,
-    x - size,
-    y,
-    x - size,
-    y + size * 0.5,
-  );
-
-  ctx.bezierCurveTo(
-    x - size,
-    y + size * 0.9,
-    x,
-    y + size * 1.1,
-    x,
-    y + size * 1.3,
-  );
-
-  ctx.bezierCurveTo(
-    x,
-    y + size * 1.1,
-    x + size,
-    y + size * 0.9,
-    x + size,
-    y + size * 0.5,
-  );
-
-  ctx.bezierCurveTo(
-    x + size,
-    y,
-    x,
-    y,
-    x,
-    y + size * 0.3,
-  );
-
-  ctx.fill();
 }
 
 
