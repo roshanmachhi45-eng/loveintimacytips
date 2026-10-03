@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PALETTES, type ColorPalette } from './palettes';
 import type { MagicEyeConfig } from './types';
@@ -12,8 +11,36 @@ interface StereogramCanvasProps {
 
 const CANVAS_W = 400;
 const CANVAS_H = 600;
+
+/*
+ * Width of the repeating random-dot source pattern.
+ * Smaller values create stronger stereoscopic repetition.
+ */
 const PATTERN_W = 72;
+
+/*
+ * Maximum depth displacement.
+ * Kept moderate so the stereogram remains comfortable to view.
+ */
 const MAX_SHIFT = 14;
+
+const FALLBACK_PALETTE = {
+  name: 'Love Matrix',
+  bg: '#12091f',
+  primary: '#ec4899',
+  secondary: '#8b5cf6',
+  starColor: '#ffffff',
+  heartColor: '#f472b6',
+  textColor: '#ffffff',
+  patternColors: [
+    '#f9a8d4',
+    '#c084fc',
+    '#818cf8',
+    '#f5d0fe',
+    '#ffffff',
+    '#e879f9',
+  ],
+};
 
 export default function StereogramCanvas({
   config,
@@ -26,450 +53,1043 @@ export default function StereogramCanvas({
 
   const render = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
 
-    setRendering(true);
-
-    const palette: ColorPalette =
-      PALETTES[paletteIndex % PALETTES.length];
-
-    canvas.width = CANVAS_W;
-    canvas.height = CANVAS_H;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      setRendering(false);
+    if (!canvas) {
       return;
     }
 
-    // ------------------------------------------
-    // 1. FACE AND FEATURE DEPTH MAP
-    // ------------------------------------------
+    setRendering(true);
 
-    const cx = CANVAS_W / 2;
-    const cy = CANVAS_H / 2 - 30;
+    try {
+      /*
+       * ------------------------------------------------------
+       * SAFE PALETTE SELECTION
+       * ------------------------------------------------------
+       */
 
-    const structure = config.faceStructure;
-    const gender = config.gender;
-    const hair = config.hairStyle;
-    const beard = config.beardStyle;
-    const faceTone = config.faceTone;
+      const paletteCount = Array.isArray(PALETTES)
+        ? PALETTES.length
+        : 0;
 
-    const getDepth = (x: number, y: number): number => {
-      let depth = 0;
+      const numericPaletteIndex = Number.isFinite(paletteIndex)
+        ? Math.floor(paletteIndex)
+        : 0;
 
-      // Face proportions
-      let rx = 70;
-      let ry = 95;
+      const safePaletteIndex =
+        paletteCount > 0
+          ? ((numericPaletteIndex % paletteCount) + paletteCount) %
+            paletteCount
+          : 0;
 
-      if (structure === 'square') {
-        rx = 80;
-        ry = 85;
-      } else if (structure === 'round') {
-        rx = 80;
-        ry = 80;
+      const palette: ColorPalette | typeof FALLBACK_PALETTE =
+        paletteCount > 0
+          ? PALETTES[safePaletteIndex] ?? FALLBACK_PALETTE
+          : FALLBACK_PALETTE;
+
+      /*
+       * ------------------------------------------------------
+       * CANVAS SETUP
+       * ------------------------------------------------------
+       */
+
+      canvas.width = CANVAS_W;
+      canvas.height = CANVAS_H;
+
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        setRendering(false);
+        return;
       }
 
-      const dx = (x - cx) / rx;
-      const dy = (y - cy) / ry;
-      const absDx = Math.abs(dx);
-      const absDy = Math.abs(dy);
+      /*
+       * ------------------------------------------------------
+       * SAFE CONFIG VALUES
+       * ------------------------------------------------------
+       *
+       * These IDs match the current types.ts:
+       *
+       * gender:
+       *   male / female
+       *
+       * faceStructure:
+       *   oval / round / square
+       *
+       * faceTone:
+       *   dark / wheatish / fair
+       *
+       * hairStyle:
+       *   bald / curly / straight
+       *
+       * beardStyle:
+       *   clean / stubble / short / full
+       */
 
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      const gender =
+        config.gender === 'male' || config.gender === 'female'
+          ? config.gender
+          : 'female';
 
-      // Different silhouettes for face structures
-      let insideFace = false;
-      let faceDepth = 0;
+      const faceStructure =
+        config.faceStructure === 'round' ||
+        config.faceStructure === 'square' ||
+        config.faceStructure === 'oval'
+          ? config.faceStructure
+          : 'oval';
 
-      if (structure === 'square') {
-        const squareDist = Math.max(absDx, absDy);
-        insideFace = squareDist < 1;
+      const faceTone =
+        config.faceTone === 'dark' ||
+        config.faceTone === 'fair' ||
+        config.faceTone === 'wheatish'
+          ? config.faceTone
+          : 'wheatish';
 
-        if (insideFace) {
-          faceDepth = (1 - squareDist) * 0.72;
+      const hairStyle =
+        config.hairStyle === 'bald' ||
+        config.hairStyle === 'curly' ||
+        config.hairStyle === 'straight'
+          ? config.hairStyle
+          : 'straight';
+
+      const beardStyle =
+        config.beardStyle === 'clean' ||
+        config.beardStyle === 'stubble' ||
+        config.beardStyle === 'short' ||
+        config.beardStyle === 'full'
+          ? config.beardStyle
+          : 'clean';
+
+      const partnerName =
+        typeof config.name === 'string'
+          ? config.name.trim().slice(0, 24)
+          : '';
+
+      /*
+       * ------------------------------------------------------
+       * 1. BACKGROUND
+       * ------------------------------------------------------
+       */
+
+      const bgColor =
+        typeof palette.bg === 'string'
+          ? palette.bg
+          : FALLBACK_PALETTE.bg;
+
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+      /*
+       * ------------------------------------------------------
+       * 2. 3D DEPTH MAP
+       * ------------------------------------------------------
+       *
+       * This is the important SIRDS depth structure.
+       *
+       * Higher depth value =
+       * stronger horizontal stereoscopic displacement.
+       */
+
+      const getDepth = (x: number, y: number): number => {
+        const cx = CANVAS_W / 2;
+        const cy = CANVAS_H / 2 - 35;
+
+        let rx = 72;
+        let ry = 96;
+
+        /*
+         * FACE STRUCTURE
+         */
+
+        if (faceStructure === 'round') {
+          rx = 82;
+          ry = 82;
         }
-      } else if (structure === 'round') {
-        insideFace = dist < 1;
 
-        if (insideFace) {
-          faceDepth = Math.cos(dist * Math.PI / 2) * 0.72;
-        }
-      } else {
-        // Oval face
-        insideFace = dist < 1;
-
-        if (insideFace) {
-          faceDepth = Math.cos(dist * Math.PI / 2) * 0.78;
-        }
-      }
-
-      if (insideFace) {
-        depth = faceDepth;
-
-        // Cheekbone relief
-        const cheekY = y - (cy + 8);
-        const cheekLeft = Math.abs(x - (cx - 34));
-        const cheekRight = Math.abs(x - (cx + 34));
-
-        if (
-          cheekY > -8 &&
-          cheekY < 28 &&
-          (cheekLeft < 18 || cheekRight < 18)
-        ) {
-          depth += 0.07;
+        if (faceStructure === 'square') {
+          rx = 82;
+          ry = 86;
         }
 
-        // Nose bridge and tip
-        const noseX = Math.abs(x - cx);
-        const noseY = y - (cy - 10);
-
-        if (noseX < 8 && noseY > 0 && noseY < 35) {
-          depth += (1 - noseX / 8) * 0.25;
+        if (faceStructure === 'oval') {
+          rx = 72;
+          ry = 98;
         }
 
-        if (noseX < 13 && noseY >= 27 && noseY < 40) {
-          depth += 0.08;
-        }
+        const dx = (x - cx) / rx;
+        const dy = (y - cy) / ry;
 
-        // Eye socket relief
-        const eyeY = y - (cy - 17);
-        const leftEyeX = Math.abs(x - (cx - 22));
-        const rightEyeX = Math.abs(x - (cx + 22));
+        const distance = Math.sqrt(
+          dx * dx + dy * dy,
+        );
 
-        if (
-          eyeY > -5 &&
-          eyeY < 5 &&
-          (leftEyeX < 10 || rightEyeX < 10)
-        ) {
-          depth -= 0.06;
-        }
+        let depth = 0;
 
-        // Chin relief
-        if (dy > 0.55 && absDx < 0.42) {
-          depth += 0.06;
-        }
+        /*
+         * --------------------------------------------------
+         * MAIN HEAD VOLUME
+         * --------------------------------------------------
+         */
 
-        // ------------------------------------------
-        // 2. MALE BEARD DEPTH
-        // ------------------------------------------
+        if (distance < 1) {
+          if (faceStructure === 'square') {
+            const edge = Math.max(
+              Math.abs(dx),
+              Math.abs(dy),
+            );
 
-        if (gender === 'male' && beard !== 'clean') {
-          const jawArea =
-            dy > 0.18 &&
-            dy < 0.95 &&
-            absDx < 0.88;
+            depth =
+              (1 - edge) *
+              0.72;
+          } else {
+            /*
+             * Oval and round faces use radial depth.
+             */
+            depth =
+              Math.cos(
+                distance * Math.PI * 0.5,
+              ) * 0.72;
+          }
 
-          if (jawArea) {
-            if (beard === 'full') {
-              depth += 0.17;
-            } else if (beard === 'short') {
-              depth += 0.11;
-            } else if (beard === 'stubble') {
-              // Gentle textured variation
-              const texture =
-                Math.sin(x * 1.7 + y * 0.8) *
-                Math.cos(y * 1.3);
+          /*
+           * ------------------------------------------------
+           * FOREHEAD / CHEEKBONE SHAPING
+           * ------------------------------------------------
+           */
 
-              depth += 0.045 + Math.abs(texture) * 0.035;
+          const upperFace =
+            dy < -0.1 && dy > -0.65;
+
+          if (upperFace) {
+            depth +=
+              (1 - Math.abs(dx)) *
+              0.045;
+          }
+
+          /*
+           * ------------------------------------------------
+           * NOSE / CENTRAL RELIEF
+           * ------------------------------------------------
+           */
+
+          const noseX = Math.abs(x - cx);
+          const noseY = y - (cy - 10);
+
+          if (
+            noseX < 8 &&
+            noseY > 0 &&
+            noseY < 38
+          ) {
+            depth +=
+              (1 - noseX / 8) *
+              0.23;
+          }
+
+          /*
+           * ------------------------------------------------
+           * NOSE BRIDGE
+           * ------------------------------------------------
+           */
+
+          if (
+            noseX < 5 &&
+            noseY > -20 &&
+            noseY < 10
+          ) {
+            depth +=
+              (1 - noseX / 5) *
+              0.12;
+          }
+
+          /*
+           * ------------------------------------------------
+           * EYE SOCKET RELIEF
+           * ------------------------------------------------
+           */
+
+          const eyeY = y - (cy - 22);
+
+          if (
+            eyeY > -7 &&
+            eyeY < 9 &&
+            Math.abs(dx) > 0.18 &&
+            Math.abs(dx) < 0.62
+          ) {
+            depth -= 0.055;
+          }
+
+          /*
+           * ------------------------------------------------
+           * CHEEKBONE RELIEF
+           * ------------------------------------------------
+           */
+
+          const cheekY = y - (cy + 5);
+
+          if (
+            cheekY > -5 &&
+            cheekY < 30 &&
+            Math.abs(dx) > 0.28 &&
+            Math.abs(dx) < 0.72
+          ) {
+            depth += 0.06;
+          }
+
+          /*
+           * ------------------------------------------------
+           * CHIN RELIEF
+           * ------------------------------------------------
+           */
+
+          const chinY = y - (cy + 58);
+
+          if (
+            chinY > -12 &&
+            chinY < 20 &&
+            Math.abs(dx) < 0.42
+          ) {
+            depth += 0.08;
+          }
+
+          /*
+           * ------------------------------------------------
+           * MALE BEARD DEPTH
+           * ------------------------------------------------
+           */
+
+          if (
+            gender === 'male' &&
+            beardStyle !== 'clean'
+          ) {
+            const jawArea =
+              dy > 0.18 &&
+              dy < 0.82 &&
+              Math.abs(dx) < 0.82;
+
+            if (jawArea) {
+              if (beardStyle === 'stubble') {
+                /*
+                 * Very subtle micro variation.
+                 */
+                const grain =
+                  Math.sin(x * 1.73 + y * 0.91) *
+                  Math.cos(y * 1.37);
+
+                depth +=
+                  0.045 +
+                  Math.max(grain, 0) * 0.025;
+              }
+
+              if (beardStyle === 'short') {
+                depth += 0.095;
+              }
+
+              if (beardStyle === 'full') {
+                depth += 0.15;
+              }
             }
           }
         }
-      }
 
-      // ------------------------------------------
-      // 3. HAIR DEPTH
-      // ------------------------------------------
+        /*
+         * ------------------------------------------------------
+         * HAIR DEPTH
+         * ------------------------------------------------------
+         */
 
-      if (hair !== 'bald') {
-        const hairTop = dy < -0.42 && dist < 1.35;
-        const sideHair =
-          absDx > 0.72 &&
-          dy > -0.48 &&
-          dy < 0.52 &&
-          dist < 1.28;
+        if (hairStyle !== 'bald') {
+          const hairTop =
+            dy < -0.42 &&
+            dy > -1.35 &&
+            Math.abs(dx) < 1.12;
 
-        if (hairTop || sideHair) {
-          if (hair === 'curly') {
-            const curlTexture =
-              Math.sin(x * 0.22) *
-              Math.cos(y * 0.2);
+          const sideHair =
+            Math.abs(dx) > 0.62 &&
+            Math.abs(dx) < 1.22 &&
+            dy > -0.65 &&
+            dy < 0.45;
 
-            depth = Math.max(depth, 0.42) +
-              curlTexture * 0.12;
-          } else if (hair === 'straight') {
-            const smoothHair =
-              0.48 + (1 - Math.min(absDx, 1)) * 0.12;
+          if (hairTop || sideHair) {
+            if (hairStyle === 'curly') {
+              /*
+               * Curly hair uses wave-like depth.
+               */
+              const curlWave =
+                Math.sin(x * 0.21) *
+                Math.cos(y * 0.18);
 
-            depth = Math.max(depth, smoothHair);
+              depth =
+                Math.max(depth, 0.34) +
+                Math.max(curlWave, 0) * 0.13;
+            }
+
+            if (hairStyle === 'straight') {
+              /*
+               * Straight hair gets smoother depth.
+               */
+              depth =
+                Math.max(depth, 0.42) +
+                (1 - Math.abs(dx)) * 0.08;
+            }
           }
         }
-      }
 
-      // ------------------------------------------
-      // 4. FACE TONE RELIEF
-      // ------------------------------------------
+        /*
+         * ------------------------------------------------------
+         * FACE TONE SUBTLE DEPTH VARIATION
+         * ------------------------------------------------------
+         *
+         * These are intentionally subtle. Face tone changes
+         * the depth character without changing the stereogram
+         * structure completely.
+         */
 
-      // Tone adds only a subtle relief variation.
-      // The selected tone remains represented by
-      // the user's chosen configuration; the SIRDS
-      // colors themselves are controlled by palette.
-      if (faceTone === 'dark') {
-        depth *= 0.97;
-      } else if (faceTone === 'fair') {
-        depth *= 1.03;
-      }
+        if (faceTone === 'dark') {
+          depth *= 0.97;
+        }
 
-      // ------------------------------------------
-      // 5. PARTNER NAME DEPTH LAYER
-      // ------------------------------------------
+        if (faceTone === 'fair') {
+          depth *= 1.03;
+        }
 
-      const name = config.name.trim();
+        /*
+         * ------------------------------------------------------
+         * PARTNER NAME DEPTH LAYER
+         * ------------------------------------------------------
+         *
+         * Name is integrated into the depth matrix near the
+         * lower portion of the image.
+         */
 
-      if (
-        name &&
-        y > CANVAS_H - 100 &&
-        y < CANVAS_H - 60
-      ) {
-        const nameWidth = Math.min(name.length * 15, 250);
-        const nameLeft = cx - nameWidth / 2;
-        const nameRight = cx + nameWidth / 2;
+        if (partnerName.length > 0) {
+          const nameWidth = Math.min(
+            partnerName.length * 9,
+            220,
+          );
 
-        if (x > nameLeft && x < nameRight) {
-          const nameY = y - (CANVAS_H - 80);
+          const nameStart =
+            cx - nameWidth / 2;
 
-          if (nameY > -10 && nameY < 10) {
-            depth = Math.max(depth, 0.25);
+          const nameEnd =
+            cx + nameWidth / 2;
+
+          const nameTop =
+            CANVAS_H - 118;
+
+          const nameBottom =
+            CANVAS_H - 62;
+
+          if (
+            x >= nameStart &&
+            x <= nameEnd &&
+            y >= nameTop &&
+            y <= nameBottom
+          ) {
+            /*
+             * Soft horizontal wave makes the name part of the
+             * depth matrix rather than a flat block.
+             */
+            const nameWave =
+              Math.sin(
+                ((x - nameStart) /
+                  Math.max(nameWidth, 1)) *
+                  Math.PI,
+              );
+
+            depth = Math.max(
+              depth,
+              0.18 + nameWave * 0.13,
+            );
           }
         }
-      }
 
-      return Math.min(Math.max(depth, 0), 1);
-    };
-
-    // ------------------------------------------
-    // 6. BACKGROUND
-    // ------------------------------------------
-
-    const bgGrad = ctx.createLinearGradient(
-      0,
-      0,
-      0,
-      CANVAS_H
-    );
-
-    bgGrad.addColorStop(0, palette.bg);
-    bgGrad.addColorStop(1, palette.bg);
-
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-    // ------------------------------------------
-    // 7. SCATTERED STARS
-    // ------------------------------------------
-
-    const starCount = 60;
-
-    for (let i = 0; i < starCount; i++) {
-      const sx = Math.random() * CANVAS_W;
-      const sy = Math.random() * CANVAS_H;
-      const sr = Math.random() * 1.5 + 0.3;
-
-      ctx.globalAlpha = Math.random() * 0.5 + 0.15;
-      ctx.fillStyle = palette.starColor;
-
-      ctx.beginPath();
-      ctx.arc(sx, sy, sr, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    ctx.globalAlpha = 1;
-
-    // ------------------------------------------
-    // 8. RANDOM DOT PATTERN STRIP
-    // ------------------------------------------
-
-    const patternStrip = ctx.createImageData(
-      PATTERN_W,
-      CANVAS_H
-    );
-
-    const pData = patternStrip.data;
-
-    for (let y = 0; y < CANVAS_H; y++) {
-      for (let x = 0; x < PATTERN_W; x++) {
-        const colorIdx = Math.floor(
-          Math.random() * palette.patternColors.length
+        /*
+         * Keep depth within safe SIRDS range.
+         */
+        return Math.min(
+          Math.max(depth, 0),
+          1,
         );
+      };
 
-        const hex = palette.patternColors[colorIdx];
+      /*
+       * ------------------------------------------------------
+       * 3. SUBTLE BACKGROUND GRADIENT
+       * ------------------------------------------------------
+       */
 
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-
-        const idx = (y * PATTERN_W + x) * 4;
-
-        pData[idx] = r;
-        pData[idx + 1] = g;
-        pData[idx + 2] = b;
-        pData[idx + 3] = 255;
-      }
-    }
-
-    // ------------------------------------------
-    // 9. SIRDS DEPTH-BASED PIXEL MAPPING
-    // ------------------------------------------
-
-    const finalImage = ctx.createImageData(
-      CANVAS_W,
-      CANVAS_H
-    );
-
-    const fData = finalImage.data;
-
-    for (let y = 0; y < CANVAS_H; y++) {
-      const same = new Int32Array(CANVAS_W);
-
-      for (let x = 0; x < CANVAS_W; x++) {
-        same[x] = x;
-      }
-
-      for (let x = 0; x < CANVAS_W; x++) {
-        const depth = getDepth(x, y);
-
-        const separation =
-          PATTERN_W - Math.round(depth * MAX_SHIFT);
-
-        const left = x - Math.round(separation / 2);
-        const right = left + separation;
-
-        if (left >= 0 && right < CANVAS_W) {
-          same[right] = left;
-        }
-      }
-
-      const rowPixels = new Uint8ClampedArray(
-        CANVAS_W * 4
+      const gradient = ctx.createLinearGradient(
+        0,
+        0,
+        0,
+        CANVAS_H,
       );
 
-      for (let x = 0; x < CANVAS_W; x++) {
-        if (same[x] === x) {
-          const patternX = x % PATTERN_W;
-          const patternIdx =
-            (y * PATTERN_W + patternX) * 4;
+      gradient.addColorStop(
+        0,
+        bgColor,
+      );
 
-          rowPixels[x * 4] = pData[patternIdx];
-          rowPixels[x * 4 + 1] = pData[patternIdx + 1];
-          rowPixels[x * 4 + 2] = pData[patternIdx + 2];
-          rowPixels[x * 4 + 3] = 255;
-        } else {
-          const sourceX = same[x];
+      gradient.addColorStop(
+        1,
+        bgColor,
+      );
 
-          rowPixels[x * 4] =
-            rowPixels[sourceX * 4];
+      ctx.fillStyle = gradient;
+      ctx.fillRect(
+        0,
+        0,
+        CANVAS_W,
+        CANVAS_H,
+      );
 
-          rowPixels[x * 4 + 1] =
-            rowPixels[sourceX * 4 + 1];
+      /*
+       * ------------------------------------------------------
+       * 4. RANDOM STARS
+       * ------------------------------------------------------
+       */
 
-          rowPixels[x * 4 + 2] =
-            rowPixels[sourceX * 4 + 2];
+      const starColor =
+        typeof palette.starColor === 'string'
+          ? palette.starColor
+          : FALLBACK_PALETTE.starColor;
 
-          rowPixels[x * 4 + 3] = 255;
+      const STAR_COUNT = 60;
+
+      for (
+        let i = 0;
+        i < STAR_COUNT;
+        i++
+      ) {
+        const sx =
+          Math.random() * CANVAS_W;
+
+        const sy =
+          Math.random() * CANVAS_H;
+
+        const sr =
+          Math.random() * 1.5 + 0.3;
+
+        ctx.save();
+
+        ctx.globalAlpha =
+          Math.random() * 0.5 + 0.15;
+
+        ctx.fillStyle = starColor;
+
+        ctx.beginPath();
+
+        ctx.arc(
+          sx,
+          sy,
+          sr,
+          0,
+          Math.PI * 2,
+        );
+
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      /*
+       * ------------------------------------------------------
+       * 5. RANDOM DOT PATTERN STRIP
+       * ------------------------------------------------------
+       */
+
+      const patternColors =
+        Array.isArray(palette.patternColors) &&
+        palette.patternColors.length > 0
+          ? palette.patternColors
+          : FALLBACK_PALETTE.patternColors;
+
+      const patternStrip =
+        ctx.createImageData(
+          PATTERN_W,
+          CANVAS_H,
+        );
+
+      const patternData =
+        patternStrip.data;
+
+      for (
+        let y = 0;
+        y < CANVAS_H;
+        y++
+      ) {
+        for (
+          let x = 0;
+          x < PATTERN_W;
+          x++
+        ) {
+          const colorIndex =
+            Math.floor(
+              Math.random() *
+                patternColors.length,
+            );
+
+          const hex =
+            patternColors[colorIndex] ??
+            FALLBACK_PALETTE.patternColors[0];
+
+          /*
+           * Accept normal 6-digit hex colors.
+           * If an invalid value somehow enters the palette,
+           * fall back safely.
+           */
+
+          const safeHex =
+            typeof hex === 'string' &&
+            /^#[0-9a-fA-F]{6}$/.test(hex)
+              ? hex
+              : '#ffffff';
+
+          const r = parseInt(
+            safeHex.slice(1, 3),
+            16,
+          );
+
+          const g = parseInt(
+            safeHex.slice(3, 5),
+            16,
+          );
+
+          const b = parseInt(
+            safeHex.slice(5, 7),
+            16,
+          );
+
+          const index =
+            (y * PATTERN_W + x) * 4;
+
+          patternData[index] = r;
+          patternData[index + 1] = g;
+          patternData[index + 2] = b;
+          patternData[index + 3] = 255;
         }
       }
 
-      for (let x = 0; x < CANVAS_W; x++) {
-        const idx = (y * CANVAS_W + x) * 4;
+      /*
+       * ------------------------------------------------------
+       * 6. TRUE SIRDS IMAGE CONSTRUCTION
+       * ------------------------------------------------------
+       *
+       * For every row:
+       *
+       * 1. Start with independent pixels.
+       * 2. Calculate separation from depth.
+       * 3. Link corresponding pixels.
+       * 4. Resolve linked pixels left-to-right.
+       *
+       * This creates the actual stereogram structure.
+       */
 
-        fData[idx] = rowPixels[x * 4];
-        fData[idx + 1] = rowPixels[x * 4 + 1];
-        fData[idx + 2] = rowPixels[x * 4 + 2];
-        fData[idx + 3] = 255;
-      }
-    }
-
-    ctx.putImageData(finalImage, 0, 0);
-
-    // ------------------------------------------
-    // 10. GLOWING HEARTS
-    // ------------------------------------------
-
-    const heartCount = 6;
-
-    for (let i = 0; i < heartCount; i++) {
-      const hx = Math.random() * CANVAS_W;
-      const hy = Math.random() * CANVAS_H;
-      const hs = Math.random() * 10 + 5;
-
-      ctx.save();
-
-      ctx.globalAlpha = Math.random() * 0.12 + 0.04;
-      ctx.shadowColor = palette.heartColor;
-      ctx.shadowBlur = 10;
-      ctx.fillStyle = palette.heartColor;
-
-      drawHeart(ctx, hx, hy, hs);
-
-      ctx.restore();
-    }
-
-    // ------------------------------------------
-    // 11. PARTNER NAME OVERLAY
-    // ------------------------------------------
-
-    if (config.name.trim()) {
-      ctx.save();
-
-      ctx.font = 'bold 13px Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.globalAlpha = 0.05;
-      ctx.fillStyle = palette.textColor;
-
-      for (let y = 40; y < CANVAS_H; y += 50) {
-        ctx.fillText(
-          config.name.trim(),
-          CANVAS_W / 2,
-          y
+      const finalImage =
+        ctx.createImageData(
+          CANVAS_W,
+          CANVAS_H,
         );
+
+      const finalData =
+        finalImage.data;
+
+      for (
+        let y = 0;
+        y < CANVAS_H;
+        y++
+      ) {
+        const same =
+          new Int32Array(CANVAS_W);
+
+        for (
+          let x = 0;
+          x < CANVAS_W;
+          x++
+        ) {
+          same[x] = x;
+        }
+
+        /*
+         * Build correspondence map.
+         */
+
+        for (
+          let x = 0;
+          x < CANVAS_W;
+          x++
+        ) {
+          const depth =
+            getDepth(x, y);
+
+          const separation =
+            PATTERN_W -
+            Math.round(
+              depth * MAX_SHIFT,
+            );
+
+          const left =
+            x -
+            Math.round(
+              separation / 2,
+            );
+
+          const right =
+            left + separation;
+
+          if (
+            left >= 0 &&
+            right < CANVAS_W
+          ) {
+            /*
+             * Keep the nearer/stronger mapping.
+             */
+            same[right] = left;
+          }
+        }
+
+        /*
+         * Resolve pixels for this row.
+         */
+
+        const rowPixels =
+          new Uint8ClampedArray(
+            CANVAS_W * 4,
+          );
+
+        for (
+          let x = 0;
+          x < CANVAS_W;
+          x++
+        ) {
+          const current =
+            same[x];
+
+          if (
+            current === x ||
+            current < 0 ||
+            current >= CANVAS_W
+          ) {
+            const patternX =
+              ((x % PATTERN_W) +
+                PATTERN_W) %
+              PATTERN_W;
+
+            const sourceIndex =
+              (y * PATTERN_W +
+                patternX) *
+              4;
+
+            const targetIndex =
+              x * 4;
+
+            rowPixels[targetIndex] =
+              patternData[sourceIndex];
+
+            rowPixels[targetIndex + 1] =
+              patternData[sourceIndex + 1];
+
+            rowPixels[targetIndex + 2] =
+              patternData[sourceIndex + 2];
+
+            rowPixels[targetIndex + 3] =
+              255;
+          } else {
+            const sourceIndex =
+              current * 4;
+
+            const targetIndex =
+              x * 4;
+
+            rowPixels[targetIndex] =
+              rowPixels[sourceIndex];
+
+            rowPixels[targetIndex + 1] =
+              rowPixels[sourceIndex + 1];
+
+            rowPixels[targetIndex + 2] =
+              rowPixels[sourceIndex + 2];
+
+            rowPixels[targetIndex + 3] =
+              255;
+          }
+        }
+
+        /*
+         * Copy resolved row into final image.
+         */
+
+        for (
+          let x = 0;
+          x < CANVAS_W;
+          x++
+        ) {
+          const sourceIndex =
+            x * 4;
+
+          const targetIndex =
+            (y * CANVAS_W + x) * 4;
+
+          finalData[targetIndex] =
+            rowPixels[sourceIndex];
+
+          finalData[targetIndex + 1] =
+            rowPixels[sourceIndex + 1];
+
+          finalData[targetIndex + 2] =
+            rowPixels[sourceIndex + 2];
+
+          finalData[targetIndex + 3] =
+            255;
+        }
       }
 
+      /*
+       * Put the actual SIRDS pixels onto canvas.
+       */
+
+      ctx.putImageData(
+        finalImage,
+        0,
+        0,
+      );
+
+      /*
+       * ------------------------------------------------------
+       * 7. SOFT NEON HEARTS
+       * ------------------------------------------------------
+       */
+
+      const heartColor =
+        typeof palette.heartColor === 'string'
+          ? palette.heartColor
+          : FALLBACK_PALETTE.heartColor;
+
+      const HEART_COUNT = 6;
+
+      for (
+        let i = 0;
+        i < HEART_COUNT;
+        i++
+      ) {
+        const hx =
+          Math.random() * CANVAS_W;
+
+        const hy =
+          Math.random() * CANVAS_H;
+
+        const hs =
+          Math.random() * 10 + 5;
+
+        ctx.save();
+
+        ctx.globalAlpha =
+          Math.random() * 0.12 + 0.04;
+
+        ctx.shadowColor =
+          heartColor;
+
+        ctx.shadowBlur = 10;
+
+        ctx.fillStyle =
+          heartColor;
+
+        drawHeart(
+          ctx,
+          hx,
+          hy,
+          hs,
+        );
+
+        ctx.restore();
+      }
+
+      /*
+       * ------------------------------------------------------
+       * 8. TRANSLUCENT PARTNER NAME
+       * ------------------------------------------------------
+       */
+
+      if (partnerName.length > 0) {
+        const textColor =
+          typeof palette.textColor === 'string'
+            ? palette.textColor
+            : FALLBACK_PALETTE.textColor;
+
+        ctx.save();
+
+        ctx.font =
+          'bold 13px Arial, sans-serif';
+
+        ctx.textAlign = 'center';
+
+        ctx.textBaseline =
+          'middle';
+
+        ctx.globalAlpha = 0.055;
+
+        ctx.fillStyle =
+          textColor;
+
+        for (
+          let y = 38;
+          y < CANVAS_H;
+          y += 48
+        ) {
+          ctx.fillText(
+            partnerName,
+            CANVAS_W / 2,
+            y,
+          );
+        }
+
+        ctx.restore();
+      }
+
+      /*
+       * ------------------------------------------------------
+       * 9. SMALL TITLE / BRAND TEXT
+       * ------------------------------------------------------
+       */
+
+      ctx.save();
+
+      ctx.font =
+        '600 10px Arial, sans-serif';
+
+      ctx.textAlign = 'center';
+
+      ctx.globalAlpha = 0.035;
+
+      ctx.fillStyle =
+        typeof palette.textColor === 'string'
+          ? palette.textColor
+          : FALLBACK_PALETTE.textColor;
+
+      ctx.fillText(
+        'LOVEONS • MAGIC EYE',
+        CANVAS_W / 2,
+        CANVAS_H - 24,
+      );
+
       ctx.restore();
+
+      /*
+       * ------------------------------------------------------
+       * 10. CREATE SHARE IMAGE
+       * ------------------------------------------------------
+       */
+
+      const dataUrl =
+        canvas.toDataURL(
+          'image/png',
+        );
+
+      if (
+        typeof onCanvasReady ===
+        'function'
+      ) {
+        onCanvasReady(dataUrl);
+      }
+    } catch (error) {
+      /*
+       * Prevent the entire React page from crashing if a
+       * browser canvas implementation or unexpected palette
+       * value causes an exception.
+       */
+      console.error(
+        'Love Magic Eye render error:',
+        error,
+      );
+    } finally {
+      setRendering(false);
     }
+  }, [
+    config,
+    paletteIndex,
+    onCanvasReady,
+  ]);
 
-    // ------------------------------------------
-    // 12. EXPORT CANVAS
-    // ------------------------------------------
-
-    const dataUrl = canvas.toDataURL('image/png');
-
-    onCanvasReady?.(dataUrl);
-    setRendering(false);
-  }, [config, paletteIndex, onCanvasReady]);
+  /*
+   * --------------------------------------------------------
+   * RENDER WHEN GENERATE KEY CHANGES
+   * --------------------------------------------------------
+   */
 
   useEffect(() => {
     if (generateKey > 0) {
       render();
     }
-  }, [generateKey, render]);
+  }, [
+    generateKey,
+    render,
+  ]);
 
-  const palette =
-    PALETTES[paletteIndex % PALETTES.length];
+  /*
+   * --------------------------------------------------------
+   * SAFE DISPLAY PALETTE
+   * --------------------------------------------------------
+   */
+
+  const paletteCount =
+    Array.isArray(PALETTES)
+      ? PALETTES.length
+      : 0;
+
+  const safeDisplayIndex =
+    paletteCount > 0
+      ? ((Math.floor(
+          Number.isFinite(paletteIndex)
+            ? paletteIndex
+            : 0,
+        ) %
+          paletteCount) +
+          paletteCount) %
+        paletteCount
+      : 0;
+
+  const displayPalette =
+    PALETTES[safeDisplayIndex] ??
+    FALLBACK_PALETTE;
+
+  const primaryColor =
+    typeof displayPalette.primary === 'string'
+      ? displayPalette.primary
+      : FALLBACK_PALETTE.primary;
+
+  const secondaryColor =
+    typeof displayPalette.secondary === 'string'
+      ? displayPalette.secondary
+      : FALLBACK_PALETTE.secondary;
+
+  const paletteName =
+    typeof displayPalette.name === 'string'
+      ? displayPalette.name
+      : FALLBACK_PALETTE.name;
+
+  /*
+   * --------------------------------------------------------
+   * UI
+   * --------------------------------------------------------
+   */
 
   return (
     <div className="flex w-full flex-col items-center">
       <div
-        className="relative mx-auto w-full max-w-[400px]"
+        className="relative mx-auto w-full max-w-[400px] overflow-hidden rounded-3xl"
         style={{
-          boxShadow: `0 0 30px ${palette.primary}40, 0 0 60px ${palette.secondary}20`,
-          borderRadius: '1.5rem',
-          overflow: 'hidden',
-          border: `2px solid ${palette.primary}30`,
+          boxShadow: `
+            0 0 30px ${primaryColor}40,
+            0 0 60px ${secondaryColor}20
+          `,
+          border: `2px solid ${primaryColor}30`,
         }}
       >
         <canvas
           ref={canvasRef}
           className="block h-auto w-full"
-          style={{ aspectRatio: '400 / 600' }}
+          style={{
+            aspectRatio: '400 / 600',
+          }}
         />
 
         {rendering && (
@@ -480,28 +1100,40 @@ export default function StereogramCanvas({
       </div>
 
       <p
-        className="mt-2 text-xs font-mono uppercase tracking-widest"
-        style={{ color: palette.primary }}
+        className="mt-2 text-center font-mono text-xs uppercase tracking-widest"
+        style={{
+          color: primaryColor,
+        }}
       >
-        {palette.name} Matrix Engine
+        {paletteName} Matrix Engine
+      </p>
+
+      <p className="mt-1 px-4 text-center text-[10px] leading-relaxed text-slate-400">
+        Relax your eyes and look through the pattern
+        to discover the hidden 3D depth.
       </p>
     </div>
   );
 }
 
-// ------------------------------------------
-// HEART DRAWING HELPER
-// ------------------------------------------
+/*
+ * ----------------------------------------------------------
+ * HEART DRAWING
+ * ----------------------------------------------------------
+ */
 
 function drawHeart(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
-  size: number
+  size: number,
 ) {
   ctx.beginPath();
 
-  ctx.moveTo(x, y + size * 0.3);
+  ctx.moveTo(
+    x,
+    y + size * 0.3,
+  );
 
   ctx.bezierCurveTo(
     x,
@@ -509,7 +1141,7 @@ function drawHeart(
     x - size,
     y,
     x - size,
-    y + size * 0.5
+    y + size * 0.5,
   );
 
   ctx.bezierCurveTo(
@@ -518,7 +1150,7 @@ function drawHeart(
     x,
     y + size * 1.1,
     x,
-    y + size * 1.3
+    y + size * 1.3,
   );
 
   ctx.bezierCurveTo(
@@ -527,7 +1159,7 @@ function drawHeart(
     x + size,
     y + size * 0.9,
     x + size,
-    y + size * 0.5
+    y + size * 0.5,
   );
 
   ctx.bezierCurveTo(
@@ -536,10 +1168,10 @@ function drawHeart(
     x,
     y,
     x,
-    y + size * 0.3
+    y + size * 0.3,
   );
 
   ctx.fill();
-}
+        }
 
 
