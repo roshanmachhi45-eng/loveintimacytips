@@ -6,14 +6,27 @@ import {
   type FaceTone,
   type HairStyle,
   type BeardStyle,
-  FACE_TONES,
   HAIR_STYLES,
   BEARD_STYLES,
 } from './types';
 
+// प्रीमियम स्किन टोन लिस्ट
+const ENHANCED_FACE_TONES = [
+  { id: 'Dark / West Indies', label: 'Deep Mahogany', color: '#5C4033' },
+  { id: 'Wheatish / Indian', label: 'Warm Honey', color: '#C68B59' },
+  { id: 'Fair / USA Type', label: 'Porcelain Glow', color: '#F3E5AB' }
+];
+
+// चेहरे की बनावट की नई लिस्ट
+const FACE_STRUCTURES = [
+  { id: 'Oval', label: 'Oval Face' },
+  { id: 'Round', label: 'Round Face' },
+  { id: 'Square', label: 'Square Face' }
+];
+
 interface ConfigurationFormProps {
-  config: MagicEyeConfig;
-  onChange: (config: MagicEyeConfig) => void;
+  config: MagicEyeConfig & { faceStructure?: string };
+  onChange: (config: any) => void;
   onGenerate: () => void;
   collapsed: boolean;
 }
@@ -26,7 +39,10 @@ export default function ConfigurationForm({
 }: ConfigurationFormProps) {
   const [error, setError] = useState('');
 
-  const update = (field: keyof MagicEyeConfig, value: string) => {
+  // डिफ़ॉल्ट फेस स्ट्रक्चर वैल्यू
+  const currentStructure = config.faceStructure || 'Oval';
+
+  const update = (field: string, value: string) => {
     setError('');
     onChange({ ...config, [field]: value });
   };
@@ -43,10 +59,10 @@ export default function ConfigurationForm({
     <div
       className={`
         transition-all duration-500 ease-in-out overflow-hidden
-        ${collapsed ? 'max-h-0 opacity-0' : 'max-h-[1200px] opacity-100'}
+        ${collapsed ? 'max-h-0 opacity-0' : 'max-h-[1400px] opacity-100'}
       `}
     >
-      <div className="rounded-3xl border border-violet-100 bg-white/85 p-5 shadow-xl shadow-violet-100 backdrop-blur-xl sm:p-6">
+      <div className="rounded-3xl border border-violet-100 bg-white/85 p-5 shadow-xl shadow-violet-100 backdrop-blur-xl sm:p-6 font-sans">
         {/* Header */}
         <div className="mb-5 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 text-white shadow-lg shadow-violet-200">
@@ -89,14 +105,14 @@ export default function ConfigurationForm({
           <div className="grid grid-cols-2 gap-2">
             <GenderButton
               active={config.gender === 'female'}
-              onClick={() => update('gender', 'female' as Gender)}
+              onClick={() => update('gender', 'female')}
               icon={<VenusIcon />}
               label="Female"
               activeClass="from-pink-500 to-rose-500 border-rose-400"
             />
             <GenderButton
               active={config.gender === 'male'}
-              onClick={() => update('gender', 'male' as Gender)}
+              onClick={() => update('gender', 'male')}
               icon={<MarsIcon />}
               label="Male"
               activeClass="from-violet-500 to-indigo-500 border-violet-400"
@@ -104,24 +120,51 @@ export default function ConfigurationForm({
           </div>
         </div>
 
-        {/* Conditional: Face Tone + Hair Style (both genders) */}
+        {/* Conditional Layer: Reveals when gender is picked */}
         <div
           className={`
             transition-all duration-300 ease-in-out overflow-hidden
-            ${config.gender ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}
+            ${config.gender ? 'max-h-[850px] opacity-100' : 'max-h-0 opacity-0'}
           `}
         >
-          {/* Face Tone */}
+          {/* FACE STRUCTURE */}
+          <div className="mb-4">
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+              Face Structure
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {FACE_STRUCTURES.map((structure) => (
+                <button
+                  key={structure.id}
+                  type="button"
+                  onClick={() => update('faceStructure', structure.id)}
+                  className={`
+                    flex flex-col items-center gap-1.5 rounded-xl border-2 p-3
+                    transition-all duration-200 text-xs font-semibold
+                    ${currentStructure === structure.id
+                      ? 'border-violet-400 bg-violet-50 text-violet-700 shadow-md shadow-violet-100'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-violet-200'
+                    }
+                  `}
+                >
+                  <FaceStructureIcon style={structure.id} />
+                  <span className="text-[11px] leading-tight text-center">{structure.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* FACE TONE */}
           <div className="mb-4">
             <label className="mb-1.5 block text-sm font-semibold text-slate-700">
               Face Tone
             </label>
             <div className="grid grid-cols-3 gap-2">
-              {FACE_TONES.map((tone) => (
+              {ENHANCED_FACE_TONES.map((tone) => (
                 <button
                   key={tone.id}
                   type="button"
-                  onClick={() => update('faceTone', tone.id as FaceTone)}
+                  onClick={() => update('faceTone', tone.id)}
                   className={`
                     flex flex-col items-center gap-1.5 rounded-xl border-2 p-3
                     transition-all duration-200
@@ -132,7 +175,7 @@ export default function ConfigurationForm({
                   `}
                 >
                   <span
-                    className="h-8 w-8 rounded-full border-2 border-white shadow-sm"
+                    className="h-7 w-7 rounded-full border-2 border-white shadow-sm"
                     style={{ backgroundColor: tone.color }}
                   />
                   <span className="text-[11px] font-medium text-slate-600 text-center leading-tight">
@@ -143,7 +186,7 @@ export default function ConfigurationForm({
             </div>
           </div>
 
-          {/* Hair Style */}
+          {/* HAIR STYLE */}
           <div className="mb-4">
             <label className="mb-1.5 block text-sm font-semibold text-slate-700">
               Hair Style
@@ -153,9 +196,9 @@ export default function ConfigurationForm({
                 <button
                   key={hair.id}
                   type="button"
-                  onClick={() => update('hairStyle', hair.id as HairStyle)}
+                  onClick={() => update('hairStyle', hair.id)}
                   className={`
-                    flex items-center justify-center gap-2 rounded-xl border-2 px-3 py-3
+                    flex flex-col items-center gap-1.5 rounded-xl border-2 p-3
                     text-xs font-medium transition-all duration-200
                     ${config.hairStyle === hair.id
                       ? 'border-violet-400 bg-violet-50 text-violet-700 shadow-md shadow-violet-100'
@@ -164,34 +207,31 @@ export default function ConfigurationForm({
                   `}
                 >
                   <HairIcon style={hair.id} />
-                  {hair.label}
+                  <span className="text-[11px] leading-tight text-center">{hair.label}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Male-only: Beard Style */}
+          {/* BEARD STYLE */}
           <div
             className={`
               transition-all duration-300 ease-in-out overflow-hidden
-              ${config.gender === 'male'
-                ? 'max-h-[300px] opacity-100'
-                : 'max-h-0 opacity-0'
-              }
+              ${config.gender === 'male' ? 'max-h-[300px] opacity-100' : 'max-h-0 opacity-0'}
             `}
           >
             <div className="mb-4">
               <label className="mb-1.5 block text-sm font-semibold text-slate-700">
                 Beard Design
               </label>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2">
                 {BEARD_STYLES.map((beard) => (
                   <button
                     key={beard.id}
                     type="button"
-                    onClick={() => update('beardStyle', beard.id as BeardStyle)}
+                    onClick={() => update('beardStyle', beard.id)}
                     className={`
-                      flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3
+                      flex items-center gap-2 rounded-xl border-2 px-3 py-2.5
                       text-xs font-medium transition-all duration-200
                       ${config.beardStyle === beard.id
                         ? 'border-indigo-400 bg-indigo-50 text-indigo-700 shadow-md shadow-indigo-100'
@@ -200,7 +240,7 @@ export default function ConfigurationForm({
                     `}
                   >
                     <BeardIcon style={beard.id} />
-                    {beard.label}
+                    <span className="text-[11px] leading-tight">{beard.label}</span>
                   </button>
                 ))}
               </div>
@@ -221,105 +261,6 @@ export default function ConfigurationForm({
           onClick={handleGenerate}
           className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-violet-300 active:scale-[0.98]"
         >
-          <Sparkles className="h-4 w-4" />
-          Generate Magic Image
-        </button>
-      </div>
-    </div>
-  );
-}
 
-/* ---- Gender Button ---- */
-function GenderButton({
-  active,
-  onClick,
-  icon,
-  label,
-  activeClass,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-  activeClass: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`
-        flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-3
-        text-sm font-semibold transition-all duration-200
-        ${active
-          ? `bg-gradient-to-r ${activeClass} text-white shadow-md`
-          : 'border-slate-200 bg-white text-slate-600 hover:border-violet-200'
-        }
-      `}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
 
-/* ---- SVG Icons ---- */
-function VenusIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="9" r="5" />
-      <path d="M12 14v8" />
-      <path d="M9 19h6" />
-    </svg>
-  );
-}
 
-function MarsIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="10" cy="14" r="5" />
-      <path d="M14 10l7-7" />
-      <path d="M14 3h7v7" />
-    </svg>
-  );
-}
-
-function HairIcon({ style }: { style: string }) {
-  if (style === 'bald') {
-    return (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M3 12c0-4 4-7 9-7s9 3 9 7" strokeDasharray="2 2" opacity="0.3" />
-      </svg>
-    );
-  }
-  if (style === 'curly') {
-    return (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="13" r="8" />
-        <path d="M4 10c2-3 5-4 8-4s6 1 8 4" />
-        <path d="M6 7c1-2 3-3 6-3s5 1 6 3" opacity="0.5" />
-      </svg>
-    );
-  }
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="13" r="8" />
-      <path d="M4 11c2-4 5-6 8-6s6 2 8 6" />
-    </svg>
-  );
-}
-
-function BeardIcon({ style }: { style: string }) {
-  const opacity = style === 'full' ? 1 : style === 'short' ? 0.7 : style === 'stubble' ? 0.35 : 0;
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="11" r="7" />
-      <path
-        d="M5 13c1 5 4 7 7 7s6-2 7-7"
-        fill="currentColor"
-        fillOpacity={opacity}
-        strokeOpacity={opacity > 0 ? 1 : 0}
-      />
-    </svg>
-  );
-}
