@@ -3,7 +3,7 @@ import { PALETTES, type ColorPalette } from './palettes';
 import type { MagicEyeConfig } from './types';
 
 interface StereogramCanvasProps {
-  config: MagicEyeConfig & { faceStructure?: string; faceTone?: string; hairStyle?: string }; // नए ऑप्शंस को सपोर्ट करने के लिए
+  config: MagicEyeConfig & { faceStructure?: string; faceTone?: string; hairStyle?: string };
   paletteIndex: number;
   generateKey: number;
   onCanvasReady?: (dataUrl: string) => void;
@@ -11,8 +11,8 @@ interface StereogramCanvasProps {
 
 const CANVAS_W = 400;
 const CANVAS_H = 600;
-const PATTERN_W = 72; // 90s स्टाइल स्टीरियोग्राम के लिए बेस्ट स्ट्रिप विड्थ
-const MAX_SHIFT = 14;  // 3D गहराई का उभार तय करने के लिए पिक्सेल शिफ्ट सीमा
+const PATTERN_W = 72; 
+const MAX_SHIFT = 14; 
 
 export default function StereogramCanvas({
   config,
@@ -41,9 +41,8 @@ export default function StereogramCanvas({
     const getDepth = (x: number, y: number): number => {
       let depth = 0;
       const cx = CANVAS_W / 2;
-      const cy = CANVAS_H / 2 - 30; // चेहरे को थोड़ा ऊपर सेंटर करना
+      const cy = CANVAS_H / 2 - 30; 
 
-      // यूज़र द्वारा चुने गए फेस स्ट्रक्चर (Square, Oval, Round) के हिसाब से बेस रेशियो सेट करना
       let rx = 70;
       let ry = 95;
       const structure = config.faceStructure || 'Oval';
@@ -55,32 +54,27 @@ export default function StereogramCanvas({
       const dy = (y - cy) / ry;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      // मुख्य चेहरे का 3D उभार (Base Head Shape)
       if (dist < 1) {
-        // चेहरे का गोलाकार या चौकोर 3D ढलान
         if (structure === 'Square') {
           depth = (1 - Math.max(Math.abs(dx), Math.abs(dy))) * 0.7;
         } else {
           depth = Math.cos(dist * Math.PI / 2) * 0.7;
         }
 
-        // नाक (Nose Bridge) का 3D उभार जोड़ना
         const noseX = Math.abs(x - cx);
         const noseY = y - (cy - 10);
         if (noseX < 8 && noseY > 0 && noseY < 35) {
           depth += (1 - noseX / 8) * 0.25;
         }
 
-        // ==========================================
         // MALE SPECIFIC 3D FEATURES (BEARD IMPLEMENTATION)
-        // ==========================================
         if (config.gender === 'Male' && config.beardStyle && config.beardStyle !== 'Clean Shaven') {
           const isJawArea = dy > 0.2 && Math.abs(dx) < 0.8;
           if (isJawArea) {
             if (config.beardStyle === 'Full Beard') {
-              depth += 0.15; // मोटी दाढ़ी का 3D उभार
+              depth += 0.15; 
             } else if (config.beardStyle === 'Stubble') {
-              depth += 0.05 + (Math.random() * 0.03); // हल्की दाढ़ी का खुरदरापन
+              depth += 0.05 + (Math.random() * 0.03); 
             } else if (config.beardStyle === 'Short Beard') {
               depth += 0.1;
             }
@@ -88,40 +82,30 @@ export default function StereogramCanvas({
         }
       }
 
-      // ==========================================
       // HAIR STYLE 3D IMPLEMENTATION (MALE & FEMALE)
-      // ==========================================
       const hair = config.hairStyle || 'Straight';
       if (hair !== 'Bald') {
-        // सिर के ऊपर बालों का क्राउन/वॉल्यूम एरिया
         const isHairArea = dy < -0.4 && dist < 1.3;
         const isSideHair = Math.abs(dx) > 0.6 && dy > -0.4 && dy < 0.5;
 
         if (isHairArea || isSideHair) {
           if (hair === 'Curly Hair' || hair === 'Curly') {
-            // घुंघराले बालों के लिए गणितीय लहरदार (Waves) टेक्सचर उभार
             depth = Math.max(depth, 0.4) + Math.sin(x * 0.2) * Math.cos(y * 0.2) * 0.15;
           } else if (hair === 'Straight Hair' || hair === 'Straight') {
-            // सीधे और सिल्क बालों का सॉलिड स्मूथ उभार
             depth = Math.max(depth, 0.5) + (1 - Math.abs(dx)) * 0.1;
           }
         }
       }
 
-      // ==========================================
-      // FACE TONE ADJUSTMENT (Subtle Depth Tweak)
-      // ==========================================
-      // स्किन टोन के हिसाब से रोशनी का 3D इफ़ेक्ट सेट करने के लिए थोड़ा सा डेप्थ ऑफसेट
+      // FACE TONE ADJUSTMENT
       if (config.faceTone === 'Fair / USA Type') depth *= 1.05;
       if (config.faceTone === 'Dark / West Indies') depth *= 0.95;
 
-      // ==========================================
       // 3D NAME EMBEDDING LOGIC
-      // ==========================================
       if (config.name.trim() && y > CANVAS_H - 100 && y < CANVAS_H - 60) {
         const nameX = x - (cx - (config.name.trim().length * 7));
         if (nameX > 0 && nameX < config.name.trim().length * 15) {
-          depth = Math.max(depth, 0.25); // नाम को 3D की एक अलग परत पर उठाना
+          depth = Math.max(depth, 0.25); 
         }
       }
 
@@ -130,8 +114,8 @@ export default function StereogramCanvas({
 
     // 2. Fill background gradient
     const bgGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
-    bgGrad.addColorStop(0, palette.bg[0]);
-    bgGrad.addColorStop(1, palette.bg[1]);
+    bgGrad.addColorStop(0, palette.bg);
+    bgGrad.addColorStop(1, palette.bg);
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
@@ -175,13 +159,11 @@ export default function StereogramCanvas({
     const fData = finalImage.data;
 
     for (let y = 0; y < CANVAS_H; y++) {
-      // हर हॉरिजॉन्टल लाइन के लिए पिक्सल्स की लिंक्ड लिस्ट (Constraints) बनाना
       const same = new Int32Array(CANVAS_W);
       for (let x = 0; x < CANVAS_W; x++) same[x] = x;
 
       for (let x = 0; x < CANVAS_W; x++) {
         const depth = getDepth(x, y);
-        // पिक्सेल को डेप्थ के आधार पर खिसकाना (Separation formula)
         const sep = PATTERN_W - Math.round(depth * MAX_SHIFT);
         const left = x - Math.round(sep / 2);
         const right = left + sep;
@@ -191,7 +173,6 @@ export default function StereogramCanvas({
         }
       }
 
-      // पिक्सल्स में रंग भरना (रिफ्रेशिंग रिपीटेड लिंक्स)
       const rowPixels = new Uint8ClampedArray(CANVAS_W * 4);
       for (let x = 0; x < CANVAS_W; x++) {
         if (same[x] === x) {
@@ -210,7 +191,6 @@ export default function StereogramCanvas({
         }
       }
 
-      // फाइनल इमेज एरे में लाइन को कॉपी करना
       for (let x = 0; x < CANVAS_W; x++) {
         const idx = (y * CANVAS_W + x) * 4;
         fData[idx] = rowPixels[x * 4];
@@ -277,4 +257,29 @@ export default function StereogramCanvas({
         <canvas
           ref={canvasRef}
           className="block w-full h-auto"
+          style={{ aspectRatio: '400 / 600' }}
+        />
+        {rendering && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+            <div className="h-8 w-8 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+          </div>
+        )}
+      </div>
+      <p className="mt-2 text-xs font-mono uppercase tracking-widest" style={{ color: palette.primary }}>
+        {palette.name} Matrix Engine
+      </p>
+    </div>
+  );
+}
+
+function drawHeart(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+  ctx.beginPath();
+  ctx.moveTo(x, y + size * 0.3);
+  ctx.bezierCurveTo(x, y, x - size, y, x - size, y + size * 0.5);
+  ctx.bezierCurveTo(x - size, y + size * 0.9, x, y + size * 1.1, x, y + size * 1.3);
+  ctx.bezierCurveTo(x, y + size * 1.1, x + size, y + size * 0.9, x + size, y + size * 0.5);
+  ctx.bezierCurveTo(x + size, y, x, y, x, y + size * 0.3);
+  ctx.fill();
+}
+
 
