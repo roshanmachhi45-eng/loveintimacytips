@@ -17,21 +17,25 @@ const CANVAS_W = 400;
 const CANVAS_H = 600;
 
 /*
- * Beginner-friendly autostereogram settings.
+ * Simple beginner-friendly stereogram.
  *
- * A larger pattern period makes the image easier to fuse on
- * phone/tablet screens than the previous very dense pattern.
+ * The first version deliberately uses one large heart.
+ * Once this renders correctly, we can put the personalized
+ * face depth back into the same engine.
  */
-const PATTERN_W = 100;
-const MAX_DEPTH_SHIFT = 28;
+const PATTERN_W = 96;
+const MAX_SHIFT = 24;
 
 function hexToRgb(hex: string) {
-  const clean = hex.replace('#', '');
+  const value = String(hex || '#888888').replace('#', '');
+
+  const safe =
+    value.length === 6 ? value : '888888';
 
   return {
-    r: parseInt(clean.slice(0, 2), 16),
-    g: parseInt(clean.slice(2, 4), 16),
-    b: parseInt(clean.slice(4, 6), 16),
+    r: parseInt(safe.slice(0, 2), 16),
+    g: parseInt(safe.slice(2, 4), 16),
+    b: parseInt(safe.slice(4, 6), 16),
   };
 }
 
@@ -42,118 +46,135 @@ function seededRandom(seed: number) {
     value += 0x6d2b79f5;
 
     let t = value;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
 
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    t = Math.imul(
+      t ^ (t >>> 15),
+      t | 1
+    );
+
+    t ^= t + Math.imul(
+      t ^ (t >>> 7),
+      t | 61
+    );
+
+    return (
+      ((t ^ (t >>> 14)) >>> 0) /
+      4294967296
+    );
   };
 }
 
 /*
- * Smooth heart mask.
+ * Large smooth heart depth.
  *
- * Returns 0 for background and up to 1 for the centre of
- * the heart. The gradual falloff is intentional because
- * smooth depth gradients are easier to perceive than a
- * completely flat hard-edged depth shape.
+ * 0 = background
+ * 1 = centre/closest part
  */
-function getHeartDepth(x: number, y: number): number {
+function getHeartDepth(
+  x: number,
+  y: number
+): number {
   const cx = CANVAS_W / 2;
   const cy = 285;
 
   const px = (x - cx) / 118;
   const py = (y - cy) / 108;
 
-  /*
-   * Classic implicit heart:
-   * (x²+y²-1)³ - x²y³ <= 0
-   */
   const x2 = px * px;
   const y2 = py * py;
 
-  const heartEquation =
-    Math.pow(x2 + y2 - 1, 3) - x2 * Math.pow(py, 3);
+  const equation =
+    Math.pow(
+      x2 + y2 - 1,
+      3
+    ) -
+    x2 * Math.pow(py, 3);
 
-  if (heartEquation > 0) {
+  if (equation > 0) {
     return 0;
   }
 
-  /*
-   * Distance-like falloff.
-   * The centre becomes the strongest foreground area.
-   */
   const distance = Math.sqrt(
-    Math.min(1, (px * px) + (py * py))
+    Math.min(
+      1,
+      px * px + py * py
+    )
   );
 
-  let depth = 1 - distance * 0.72;
+  let depth =
+    1 - distance * 0.65;
 
   /*
-   * Make the upper lobes and lower point smoother.
+   * Smooth the depth so there is no hard
+   * transition around the heart.
    */
-  const verticalShape = 1 - Math.min(1, Math.abs(py) * 0.25);
+  depth *=
+    0.88 +
+    Math.cos(distance * Math.PI) * 0.12;
 
-  depth *= verticalShape;
-
-  return Math.max(0, Math.min(1, depth));
+  return Math.max(
+    0,
+    Math.min(1, depth)
+  );
 }
 
 /*
- * Very subtle visible preview.
+ * Very faint visual guide.
  *
- * This is NOT the stereoscopic information.
- * It is intentionally faint and blurred so a beginner
- * can understand where the hidden shape is.
+ * This is intentionally subtle.
  */
-function drawSoftHeartPreview(
+function drawSoftHeart(
   ctx: CanvasRenderingContext2D,
-  palette: ColorPalette
+  color: string
 ) {
   const cx = CANVAS_W / 2;
   const cy = 285;
 
   ctx.save();
 
-  ctx.globalAlpha = 0.13;
-  ctx.filter = 'blur(10px)';
-  ctx.fillStyle = palette.heartColor;
+  ctx.globalAlpha = 0.12;
+  ctx.filter = 'blur(9px)';
+  ctx.fillStyle = color;
 
   ctx.beginPath();
 
-  ctx.moveTo(cx, cy + 100);
+  ctx.moveTo(
+    cx,
+    cy + 100
+  );
 
   ctx.bezierCurveTo(
-    cx - 18,
-    cy + 78,
+    cx - 20,
+    cy + 75,
     cx - 112,
-    cy + 20,
+    cy + 22,
     cx - 112,
     cy - 35
   );
 
   ctx.bezierCurveTo(
     cx - 112,
-    cy - 82,
+    cy - 84,
     cx - 55,
     cy - 100,
     cx,
-    cy - 50
+    cy - 48
   );
 
   ctx.bezierCurveTo(
     cx + 55,
     cy - 100,
     cx + 112,
-    cy - 82,
+    cy - 84,
     cx + 112,
     cy - 35
   );
 
   ctx.bezierCurveTo(
     cx + 112,
-    cy + 20,
-    cx + 18,
-    cy + 78,
+    cy + 22,
+    cx + 20,
+    cy + 75,
     cx,
     cy + 100
   );
@@ -170,319 +191,412 @@ export default function StereogramCanvas({
   generateKey,
   onCanvasReady,
 }: StereogramCanvasProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [rendering, setRendering] = useState(false);
+  const canvasRef =
+    useRef<HTMLCanvasElement>(null);
+
+  const [rendering, setRendering] =
+    useState(false);
 
   const render = useCallback(() => {
-    const canvas = canvasRef.current;
+    const canvas =
+      canvasRef.current;
 
-    if (!canvas) return;
-
-    setRendering(true);
-
-    const palette: ColorPalette =
-      PALETTES[paletteIndex % PALETTES.length];
-
-    canvas.width = CANVAS_W;
-    canvas.height = CANVAS_H;
-
-    const ctx = canvas.getContext('2d');
-
-    if (!ctx) {
-      setRendering(false);
+    if (!canvas) {
       return;
     }
 
-    /*
-     * ----------------------------------------------------
-     * 1. BACKGROUND
-     * ----------------------------------------------------
-     */
+    setRendering(true);
 
-    const background = ctx.createLinearGradient(
-      0,
-      0,
-      0,
-      CANVAS_H
-    );
-
-    background.addColorStop(0, palette.bg);
-    background.addColorStop(1, palette.bg);
-
-    ctx.fillStyle = background;
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-    /*
-     * ----------------------------------------------------
-     * 2. CREATE A SMALL RANDOM DOT PATTERN
-     * ----------------------------------------------------
-     *
-     * Instead of generating a completely independent
-     * random field for every pixel, we create one seamless
-     * horizontal strip and repeat it.
-     *
-     * The hidden depth changes the repeat distance.
-     */
-
-    const pattern = new Uint8ClampedArray(
-      PATTERN_W * 4
-    );
-
-    const seed =
-      generateKey * 928371 +
-      paletteIndex * 73129 +
-      config.name.length * 97;
-
-    const random = seededRandom(seed);
-
-    const patternColors =
-      palette.patternColors.length > 0
-        ? palette.patternColors
-        : [palette.primary, palette.secondary];
-
-    for (let x = 0; x < PATTERN_W; x++) {
-      /*
-       * Keep the dots reasonably high contrast.
-       */
-      const color =
-        patternColors[
-          Math.floor(random() * patternColors.length)
+    try {
+      const palette: ColorPalette =
+        PALETTES[
+          paletteIndex %
+            PALETTES.length
         ];
 
-      const rgb = hexToRgb(color);
+      /*
+       * ------------------------------------------------
+       * CANVAS SETUP
+       * ------------------------------------------------
+       */
 
-      const index = x * 4;
+      canvas.width = CANVAS_W;
+      canvas.height = CANVAS_H;
 
-      pattern[index] = rgb.r;
-      pattern[index + 1] = rgb.g;
-      pattern[index + 2] = rgb.b;
-      pattern[index + 3] = 255;
-    }
+      const ctx =
+        canvas.getContext('2d');
 
-    /*
-     * ----------------------------------------------------
-     * 3. DEPTH MAP
-     * ----------------------------------------------------
-     *
-     * We keep the heart very large and simple for the first
-     * reliable version.
-     *
-     * 0 = background
-     * 1 = closest part of heart
-     */
-
-    const depthMap = new Float32Array(
-      CANVAS_W * CANVAS_H
-    );
-
-    for (let y = 0; y < CANVAS_H; y++) {
-      for (let x = 0; x < CANVAS_W; x++) {
-        depthMap[y * CANVAS_W + x] =
-          getHeartDepth(x, y);
-      }
-    }
-
-    /*
-     * ----------------------------------------------------
-     * 4. BUILD AUTOSTEREOGRAM
-     * ----------------------------------------------------
-     *
-     * Each row is independent.
-     *
-     * Background:
-     *   repeat period = PATTERN_W
-     *
-     * Heart:
-     *   repeat period becomes smaller
-     *
-     * That small change in repetition is what carries the
-     * binocular disparity used by the Magic Eye illusion.
-     */
-
-    const image = ctx.createImageData(
-      CANVAS_W,
-      CANVAS_H
-    );
-
-    const pixels = image.data;
-
-    for (let y = 0; y < CANVAS_H; y++) {
-      const row = new Uint8ClampedArray(
-        CANVAS_W * 4
-      );
-
-      for (let x = 0; x < CANVAS_W; x++) {
-        const depth =
-          depthMap[y * CANVAS_W + x];
-
-        /*
-         * Stronger depth = smaller repeat period.
-         */
-        const separation =
-          PATTERN_W -
-          Math.round(depth * MAX_DEPTH_SHIFT);
-
-        /*
-         * First pattern-width area is seeded directly
-         * from the random pattern.
-         */
-        if (x < PATTERN_W) {
-          const patternX = x % PATTERN_W;
-          const patternIndex = patternX * 4;
-          const outputIndex = x * 4;
-
-          row[outputIndex] =
-            pattern[patternIndex];
-
-          row[outputIndex + 1] =
-            pattern[patternIndex + 1];
-
-          row[outputIndex + 2] =
-            pattern[patternIndex + 2];
-
-          row[outputIndex + 3] = 255;
-
-          continue;
-        }
-
-        /*
-         * The source pixel is shifted according to depth.
-         */
-        let sourceX =
-          x - separation;
-
-        /*
-         * Safety boundary.
-         */
-        if (sourceX < 0) {
-          sourceX = x % PATTERN_W;
-        }
-
-        const outputIndex = x * 4;
-        const sourceIndex = sourceX * 4;
-
-        row[outputIndex] =
-          row[sourceIndex];
-
-        row[outputIndex + 1] =
-          row[sourceIndex + 1];
-
-        row[outputIndex + 2] =
-          row[sourceIndex + 2];
-
-        row[outputIndex + 3] = 255;
+      if (!ctx) {
+        return;
       }
 
       /*
-       * Copy row into final image.
+       * ------------------------------------------------
+       * BACKGROUND
+       * ------------------------------------------------
        */
-      const rowStart = y * CANVAS_W * 4;
 
-      for (let x = 0; x < CANVAS_W * 4; x++) {
-        pixels[rowStart + x] = row[x];
-      }
-    }
+      ctx.fillStyle =
+        palette.bg || '#111827';
 
-    /*
-     * ----------------------------------------------------
-     * 5. DRAW STEREOGRAM
-     * ----------------------------------------------------
-     */
-
-    ctx.putImageData(image, 0, 0);
-
-    /*
-     * ----------------------------------------------------
-     * 6. VERY SUBTLE BEGINNER PREVIEW
-     * ----------------------------------------------------
-     *
-     * The stereogram remains the main image.
-     *
-     * This faint blurred heart is deliberately low opacity.
-     * It gives beginners a visual clue without drawing a
-     * hard obvious heart over the stereogram.
-     */
-
-    drawSoftHeartPreview(ctx, palette);
-
-    /*
-     * ----------------------------------------------------
-     * 7. SMALL VIEWING GUIDE
-     * ----------------------------------------------------
-     *
-     * Two dots near the upper part are easier to use on
-     * mobile than dots placed at the bottom of a tall image.
-     */
-
-    ctx.save();
-
-    ctx.globalAlpha = 0.72;
-    ctx.fillStyle = palette.textColor;
-
-    ctx.beginPath();
-    ctx.arc(
-      CANVAS_W / 2 - 18,
-      34,
-      3,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.arc(
-      CANVAS_W / 2 + 18,
-      34,
-      3,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-
-    ctx.restore();
-
-    /*
-     * ----------------------------------------------------
-     * 8. VERY FAINT PARTNER NAME
-     * ----------------------------------------------------
-     *
-     * The name is intentionally NOT part of the first
-     * stereogram depth test. We only show it subtly after
-     * the engine has been proven stable.
-     */
-
-    if (config.name.trim()) {
-      ctx.save();
-
-      ctx.globalAlpha = 0.08;
-      ctx.fillStyle = palette.textColor;
-      ctx.font =
-        '600 14px system-ui, -apple-system, sans-serif';
-      ctx.textAlign = 'center';
-
-      ctx.filter = 'blur(1px)';
-
-      ctx.fillText(
-        config.name.trim(),
-        CANVAS_W / 2,
-        CANVAS_H - 32
+      ctx.fillRect(
+        0,
+        0,
+        CANVAS_W,
+        CANVAS_H
       );
 
+      /*
+       * ------------------------------------------------
+       * SAFE PATTERN COLORS
+       * ------------------------------------------------
+       *
+       * Do NOT assume patternColors exists.
+       */
+
+      const paletteObject =
+        palette as ColorPalette & {
+          patternColors?: string[];
+          heartColor?: string;
+          textColor?: string;
+        };
+
+      const availableColors =
+        Array.isArray(
+          paletteObject.patternColors
+        ) &&
+        paletteObject.patternColors.length
+          ? paletteObject.patternColors
+          : [
+              palette.primary ||
+                '#8b5cf6',
+              palette.secondary ||
+                '#ec4899',
+              '#ffffff',
+            ];
+
+      /*
+       * ------------------------------------------------
+       * RANDOM PATTERN
+       * ------------------------------------------------
+       */
+
+      const pattern =
+        new Uint8ClampedArray(
+          PATTERN_W * 4
+        );
+
+      const random =
+        seededRandom(
+          generateKey * 7919 +
+            paletteIndex * 997 +
+            config.name.length * 31
+        );
+
+      for (
+        let x = 0;
+        x < PATTERN_W;
+        x++
+      ) {
+        const color =
+          availableColors[
+            Math.floor(
+              random() *
+                availableColors.length
+            )
+          ];
+
+        const rgb =
+          hexToRgb(color);
+
+        const index =
+          x * 4;
+
+        pattern[index] =
+          rgb.r;
+
+        pattern[index + 1] =
+          rgb.g;
+
+        pattern[index + 2] =
+          rgb.b;
+
+        pattern[index + 3] =
+          255;
+      }
+
+      /*
+       * ------------------------------------------------
+       * FINAL IMAGE
+       * ------------------------------------------------
+       */
+
+      const image =
+        ctx.createImageData(
+          CANVAS_W,
+          CANVAS_H
+        );
+
+      const output =
+        image.data;
+
+      /*
+       * ------------------------------------------------
+       * ROW-BY-ROW STEREOGRAM
+       * ------------------------------------------------
+       */
+
+      for (
+        let y = 0;
+        y < CANVAS_H;
+        y++
+      ) {
+        const row =
+          new Uint8ClampedArray(
+            CANVAS_W * 4
+          );
+
+        for (
+          let x = 0;
+          x < CANVAS_W;
+          x++
+        ) {
+          const depth =
+            getHeartDepth(
+              x,
+              y
+            );
+
+          /*
+           * Background repeats every PATTERN_W.
+           *
+           * Heart gradually reduces the repetition
+           * distance, creating the hidden depth.
+           */
+          const separation =
+            PATTERN_W -
+            Math.round(
+              depth * MAX_SHIFT
+            );
+
+          let sourceX =
+            x - separation;
+
+          /*
+           * The beginning of every row is seeded
+           * directly from the random pattern.
+           */
+          if (
+            x < PATTERN_W
+          ) {
+            sourceX =
+              x % PATTERN_W;
+
+            const source =
+              sourceX * 4;
+
+            const target =
+              x * 4;
+
+            row[target] =
+              pattern[source];
+
+            row[target + 1] =
+              pattern[source + 1];
+
+            row[target + 2] =
+              pattern[source + 2];
+
+            row[target + 3] =
+              255;
+
+            continue;
+          }
+
+          /*
+           * Safety clamp.
+           */
+          if (
+            sourceX < 0
+          ) {
+            sourceX =
+              x % PATTERN_W;
+          }
+
+          if (
+            sourceX >= x
+          ) {
+            sourceX =
+              x - 1;
+          }
+
+          const source =
+            sourceX * 4;
+
+          const target =
+            x * 4;
+
+          row[target] =
+            row[source];
+
+          row[target + 1] =
+            row[source + 1];
+
+          row[target + 2] =
+            row[source + 2];
+
+          row[target + 3] =
+            255;
+        }
+
+        /*
+         * Copy completed row.
+         */
+        const rowStart =
+          y * CANVAS_W * 4;
+
+        output.set(
+          row,
+          rowStart
+        );
+      }
+
+      /*
+       * ------------------------------------------------
+       * DRAW GENERATED IMAGE
+       * ------------------------------------------------
+       */
+
+      ctx.putImageData(
+        image,
+        0,
+        0
+      );
+
+      /*
+       * ------------------------------------------------
+       * VERY FAINT HEART GUIDE
+       * ------------------------------------------------
+       */
+
+      drawSoftHeart(
+        ctx,
+        paletteObject.heartColor ||
+          palette.primary ||
+          '#ec4899'
+      );
+
+      /*
+       * ------------------------------------------------
+       * VIEWING DOTS
+       * ------------------------------------------------
+       */
+
+      ctx.save();
+
+      ctx.globalAlpha = 0.7;
+
+      ctx.fillStyle =
+        paletteObject.textColor ||
+        '#ffffff';
+
+      ctx.beginPath();
+
+      ctx.arc(
+        CANVAS_W / 2 - 18,
+        32,
+        3,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
+      ctx.beginPath();
+
+      ctx.arc(
+        CANVAS_W / 2 + 18,
+        32,
+        3,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
       ctx.restore();
+
+      /*
+       * ------------------------------------------------
+       * PARTNER NAME
+       * ------------------------------------------------
+       *
+       * Only a subtle visible label for now.
+       * We will integrate the name into the depth map
+       * after the heart engine is confirmed.
+       */
+
+      if (
+        config.name &&
+        config.name.trim()
+      ) {
+        ctx.save();
+
+        ctx.globalAlpha =
+          0.08;
+
+        ctx.filter =
+          'blur(1px)';
+
+        ctx.fillStyle =
+          paletteObject.textColor ||
+          palette.primary ||
+          '#ffffff';
+
+        ctx.font =
+          '600 14px system-ui, sans-serif';
+
+        ctx.textAlign =
+          'center';
+
+        ctx.fillText(
+          config.name.trim(),
+          CANVAS_W / 2,
+          CANVAS_H - 30
+        );
+
+        ctx.restore();
+      }
+
+      /*
+       * ------------------------------------------------
+       * SHARE IMAGE
+       * ------------------------------------------------
+       */
+
+      const dataUrl =
+        canvas.toDataURL(
+          'image/png'
+        );
+
+      if (onCanvasReady) {
+        onCanvasReady(
+          dataUrl
+        );
+      }
+    } catch (error) {
+      /*
+       * Important:
+       * A rendering error must NEVER leave the
+       * loading spinner permanently active.
+       */
+      console.error(
+        'Love Magic Eye rendering error:',
+        error
+      );
+    } finally {
+      setRendering(false);
     }
-
-    /*
-     * ----------------------------------------------------
-     * 9. EXPORT
-     * ----------------------------------------------------
-     */
-
-    const dataUrl =
-      canvas.toDataURL('image/png');
-
-    onCanvasReady?.(dataUrl);
-
-    setRendering(false);
   }, [
     config,
     paletteIndex,
@@ -491,49 +605,73 @@ export default function StereogramCanvas({
   ]);
 
   useEffect(() => {
-    if (generateKey > 0) {
-      const frame =
-        window.requestAnimationFrame(() => {
-          render();
-        });
-
-      return () => {
-        window.cancelAnimationFrame(frame);
-      };
+    if (
+      generateKey <= 0
+    ) {
+      return;
     }
-  }, [generateKey, render]);
+
+    const frame =
+      window.requestAnimationFrame(
+        () => {
+          render();
+        }
+      );
+
+    return () => {
+      window.cancelAnimationFrame(
+        frame
+      );
+    };
+  }, [
+    generateKey,
+    render,
+  ]);
 
   const palette: ColorPalette =
-    PALETTES[paletteIndex % PALETTES.length];
+    PALETTES[
+      paletteIndex %
+        PALETTES.length
+    ];
 
   return (
-    <div className="flex flex-col items-center w-full">
+    <div className="flex w-full flex-col items-center">
       <div
-        className="relative w-full max-w-[400px] mx-auto"
+        className="relative mx-auto w-full max-w-[400px]"
         style={{
           boxShadow: `
-            0 0 30px ${palette.primary}40,
-            0 0 60px ${palette.secondary}20
+            0 0 30px ${
+              palette.primary || '#8b5cf6'
+            }40,
+            0 0 60px ${
+              palette.secondary || '#ec4899'
+            }20
           `,
-          borderRadius: '1.5rem',
-          overflow: 'hidden',
-          border: `2px solid ${palette.primary}30`,
-          background: palette.bg,
+          borderRadius:
+            '1.5rem',
+          overflow:
+            'hidden',
+          border: `2px solid ${
+            palette.primary ||
+            '#8b5cf6'
+          }30`,
+          background:
+            palette.bg ||
+            '#111827',
         }}
       >
         <canvas
           ref={canvasRef}
-          className="block w-full h-auto"
+          className="block h-auto w-full"
           style={{
-            aspectRatio: '400 / 600',
+            aspectRatio:
+              '400 / 600',
           }}
         />
 
         {rendering && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[2px]">
-            <div
-              className="h-8 w-8 rounded-full border-2 border-white/30 border-t-white animate-spin"
-            />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
           </div>
         )}
       </div>
@@ -541,7 +679,9 @@ export default function StereogramCanvas({
       <p
         className="mt-2 text-xs font-mono uppercase tracking-widest"
         style={{
-          color: palette.primary,
+          color:
+            palette.primary ||
+            '#8b5cf6',
         }}
       >
         {palette.name} Magic Eye
@@ -550,19 +690,21 @@ export default function StereogramCanvas({
       <div
         className="mt-3 max-w-[400px] px-5 text-center"
         style={{
-          color: palette.textColor,
+          color:
+            palette.textColor ||
+            palette.primary ||
+            '#8b5cf6',
         }}
       >
         <p className="text-sm font-medium">
-          Relax your eyes and look slightly
-          <span className="font-bold"> behind </span>
-          the screen.
+          Relax your eyes and look
+          slightly behind the screen.
         </p>
 
         <p className="mt-1 text-xs opacity-70">
-          The soft heart is only a gentle guide.
-          Let the repeating dots merge and the
-          hidden 3D heart should appear.
+          A soft heart guide is
+          visible while the hidden
+          3D pattern is generated.
         </p>
       </div>
     </div>
