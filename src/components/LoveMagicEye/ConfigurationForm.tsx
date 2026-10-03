@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Venus, Mars, Sparkles, Wand2 } from 'lucide-react';
+import { Sparkles, Wand2 } from 'lucide-react';
 import {
   type MagicEyeConfig,
   type Gender,
@@ -264,11 +264,23 @@ function GenderButton({
 
 /* ---- SVG Icons ---- */
 function VenusIcon() {
-  return <Venus className="h-5 w-5" />;
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="9" r="5" />
+      <path d="M12 14v8" />
+      <path d="M9 19h6" />
+    </svg>
+  );
 }
 
 function MarsIcon() {
-  return <Mars className="h-5 w-5" />;
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="10" cy="14" r="5" />
+      <path d="M14 10l7-7" />
+      <path d="M14 3h7v7" />
+    </svg>
+  );
 }
 
 function HairIcon({ style }: { style: string }) {

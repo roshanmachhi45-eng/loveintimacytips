@@ -385,7 +385,6 @@ export default function Home() {
   // =====================================================
 
   const openLoveMagicEye = () => {
-    closeEverything ? undefined : undefined;
     navigate('/love-magic-eye');
   };
 
