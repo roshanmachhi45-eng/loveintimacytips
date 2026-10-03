@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   Calculator,
+  Eye,
   Heart,
   Sparkles,
   X,
@@ -380,6 +381,15 @@ export default function Home() {
   };
 
   // =====================================================
+  // OPEN LOVE MAGIC EYE
+  // =====================================================
+
+  const openLoveMagicEye = () => {
+    closeEverything ? undefined : undefined;
+    navigate('/love-magic-eye');
+  };
+
+  // =====================================================
   // CLOSE LOVE CALCULATOR
   // =====================================================
 
@@ -742,6 +752,65 @@ export default function Home() {
                 <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-purple-500 transition-colors group-hover:text-purple-600">
 
                   Try Cosmic Love Tarot
+
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+
+                </div>
+
+              </div>
+
+            </button>
+
+            {/* =================================================
+                LOVE MAGIC EYE CARD
+            ================================================= */}
+
+            <button
+              type="button"
+              onClick={openLoveMagicEye}
+              aria-label="Open Love Magic Eye"
+              className="group relative overflow-hidden rounded-[1.75rem] border border-violet-200 bg-white/85 p-5 text-left shadow-[0_12px_40px_rgba(139,92,246,0.10)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-violet-300 hover:shadow-[0_20px_50px_rgba(139,92,246,0.18)] focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 sm:p-6"
+              style={{ boxShadow: '0 0 20px rgba(168,85,247,0.08)' }}
+            >
+
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-violet-200/40 blur-3xl transition-transform duration-500 group-hover:scale-125"
+              />
+
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -bottom-12 -left-8 h-28 w-28 rounded-full bg-pink-200/30 blur-3xl transition-transform duration-500 group-hover:scale-125"
+              />
+
+              <div className="relative">
+
+                <div className="mb-5 flex items-start justify-between">
+
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-violet-200">
+
+                    <Eye className="h-6 w-6" />
+
+                  </div>
+
+                  <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-500">
+                    New Tool
+                  </span>
+
+                </div>
+
+                <h3 className="font-display text-lg font-bold text-slate-900 sm:text-xl">
+                  Love Magic Eye
+                </h3>
+
+                <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                  Decode your lover's hidden 3D aura in a mesmerizing
+                  holographic magic eye stereogram.
+                </p>
+
+                <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-violet-500 transition-colors group-hover:text-violet-600">
+
+                  Try Love Magic Eye
 
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
 

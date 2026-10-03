@@ -56,6 +56,11 @@ const CosmicTarot = lazy(
   () => import('./pages/CosmicTarot')
 );
 
+// LOVE MAGIC EYE
+const LoveMagicEye = lazy(
+  () => import('./components/LoveMagicEye')
+);
+
 
 function PageLoader() {
   return (
@@ -159,7 +164,14 @@ export default function App() {
             <Route
               path="/cosmic-tarot"
               element={<CosmicTarot />}
-            />                           
+            />
+
+            {/* LOVE MAGIC EYE */}
+
+            <Route
+              path="/love-magic-eye"
+              element={<LoveMagicEye />}
+            />
             {/* =========================================
                 BLOG LISTING
 

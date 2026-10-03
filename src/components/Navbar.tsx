@@ -8,6 +8,7 @@ import {
   LogOut,
   User as UserIcon,
   Sparkles,
+  Eye,
   X,
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -28,6 +29,11 @@ const TOOLS = [
     id: 'cosmic-love-tarot',
     label: 'Cosmic Love Tarot',
     icon: Sparkles,
+  },
+  {
+    id: 'love-magic-eye',
+    label: 'Love Magic Eye Tool',
+    icon: Eye,
   },
 ];
 export default function Navbar() {
@@ -362,6 +368,12 @@ const handleLogin = async () => {
 
     if (toolId === 'cosmic-love-tarot') {
       openCosmicLoveTarot();
+      return;
+    }
+
+    if (toolId === 'love-magic-eye') {
+      closeEverything();
+      navigate('/love-magic-eye');
       return;
     }
   };
