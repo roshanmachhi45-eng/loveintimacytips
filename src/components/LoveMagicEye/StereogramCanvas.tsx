@@ -1,86 +1,32 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { MagicEyeConfig } from './types';
 
-interface StereogramCanvasProps {
+interface Props {
   config: MagicEyeConfig;
   paletteIndex: number;
-  generateKey: number;
-  onCanvasReady?: (dataUrl: string) => void;
+  onGenerated?: (dataUrl: string) => void;
 }
 
-const CANVAS_W = 400;
-const CANVAS_H = 600;
+const WIDTH = 400;
+const HEIGHT = 600;
 
 /*
- * =========================================================
- * MAGIC EYE ENGINE
- * =========================================================
+ * Reference-style autostereogram settings.
  *
- * The image consists of:
- *
- * 1. A strong black/white geometric repeating carrier.
- * 2. A mathematical hidden face depth map.
- * 3. Horizontal pixel correspondence constraints.
- *
- * The face itself is NEVER painted onto the canvas.
+ * The important idea:
+ * - A small black/white geometric tile is repeated.
+ * - The hidden face changes the horizontal spacing of repeated elements.
+ * - Nothing resembling a face is drawn directly onto the image.
  */
-
+const TILE_SIZE = 64;
 const FAR_SEPARATION = 88;
+const DEPTH_SHIFT = 25;
 
-/*
- * Difference between the far background and the closest
- * part of the hidden face.
- *
- * Keeping this moderate makes the stereogram easier to
- * fuse on phones/tablets.
- */
-const DEPTH_RANGE = 24;
+const clamp = (value: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, value));
 
-/*
- * Geometric carrier period.
- *
- * The reference image has a clearly repeating pattern.
- */
-const CARRIER_PERIOD = 32;
-
-/*
- * =========================================================
- * BASIC HELPERS
- * =========================================================
- */
-
-function clamp(
-  value: number,
-  min: number,
-  max: number
-): number {
-  return Math.max(
-    min,
-    Math.min(max, value)
-  );
-}
-
-function smoothstep(
-  value: number
-): number {
-  const x = clamp(
-    value,
-    0,
-    1
-  );
-
-  return (
-    x *
-    x *
-    (3 - 2 * x)
-  );
-}
-
-/*
- * =========================================================
- * SHAPE FUNCTIONS
- * =========================================================
- */
+const mod = (value: number, divisor: number) =>
+  ((value % divisor) + divisor) % divisor;
 
 function ellipse(
   x: number,
@@ -89,612 +35,357 @@ function ellipse(
   cy: number,
   rx: number,
   ry: number
-): number {
-  const dx =
-    (x - cx) / rx;
-
-  const dy =
-    (y - cy) / ry;
-
-  const distance =
-    dx * dx +
-    dy * dy;
-
-  if (distance >= 1) {
-    return 0;
-  }
-
-  return smoothstep(
-    1 - distance
-  );
+) {
+  const dx = (x - cx) / rx;
+  const dy = (y - cy) / ry;
+  return dx * dx + dy * dy <= 1;
 }
 
-function roundedRectangle(
+function roundedRect(
   x: number,
   y: number,
-  cx: number,
-  cy: number,
-  width: number,
-  height: number,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
   radius: number
-): number {
-  const halfW =
-    width / 2;
+) {
+  const cx = clamp(x, left + radius, right - radius);
+  const cy = clamp(y, top + radius, bottom - radius);
 
-  const halfH =
-    height / 2;
+  const dx = x - cx;
+  const dy = y - cy;
 
-  const px =
-    Math.abs(x - cx) -
-    halfW +
-    radius;
-
-  const py =
-    Math.abs(y - cy) -
-    halfH +
-    radius;
-
-  const ax =
-    Math.max(px, 0);
-
-  const ay =
-    Math.max(py, 0);
-
-  const outside =
-    Math.sqrt(
-      ax * ax +
-      ay * ay
-    );
-
-  const inside =
-    Math.min(
-      Math.max(px, py),
-      0
-    );
-
-  const distance =
-    outside + inside;
-
-  if (
-    distance >= radius
-  ) {
-    return 0;
-  }
-
-  return smoothstep(
-    1 -
-      distance /
-        radius
+  return (
+    dx * dx + dy * dy <= radius * radius &&
+    x >= left &&
+    x <= right &&
+    y >= top &&
+    y <= bottom
   );
 }
 
-/*
- * =========================================================
- * HAIR DEPTH
- * =========================================================
- */
-
-function getHairDepth(
-  x: number,
-  y: number,
-  cx: number,
-  cy: number,
-  config: MagicEyeConfig
-): number {
-  if (
-    config.hairStyle === 'bald'
-  ) {
-    return 0;
-  }
-
-  /*
-   * Main head cap.
-   */
-  const cap =
-    ellipse(
-      x,
-      y,
-      cx,
-      cy - 55,
-      108,
-      90
-    );
-
-  if (cap <= 0) {
-    return 0;
-  }
-
-  /*
-   * Hair should not cover the middle/lower face.
-   */
-  if (
-    y >
-    cy - 48
-  ) {
-    return 0;
-  }
-
-  /*
-   * Curly hair gets several soft bumps.
-   */
-  if (
-    config.hairStyle === 'curly'
-  ) {
-    const curls = [
-      [-82, -78],
-      [-58, -96],
-      [-30, -105],
-      [0, -108],
-      [30, -105],
-      [58, -96],
-      [82, -78],
-    ];
-
-    let result = 0;
-
-    for (
-      const [offsetX, offsetY]
-      of curls
-    ) {
-      result = Math.max(
-        result,
-        ellipse(
-          x,
-          y,
-          cx + offsetX,
-          cy + offsetY,
-          31,
-          29
-        )
-      );
-    }
-
-    return result;
-  }
-
-  /*
-   * Straight hair.
-   */
-  return cap;
-}
-
-/*
- * =========================================================
- * FACE DEPTH MAP
- * =========================================================
+/**
+ * Returns a smooth face depth.
  *
  * 0 = background
- * 1 = strongest foreground
+ * 1 = deepest/closest feature
  *
- * Nothing from this function is directly painted.
- * It only controls stereoscopic displacement.
- * =========================================================
+ * The face is deliberately large and simple.
+ * This makes the hidden image easier to perceive.
  */
+function buildDepthMap(config: MagicEyeConfig) {
+  const depth = new Float32Array(WIDTH * HEIGHT);
 
-function getFaceDepth(
-  x: number,
-  y: number,
-  config: MagicEyeConfig
-): number {
-  const cx =
-    CANVAS_W / 2;
+  const cx = WIDTH * 0.5;
 
-  const cy = 282;
+  const faceTop = 145;
+  const faceBottom = 485;
 
-  let face = 0;
-
-  /*
-   * -------------------------------------------------------
-   * FACE STRUCTURE
-   * -------------------------------------------------------
-   */
-
-  if (
+  const faceWidth =
     config.faceStructure === 'round'
-  ) {
-    face =
-      ellipse(
+      ? 245
+      : config.faceStructure === 'square'
+        ? 255
+        : 225;
+
+  const faceHeight =
+    config.faceStructure === 'round'
+      ? 310
+      : config.faceStructure === 'square'
+        ? 315
+        : 335;
+
+  const faceRx = faceWidth / 2;
+  const faceRy = faceHeight / 2;
+
+  for (let y = 0; y < HEIGHT; y++) {
+    for (let x = 0; x < WIDTH; x++) {
+      const index = y * WIDTH + x;
+
+      let d = 0;
+
+      /*
+       * Main head silhouette.
+       */
+      const head = ellipse(
         x,
         y,
         cx,
-        cy,
-        108,
-        128
+        faceTop + faceHeight / 2,
+        faceRx,
+        faceRy
       );
-  } else if (
-    config.faceStructure === 'square'
-  ) {
-    face =
-      roundedRectangle(
-        x,
-        y,
-        cx,
-        cy,
-        214,
-        250,
-        48
-      );
-  } else {
-    /*
-     * Oval.
-     */
-    face =
-      ellipse(
-        x,
-        y,
-        cx,
-        cy,
-        102,
-        137
-      );
+
+      if (head) {
+        const nx = (x - cx) / faceRx;
+        const ny =
+          (y - (faceTop + faceHeight / 2)) /
+          faceRy;
+
+        /*
+         * Rounded 3D face surface.
+         */
+        const surface = Math.sqrt(
+          Math.max(0, 1 - nx * nx - ny * ny)
+        );
+
+        d = 0.25 + surface * 0.35;
+      }
+
+      /*
+       * Hair mass.
+       */
+      if (config.hairStyle !== 'bald') {
+        const hairTop = ellipse(
+          x,
+          y,
+          cx,
+          155,
+          faceRx * 1.03,
+          95
+        );
+
+        const hairSide =
+          ellipse(x, y, cx - faceRx * 0.83, 210, 38, 95) ||
+          ellipse(x, y, cx + faceRx * 0.83, 210, 38, 95);
+
+        if (hairTop || hairSide) {
+          d = Math.max(d, 0.58);
+        }
+
+        /*
+         * Curly hair gets a slightly irregular outer silhouette.
+         */
+        if (config.hairStyle === 'curly') {
+          const curls =
+            ellipse(x, y, cx - 75, 135, 45, 45) ||
+            ellipse(x, y, cx + 75, 135, 45, 45) ||
+            ellipse(x, y, cx - 92, 190, 42, 52) ||
+            ellipse(x, y, cx + 92, 190, 42, 52);
+
+          if (curls) {
+            d = Math.max(d, 0.68);
+          }
+        }
+      }
+
+      /*
+       * Eyes.
+       */
+      const leftEye =
+        ellipse(x, y, cx - 52, 275, 24, 11);
+
+      const rightEye =
+        ellipse(x, y, cx + 52, 275, 24, 11);
+
+      if (leftEye || rightEye) {
+        d = Math.max(d, 0.88);
+      }
+
+      /*
+       * Eyebrows.
+       */
+      const leftBrow =
+        roundedRect(x, y, cx - 80, 247, cx - 22, 258, 5);
+
+      const rightBrow =
+        roundedRect(x, y, cx + 22, 247, cx + 80, 258, 5);
+
+      if (leftBrow || rightBrow) {
+        d = Math.max(d, 0.78);
+      }
+
+      /*
+       * Nose.
+       *
+       * A narrow vertical depth ridge gives the hidden face
+       * a recognizable center line.
+       */
+      const nose =
+        roundedRect(
+          x,
+          y,
+          cx - 12,
+          282,
+          cx + 12,
+          350,
+          8
+        );
+
+      const noseTip =
+        ellipse(x, y, cx, 350, 22, 12);
+
+      if (nose || noseTip) {
+        d = Math.max(d, noseTip ? 0.92 : 0.72);
+      }
+
+      /*
+       * Cheeks.
+       */
+      if (
+        ellipse(x, y, cx - 73, 333, 38, 28) ||
+        ellipse(x, y, cx + 73, 333, 38, 28)
+      ) {
+        d = Math.max(d, 0.48);
+      }
+
+      /*
+       * Mouth.
+       */
+      const mouth =
+        ellipse(x, y, cx, 390, 48, 10);
+
+      if (mouth) {
+        d = Math.max(d, 0.9);
+      }
+
+      /*
+       * Chin.
+       */
+      if (ellipse(x, y, cx, 430, 48, 25)) {
+        d = Math.max(d, 0.55);
+      }
+
+      /*
+       * Male beard.
+       */
+      if (
+        config.gender === 'male' &&
+        config.beardStyle !== 'clean'
+      ) {
+        const beardArea =
+          ellipse(x, y, cx, 397, 103, 92);
+
+        if (beardArea) {
+          const beardStrength =
+            config.beardStyle === 'full'
+              ? 0.78
+              : config.beardStyle === 'short'
+                ? 0.64
+                : 0.50;
+
+          d = Math.max(d, beardStrength);
+        }
+
+        /*
+         * Keep mouth/nose recognizable through the beard depth.
+         */
+        if (mouth) {
+          d = Math.max(d, 0.91);
+        }
+      }
+
+      /*
+       * Female jaw/cheek contour.
+       */
+      if (config.gender === 'female') {
+        const feminineContour =
+          ellipse(x, y, cx, 385, faceRx * 0.72, 100);
+
+        if (feminineContour) {
+          d = Math.max(d, 0.42);
+        }
+      }
+
+      /*
+       * Strong outer silhouette.
+       */
+      if (
+        head &&
+        (
+          Math.abs(nx) > 0.82 ||
+          Math.abs(ny) > 0.80
+        )
+      ) {
+        d = Math.max(d, 0.34);
+      }
+
+      depth[index] = clamp(d, 0, 1);
+    }
   }
 
-  const hair =
-    getHairDepth(
-      x,
-      y,
-      cx,
-      cy,
-      config
-    );
+  return depth;
+}
+
+/**
+ * Black/white geometric carrier.
+ *
+ * This is intentionally not random noise.
+ * It produces the clean repeating look closer to the
+ * reference-style stereogram.
+ */
+function carrierPixel(x: number, y: number) {
+  const px = mod(x, TILE_SIZE);
+  const py = mod(y, TILE_SIZE);
+
+  const cell = 8;
+
+  const gx = Math.floor(px / cell);
+  const gy = Math.floor(py / cell);
 
   /*
-   * Hair can extend outside the face.
+   * Checker + diagonal geometry.
    */
-  if (face <= 0) {
-    return hair * 0.75;
+  let value =
+    (gx + gy) % 2 === 0;
+
+  /*
+   * Add diagonal white/black cuts.
+   */
+  const diagonalA =
+    mod(px + py, 16) < 7;
+
+  const diagonalB =
+    mod(px - py, 16) < 7;
+
+  if ((gx + gy) % 3 === 0) {
+    value = diagonalA;
+  }
+
+  if ((gx + gy) % 4 === 0) {
+    value = diagonalB;
   }
 
   /*
-   * -------------------------------------------------------
-   * MAIN FACE VOLUME
-   * -------------------------------------------------------
+   * Small square accents make the carrier resemble
+   * the geometric reference rather than plain dots.
    */
-
-  let depth =
-    0.34 +
-    face * 0.38;
-
-  /*
-   * -------------------------------------------------------
-   * FOREHEAD
-   * -------------------------------------------------------
-   */
-
-  depth +=
-    ellipse(
-      x,
-      y,
-      cx,
-      cy - 52,
-      62,
-      48
-    ) * 0.09;
-
-  /*
-   * -------------------------------------------------------
-   * CHEEKS
-   * -------------------------------------------------------
-   */
-
-  const leftCheek =
-    ellipse(
-      x,
-      y,
-      cx - 43,
-      cy + 13,
-      53,
-      49
-    );
-
-  const rightCheek =
-    ellipse(
-      x,
-      y,
-      cx + 43,
-      cy + 13,
-      53,
-      49
-    );
-
-  depth +=
-    Math.max(
-      leftCheek,
-      rightCheek
-    ) * 0.11;
-
-  /*
-   * -------------------------------------------------------
-   * EYES
-   * -------------------------------------------------------
-   *
-   * Very shallow so the face stays visually coherent.
-   */
-
-  depth +=
-    Math.max(
-      ellipse(
-        x,
-        y,
-        cx - 38,
-        cy - 24,
-        24,
-        9
-      ),
-      ellipse(
-        x,
-        y,
-        cx + 38,
-        cy - 24,
-        24,
-        9
-      )
-    ) * 0.08;
-
-  /*
-   * -------------------------------------------------------
-   * NOSE
-   * -------------------------------------------------------
-   */
-
-  depth +=
-    ellipse(
-      x,
-      y,
-      cx,
-      cy + 2,
-      17,
-      42
-    ) * 0.16;
-
-  /*
-   * -------------------------------------------------------
-   * MOUTH
-   * -------------------------------------------------------
-   */
-
-  depth +=
-    ellipse(
-      x,
-      y,
-      cx,
-      cy + 55,
-      34,
-      11
-    ) * 0.07;
-
-  /*
-   * -------------------------------------------------------
-   * CHIN
-   * -------------------------------------------------------
-   */
-
-  depth +=
-    ellipse(
-      x,
-      y,
-      cx,
-      cy + 89,
-      47,
-      34
-    ) * 0.10;
-
-  /*
-   * -------------------------------------------------------
-   * GENDER SHAPE
-   * -------------------------------------------------------
-   */
-
   if (
-    config.gender === 'male'
+    (px >= 24 && px < 40 && py >= 24 && py < 40) ||
+    (px >= 48 && px < 56 && py >= 8 && py < 16)
   ) {
-    /*
-     * Stronger jaw.
-     */
-    if (
-      config.faceStructure === 'square'
-    ) {
-      depth +=
-        roundedRectangle(
-          x,
-          y,
-          cx,
-          cy + 45,
-          194,
-          105,
-          34
-        ) * 0.14;
-    } else {
-      depth +=
-        ellipse(
-          x,
-          y,
-          cx,
-          cy + 50,
-          88,
-          72
-        ) * 0.11;
-    }
-  } else {
-    /*
-     * Slightly softer lower-face volume.
-     */
-    depth +=
-      ellipse(
-        x,
-        y,
-        cx,
-        cy + 48,
-        79,
-        76
-      ) * 0.07;
+    value = !value;
   }
 
-  /*
-   * -------------------------------------------------------
-   * BEARD
-   * -------------------------------------------------------
-   */
+  return value ? 255 : 0;
+}
 
-  if (
-    config.gender === 'male'
-  ) {
-    let beard = 0;
-
-    if (
-      config.beardStyle === 'stubble'
-    ) {
-      beard =
-        ellipse(
-          x,
-          y,
-          cx,
-          cy + 53,
-          72,
-          59
-        );
-    }
-
-    if (
-      config.beardStyle === 'short'
-    ) {
-      beard =
-        ellipse(
-          x,
-          y,
-          cx,
-          cy + 54,
-          78,
-          64
-        );
-    }
-
-    if (
-      config.beardStyle === 'full'
-    ) {
-      beard =
-        ellipse(
-          x,
-          y,
-          cx,
-          cy + 48,
-          87,
-          76
-        );
-    }
-
-    depth +=
-      beard * 0.11;
-  }
-
-  /*
-   * -------------------------------------------------------
-   * HAIR
-   * -------------------------------------------------------
-   */
-
-  depth +=
-    hair * 0.17;
-
-  return clamp(
-    depth,
-    0,
-    1
+/**
+ * Standard SIRDS separation.
+ *
+ * Larger depth = smaller separation.
+ */
+function separationFromDepth(depth: number) {
+  return Math.round(
+    FAR_SEPARATION -
+      depth * DEPTH_SHIFT
   );
 }
 
-/*
- * =========================================================
- * GEOMETRIC REFERENCE-STYLE CARRIER
- * =========================================================
- *
- * Instead of random dots, we create a continuous,
- * high-contrast diamond/chevron pattern.
- *
- * The pattern itself is visible to the user.
- *
- * The hidden face is created by the pixel constraints,
- * not by painting a face over it.
- * =========================================================
+/**
+ * Union-find helpers.
  */
-
-function carrierPixel(
-  x: number,
-  y: number
-): number {
-  /*
-   * Two diagonal waves.
-   */
-  const p1 =
-    ((x + y) %
-      CARRIER_PERIOD +
-      CARRIER_PERIOD) %
-    CARRIER_PERIOD;
-
-  const p2 =
-    ((x - y) %
-      CARRIER_PERIOD +
-      CARRIER_PERIOD) %
-    CARRIER_PERIOD;
-
-  /*
-   * Distance from centre of each diagonal cycle.
-   */
-  const d1 =
-    Math.abs(
-      p1 -
-        CARRIER_PERIOD / 2
-    );
-
-  const d2 =
-    Math.abs(
-      p2 -
-        CARRIER_PERIOD / 2
-    );
-
-  const distance =
-    Math.min(
-      d1,
-      d2
-    );
-
-  /*
-   * Narrow white geometric strokes
-   * over a black background.
-   */
-  return distance < 4
-    ? 255
-    : 0;
-}
-
-/*
- * =========================================================
- * UNION-FIND
- * =========================================================
- */
-
-function findRoot(
-  parent: Int32Array,
-  value: number
-): number {
+function findRoot(parent: Int32Array, value: number) {
   let root = value;
 
-  while (
-    parent[root] !== root
-  ) {
-    root =
-      parent[root];
+  while (parent[root] !== root) {
+    root = parent[root];
   }
 
-  while (
-    parent[value] !== value
-  ) {
-    const next =
-      parent[value];
-
-    parent[value] =
-      root;
-
+  while (parent[value] !== value) {
+    const next = parent[value];
+    parent[value] = root;
     value = next;
   }
 
@@ -705,368 +396,218 @@ function union(
   parent: Int32Array,
   a: number,
   b: number
-): void {
-  const rootA =
-    findRoot(
-      parent,
-      a
-    );
+) {
+  const ra = findRoot(parent, a);
+  const rb = findRoot(parent, b);
 
-  const rootB =
-    findRoot(
-      parent,
-      b
-    );
-
-  if (
-    rootA !== rootB
-  ) {
-    parent[rootB] =
-      rootA;
+  if (ra !== rb) {
+    /*
+     * Keep the smaller index as the root.
+     * This makes the generated pattern stable.
+     */
+    if (ra < rb) {
+      parent[rb] = ra;
+    } else {
+      parent[ra] = rb;
+    }
   }
 }
 
-/*
- * =========================================================
- * MAIN COMPONENT
- * =========================================================
+/**
+ * Generates the complete autostereogram.
  */
+function generateStereogram(config: MagicEyeConfig) {
+  const depth = buildDepthMap(config);
+
+  const pixels = new Uint8ClampedArray(
+    WIDTH * HEIGHT
+  );
+
+  for (let y = 0; y < HEIGHT; y++) {
+    /*
+     * Each row has its own correspondence groups.
+     */
+    const parent = new Int32Array(WIDTH);
+
+    for (let x = 0; x < WIDTH; x++) {
+      parent[x] = x;
+    }
+
+    /*
+     * Establish left/right correspondences.
+     *
+     * The separation is controlled by the hidden depth.
+     */
+    for (let x = 0; x < WIDTH; x++) {
+      const d = depth[y * WIDTH + x];
+
+      if (d <= 0.02) {
+        continue;
+      }
+
+      const separation =
+        separationFromDepth(d);
+
+      const left =
+        Math.floor(
+          x - separation / 2
+        );
+
+      const right =
+        left + separation;
+
+      if (
+        left < 0 ||
+        right >= WIDTH
+      ) {
+        continue;
+      }
+
+      /*
+       * Basic visibility test.
+       *
+       * Prevents a foreground feature from being
+       * connected through a stronger foreground feature.
+       */
+      const leftDepth =
+        depth[y * WIDTH + left];
+
+      const rightDepth =
+        depth[y * WIDTH + right];
+
+      if (
+        leftDepth > d + 0.10 ||
+        rightDepth > d + 0.10
+      ) {
+        continue;
+      }
+
+      union(parent, left, right);
+    }
+
+    /*
+     * Assign each equivalence group a pixel from
+     * the repeating geometric carrier.
+     */
+    const groupValue = new Int16Array(WIDTH);
+    groupValue.fill(-1);
+
+    for (let x = 0; x < WIDTH; x++) {
+      const root = findRoot(parent, x);
+
+      if (groupValue[root] === -1) {
+        groupValue[root] =
+          carrierPixel(x, y);
+      }
+
+      pixels[y * WIDTH + x] =
+        groupValue[root];
+    }
+  }
+
+  return pixels;
+}
 
 export default function StereogramCanvas({
   config,
-  generateKey,
-  onCanvasReady,
-}: StereogramCanvasProps) {
+  paletteIndex,
+  onGenerated,
+}: Props) {
   const canvasRef =
-    useRef<HTMLCanvasElement>(
-      null
-    );
+    useRef<HTMLCanvasElement | null>(null);
 
-  const [
-    rendering,
-    setRendering,
-  ] = useState(false);
+  const [isGenerating, setIsGenerating] =
+    useState(true);
 
-  const render =
-    useCallback(() => {
+  useEffect(() => {
+    let cancelled = false;
+
+    setIsGenerating(true);
+
+    /*
+     * Let React paint the loading state first.
+     */
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+
       const canvas =
         canvasRef.current;
 
-      if (!canvas) {
-        return;
+      if (!canvas) return;
+
+      const ctx =
+        canvas.getContext('2d', {
+          alpha: false,
+        });
+
+      if (!ctx) return;
+
+      const pixels =
+        generateStereogram(config);
+
+      const imageData =
+        ctx.createImageData(
+          WIDTH,
+          HEIGHT
+        );
+
+      for (
+        let i = 0;
+        i < pixels.length;
+        i++
+      ) {
+        const value = pixels[i];
+
+        imageData.data[i * 4] = value;
+        imageData.data[i * 4 + 1] = value;
+        imageData.data[i * 4 + 2] = value;
+        imageData.data[i * 4 + 3] = 255;
       }
 
-      setRendering(true);
-
-      try {
-        canvas.width =
-          CANVAS_W;
-
-        canvas.height =
-          CANVAS_H;
-
-        const ctx =
-          canvas.getContext(
-            '2d'
-          );
-
-        if (!ctx) {
-          return;
-        }
-
-        const image =
-          ctx.createImageData(
-            CANVAS_W,
-            CANVAS_H
-          );
-
-        const pixels =
-          image.data;
-
-        /*
-         * =================================================
-         * SOLVE EACH HORIZONTAL ROW
-         * =================================================
-         */
-
-        for (
-          let y = 0;
-          y < CANVAS_H;
-          y++
-        ) {
-          /*
-           * IMPORTANT:
-           *
-           * Int32Array supports -1 correctly.
-           * We explicitly initialize every pixel.
-           */
-          const parent =
-            new Int32Array(
-              CANVAS_W
-            );
-
-          for (
-            let x = 0;
-            x < CANVAS_W;
-            x++
-          ) {
-            parent[x] =
-              x;
-          }
-
-          /*
-           * ------------------------------------------------
-           * DEPTH CONSTRAINTS
-           * ------------------------------------------------
-           */
-
-          for (
-            let x = 0;
-            x < CANVAS_W;
-            x++
-          ) {
-            const depth =
-              getFaceDepth(
-                x,
-                y,
-                config
-              );
-
-            /*
-             * Far background:
-             *
-             * separation = 88
-             *
-             * Foreground face:
-             *
-             * separation becomes smaller.
-             */
-            const separation =
-              Math.round(
-                FAR_SEPARATION -
-                  depth *
-                    DEPTH_RANGE
-              );
-
-            /*
-             * Symmetric correspondence.
-             */
-            const left =
-              Math.round(
-                x -
-                  separation / 2
-              );
-
-            const right =
-              left +
-              separation;
-
-            /*
-             * Outside the canvas = no constraint.
-             */
-            if (
-              left < 0 ||
-              right >= CANVAS_W
-            ) {
-              continue;
-            }
-
-            /*
-             * These two pixels represent the same
-             * hidden visual point.
-             */
-            union(
-              parent,
-              left,
-              right
-            );
-          }
-
-          /*
-           * ------------------------------------------------
-           * ASSIGN CARRIER TO EACH GROUP
-           * ------------------------------------------------
-           *
-           * Every equivalence group gets one black/white
-           * value.
-           *
-           * This is where the visible geometric pattern
-           * comes from.
-           */
-
-          const groupValue =
-            new Int16Array(
-              CANVAS_W
-            );
-
-          /*
-           * -1 means "not assigned yet".
-           */
-          groupValue.fill(
-            -1
-          );
-
-          for (
-            let x = 0;
-            x < CANVAS_W;
-            x++
-          ) {
-            const root =
-              findRoot(
-                parent,
-                x
-              );
-
-            /*
-             * Assign each group exactly once.
-             */
-            if (
-              groupValue[root] ===
-              -1
-            ) {
-              groupValue[root] =
-                carrierPixel(
-                  root,
-                  y
-                );
-            }
-
-            const value =
-              groupValue[root];
-
-            const index =
-              (
-                y *
-                  CANVAS_W +
-                x
-              ) * 4;
-
-            pixels[index] =
-              value;
-
-            pixels[index + 1] =
-              value;
-
-            pixels[index + 2] =
-              value;
-
-            pixels[index + 3] =
-              255;
-          }
-        }
-
-        /*
-         * =================================================
-         * DRAW
-         * =================================================
-         */
-
-        ctx.putImageData(
-          image,
-          0,
-          0
-        );
-
-        /*
-         * =================================================
-         * IMPORTANT
-         * =================================================
-         *
-         * NOTHING is drawn over the stereogram.
-         *
-         * No face.
-         * No heart.
-         * No partner name.
-         * No text.
-         * No overlay.
-         *
-         * The hidden face exists only inside the
-         * stereoscopic correspondence.
-         * =================================================
-         */
-
-        const dataUrl =
-          canvas.toDataURL(
-            'image/png'
-          );
-
-        onCanvasReady?.(
-          dataUrl
-        );
-      } catch (error) {
-        console.error(
-          'Love Magic Eye render error:',
-          error
-        );
-      } finally {
-        setRendering(false);
-      }
-    }, [
-      config,
-      generateKey,
-      onCanvasReady,
-    ]);
-
-  useEffect(() => {
-    if (
-      generateKey <= 0
-    ) {
-      return;
-    }
-
-    const frame =
-      window.requestAnimationFrame(
-        render
+      ctx.putImageData(
+        imageData,
+        0,
+        0
       );
+
+      const dataUrl =
+        canvas.toDataURL('image/png');
+
+      if (!cancelled) {
+        setIsGenerating(false);
+        onGenerated?.(dataUrl);
+      }
+    }, 40);
 
     return () => {
-      window.cancelAnimationFrame(
-        frame
-      );
+      cancelled = true;
+      window.clearTimeout(timer);
     };
-  }, [
-    generateKey,
-    render,
-  ]);
+  }, [config, paletteIndex, onGenerated]);
 
   return (
-    <div className="flex w-full flex-col items-center">
-      <div
-        className="relative mx-auto w-full max-w-[400px] overflow-hidden rounded-[18px]"
-        style={{
-          background:
-            '#000000',
-          border:
-            '2px solid rgba(255,255,255,0.16)',
-          boxShadow:
-            '0 12px 45px rgba(0,0,0,0.20)',
-        }}
-      >
-        <canvas
-          ref={canvasRef}
-          className="block h-auto w-full"
-          style={{
-            aspectRatio:
-              '400 / 600',
-          }}
-        />
+    <div
+      id="magic-eye-canvas"
+      className="relative mx-auto w-full max-w-[400px] overflow-hidden rounded-2xl bg-black"
+    >
+      <canvas
+        ref={canvasRef}
+        width={WIDTH}
+        height={HEIGHT}
+        className="block h-auto w-full"
+        aria-label="Hidden love magic eye stereogram"
+      />
 
-        {rendering && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-            <div className="h-9 w-9 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+      {isGenerating && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black">
+          <div className="flex flex-col items-center gap-3 text-white">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            <span className="text-sm">
+              Creating your hidden image...
+            </span>
           </div>
-        )}
-      </div>
-
-      <p className="mt-3 text-center text-xs font-mono uppercase tracking-[0.18em] text-gray-500">
-        Magic Eye Stereogram
-      </p>
-
-      <p className="mt-2 max-w-[390px] px-4 text-center text-sm text-gray-600">
-        Relax your eyes and look through the
-        repeating pattern. Keep the image still
-        and allow the hidden 3D image to appear.
-      </p>
+        </div>
+      )}
     </div>
   );
 }
