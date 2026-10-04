@@ -12,169 +12,34 @@ interface StereogramCanvasProps {
 const WIDTH = 400;
 const HEIGHT = 600;
 
-/*
- * Fine carrier.
- * Smaller values = finer repeating pattern.
- */
-const TILE_WIDTH = 64;
-const CARRIER_CELL = 4;
-
-/*
- * Stereogram parameters.
- *
- * Larger EYE_SEPARATION and stronger DEPTH_STRENGTH
- * make the hidden face easier to perceive.
- */
-const EYE_SEPARATION = 96;
-const MU = 0.62;
-const DEPTH_STRENGTH = 1.65;
-
 /* -------------------------------------------------- */
-/* Utility                                             */
+/* Utility Helpers                                    */
 /* -------------------------------------------------- */
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
-function smoothstep(a: number, b: number, value: number) {
-  const t = clamp((value - a) / (b - a), 0, 1);
-  return t * t * (3 - 2 * t);
-}
-
-function ellipse(
-  x: number,
-  y: number,
-  cx: number,
-  cy: number,
-  rx: number,
-  ry: number
-) {
+function ellipse(x: number, y: number, cx: number, cy: number, rx: number, ry: number) {
   const dx = (x - cx) / rx;
   const dy = (y - cy) / ry;
   return dx * dx + dy * dy;
 }
 
-function roundedBox(
-  x: number,
-  y: number,
-  cx: number,
-  cy: number,
-  halfW: number,
-  halfH: number,
-  radius: number
-) {
+function roundedBox(x: number, y: number, cx: number, cy: number, halfW: number, halfH: number, radius: number) {
   const dx = Math.abs(x - cx) - halfW + radius;
   const dy = Math.abs(y - cy) - halfH + radius;
 
   const ax = Math.max(dx, 0);
   const ay = Math.max(dy, 0);
 
-  return Math.sqrt(ax * ax + ay * ay) +
-    Math.min(Math.max(dx, dy), 0) -
-    radius;
+  return Math.sqrt(ax * ax + ay * ay) + Math.min(Math.max(dx, dy), 0) - radius;
 }
 
 /* -------------------------------------------------- */
-/* Carrier                                             */
+/* Face-Tone Structural Modifiers                     */
 /* -------------------------------------------------- */
 
-/*
- * Dense geometric black/white carrier.
- *
- * The important difference from the previous version:
- * there are NO large square blocks.
- *
- * The pattern is made from:
- * - tiny diamonds
- * - diagonal strokes
- * - micro checker details
- * - repeating zig-zag geometry
- */
-function carrier(x: number, y: number) {
-  const px =
-    ((x % TILE_WIDTH) + TILE_WIDTH) %
-    TILE_WIDTH;
-
-  const py =
-    ((y % 32) + 32) % 32;
-
-  const cx =
-    Math.floor(px / CARRIER_CELL);
-
-  const cy =
-    Math.floor(py / CARRIER_CELL);
-
-  const localX = px % CARRIER_CELL;
-  const localY = py % CARRIER_CELL;
-
-  /*
-   * Small diamond.
-   */
-  const diamondCenterX = 32;
-  const diamondCenterY = 16;
-
-  const diamondDistance =
-    Math.abs(px - diamondCenterX) +
-    Math.abs(py - diamondCenterY);
-
-  const diamond =
-    diamondDistance < 14;
-
-  /*
-   * Fine diagonal lattice.
-   */
-  const diagonal1 =
-    ((px + py * 2) % 18) < 5;
-
-  const diagonal2 =
-    ((px * 2 - py + 1000) % 21) < 5;
-
-  /*
-   * Small repeating checker.
-   */
-  const checker =
-    ((cx + cy) & 1) === 0;
-
-  /*
-   * Tiny alternating cells prevent the carrier
-   * from becoming visually flat.
-   */
-  const micro =
-    localX < 2 && localY < 2;
-
-  let result = 0;
-
-  if (diamond) {
-    result = 1;
-  } else if (diagonal1 !== diagonal2) {
-    result = 1;
-  } else if (checker) {
-    result = 0;
-  } else {
-    result = 1;
-  }
-
-  if (micro) {
-    result = result ? 0 : 1;
-  }
-
-  return result;
-}
-
-/* -------------------------------------------------- */
-/* Face depth map                                     */
-/* -------------------------------------------------- */
-
-/*
- * Face-tone–based structural modifiers.
- *
- * Different skin tones correlate (in aggregate morphology studies)
- * with subtle but real differences in brow ridge prominence,
- * nasal bridge width, lip fullness, and cheekbone projection.
- * These values shift the depth map enough that the hidden 3D
- * face is recognizably different per tone.
- */
 const TONE_MODIFIERS = {
   dark: {
     browRidge: 0.06,
@@ -202,493 +67,138 @@ const TONE_MODIFIERS = {
   },
 } as const;
 
-/*
- * Creates a strongly structured frontal face.
- *
- * 0 = background
- * 1 = closest facial surface
- */
-function createDepthMap(config: MagicEyeConfig) {
+/* -------------------------------------------------- */
+/* Op-Art Face Geometry Engine                        */
+/* -------------------------------------------------- */
+
+function calculateFaceDensity(x: number, y: number, config: MagicEyeConfig): number {
   const cx = WIDTH / 2;
   const cy = HEIGHT / 2 - 20;
 
-  const tone =
-    TONE_MODIFIERS[config.faceTone] ??
-    TONE_MODIFIERS.wheatish;
+  const tone = TONE_MODIFIERS[config.faceTone] ?? TONE_MODIFIERS.wheatish;
+  let intensity = 0;
 
-  return (x: number, y: number) => {
-    let depth = 0;
+  let headRX = 76;
+  let headRY = 103;
 
-    let headRX = 76;
-    let headRY = 103;
+  if (config.faceStructure === 'round') {
+    headRX = 83;
+    headRY = 92;
+  }
+  if (config.faceStructure === 'square') {
+    headRX = 82;
+    headRY = 101;
+  }
+
+  // 1. मुख्य सिर की रूपरेखा (Silhouette)
+  const headValue = ellipse(x, y, cx, cy, headRX, headRY);
+
+  if (headValue < 1) {
+    intensity = 0.32 + (1 - headValue) * 0.30;
+
+    const centerValue = ellipse(x, y, cx, cy + 2, headRX * 0.66, headRY * 0.76);
+    if (centerValue < 1) {
+      intensity += (1 - centerValue) * 0.18;
+    }
+
+    // 2. जबड़े की बनावट (Jaw Structures)
+    if (config.faceStructure === 'oval') {
+      const jaw = ellipse(x, y, cx, cy + 48, headRX * 0.72, headRY * 0.47);
+      if (jaw < 1) intensity += (1 - jaw) * 0.12;
+    }
 
     if (config.faceStructure === 'round') {
-      headRX = 83;
-      headRY = 92;
+      const jaw = ellipse(x, y, cx, cy + 45, headRX * 0.82, headRY * 0.43);
+      if (jaw < 1) intensity += (1 - jaw) * 0.16;
     }
 
     if (config.faceStructure === 'square') {
-      headRX = 82;
-      headRY = 101;
+      const jawDistance = roundedBox(x, y, cx, cy + 42, 59, 53, 18);
+      if (jawDistance < 0) intensity += 0.20;
     }
 
-    /*
-     * Main head silhouette.
-     */
-    const headValue = ellipse(
-      x,
-      y,
-      cx,
-      cy,
-      headRX,
-      headRY
-    );
+    // 3. गाल (Cheeks)
+    const leftCheek = ellipse(x, y, cx - 29, cy + 19, 32, 27);
+    const rightCheek = ellipse(x, y, cx + 29, cy + 19, 32, 27);
 
-    if (headValue < 1) {
-      /*
-       * Strong central facial plane.
-       */
-      depth =
-        0.32 +
-        (1 - headValue) * 0.30;
+    if (leftCheek < 1) intensity += (1 - leftCheek) * (0.14 + tone.cheekbone);
+    if (rightCheek < 1) intensity += (1 - rightCheek) * (0.14 + tone.cheekbone);
 
-      /*
-       * Slightly stronger center.
-       */
-      const centerValue = ellipse(
-        x,
-        y,
-        cx,
-        cy + 2,
-        headRX * 0.66,
-        headRY * 0.76
-      );
+    // 4. आँखें (Eyes & Sockets)
+    const leftEyeSocket = ellipse(x, y, cx - 29, cy - 12, 22, 11);
+    const rightEyeSocket = ellipse(x, y, cx + 29, cy - 12, 22, 11);
 
-      if (centerValue < 1) {
-        depth +=
-          (1 - centerValue) * 0.18;
-      }
+    if (leftEyeSocket < 1) intensity += (1 - leftEyeSocket) * 0.16;
+    if (rightEyeSocket < 1) intensity += (1 - rightEyeSocket) * 0.16;
 
-      /*
-       * Different jaw structures.
-       */
-      if (config.faceStructure === 'oval') {
-        const jaw = ellipse(
-          x,
-          y,
-          cx,
-          cy + 48,
-          headRX * 0.72,
-          headRY * 0.47
-        );
+    const leftEye = ellipse(x, y, cx - 29, cy - 12, 8, 5);
+    const rightEye = ellipse(x, y, cx + 29, cy - 12, 8, 5);
 
-        if (jaw < 1) {
-          depth +=
-            (1 - jaw) * 0.12;
+    if (leftEye < 1) intensity -= (1 - leftEye) * 0.10;
+    if (rightEye < 1) intensity -= (1 - rightEye) * 0.10;
+
+    // 5. नाक (Nose Bridge & Tip)
+    const noseBridge = roundedBox(x, y, cx, cy + 11, 8 * tone.noseWidth, 29, 5);
+    if (noseBridge < 0) intensity += 0.23 + tone.browRidge;
+
+    const noseTip = ellipse(x, y, cx, cy + 35, 15, 10);
+    if (noseTip < 1) intensity += (1 - noseTip) * (0.26 + tone.noseTipDepth);
+
+    const leftNostril = ellipse(x, y, cx - 7, cy + 38, 5, 3);
+    const rightNostril = ellipse(x, y, cx + 7, cy + 38, 5, 3);
+
+    if (leftNostril < 1) intensity -= (1 - leftNostril) * 0.09;
+    if (rightNostril < 1) intensity -= (1 - rightNostril) * 0.09;
+
+    // 6. मुँह और होंठ (Mouth & Lips)
+    const upperLip = ellipse(x, y, cx, cy + 55, 23, 7);
+    if (upperLip < 1) intensity += (1 - upperLip) * (0.14 + tone.lipFullness);
+
+    const mouthOpening = ellipse(x, y, cx, cy + 58, 19, 3);
+    if (mouthOpening < 1) intensity -= (1 - mouthOpening) * 0.10;
+
+    // 7. ठोड़ी (Chin)
+    const chin = ellipse(x, y, cx, cy + 75, 30, 20);
+    if (chin < 1) intensity += (1 - chin) * 0.17;
+
+    // 8. बाल (Hair Styles)
+    if (config.hairStyle !== 'bald') {
+      const hair = ellipse(x, y, cx, cy - 73, headRX * 1.03, 51);
+      if (hair < 1) {
+        if (config.hairStyle === 'straight') {
+          intensity += (1 - hair) * 0.32;
+        } else {
+          const curlWave = Math.sin(x * 0.34) * Math.cos(y * 0.21);
+          intensity += (1 - hair) * (0.28 + curlWave * 0.045);
         }
       }
 
-      if (config.faceStructure === 'round') {
-        const jaw = ellipse(
-          x,
-          y,
-          cx,
-          cy + 45,
-          headRX * 0.82,
-          headRY * 0.43
-        );
-
-        if (jaw < 1) {
-          depth +=
-            (1 - jaw) * 0.16;
-        }
-      }
-
-      if (config.faceStructure === 'square') {
-        const jawDistance = roundedBox(
-          x,
-          y,
-          cx,
-          cy + 42,
-          59,
-          53,
-          18
-        );
-
-        if (jawDistance < 0) {
-          depth += 0.20;
-        }
-      }
-
-      /*
-       * Cheeks.
-       */
-      const leftCheek = ellipse(
-        x,
-        y,
-        cx - 29,
-        cy + 19,
-        32,
-        27
-      );
-
-      const rightCheek = ellipse(
-        x,
-        y,
-        cx + 29,
-        cy + 19,
-        32,
-        27
-      );
-
-      if (leftCheek < 1) {
-        depth +=
-          (1 - leftCheek) *
-          (0.14 + tone.cheekbone);
-      }
-
-      if (rightCheek < 1) {
-        depth +=
-          (1 - rightCheek) *
-          (0.14 + tone.cheekbone);
-      }
-
-      /*
-       * Eye sockets.
-       *
-       * These are deliberately broad enough to
-       * create a recognizable face in depth.
-       */
-      const leftEyeSocket = ellipse(
-        x,
-        y,
-        cx - 29,
-        cy - 12,
-        22,
-        11
-      );
-
-      const rightEyeSocket = ellipse(
-        x,
-        y,
-        cx + 29,
-        cy - 12,
-        22,
-        11
-      );
-
-      if (leftEyeSocket < 1) {
-        depth +=
-          (1 - leftEyeSocket) * 0.16;
-      }
-
-      if (rightEyeSocket < 1) {
-        depth +=
-          (1 - rightEyeSocket) * 0.16;
-      }
-
-      /*
-       * Eye centers.
-       */
-      const leftEye = ellipse(
-        x,
-        y,
-        cx - 29,
-        cy - 12,
-        8,
-        5
-      );
-
-      const rightEye = ellipse(
-        x,
-        y,
-        cx + 29,
-        cy - 12,
-        8,
-        5
-      );
-
-      if (leftEye < 1) {
-        depth -=
-          (1 - leftEye) * 0.10;
-      }
-
-      if (rightEye < 1) {
-        depth -=
-          (1 - rightEye) * 0.10;
-      }
-
-      /*
-       * Nose bridge.
-       */
-      const noseBridge = roundedBox(
-        x,
-        y,
-        cx,
-        cy + 11,
-        8 * tone.noseWidth,
-        29,
-        5
-      );
-
-      if (noseBridge < 0) {
-        depth += 0.23 + tone.browRidge;
-      }
-
-      /*
-       * Nose tip.
-       */
-      const noseTip = ellipse(
-        x,
-        y,
-        cx,
-        cy + 35,
-        15,
-        10
-      );
-
-      if (noseTip < 1) {
-        depth +=
-          (1 - noseTip) *
-          (0.26 + tone.noseTipDepth);
-      }
-
-      /*
-       * Nose sides create recognizable structure.
-       */
-      const leftNostril = ellipse(
-        x,
-        y,
-        cx - 7,
-        cy + 38,
-        5,
-        3
-      );
-
-      const rightNostril = ellipse(
-        x,
-        y,
-        cx + 7,
-        cy + 38,
-        5,
-        3
-      );
-
-      if (leftNostril < 1) {
-        depth -=
-          (1 - leftNostril) * 0.09;
-      }
-
-      if (rightNostril < 1) {
-        depth -=
-          (1 - rightNostril) * 0.09;
-      }
-
-      /*
-       * Mouth area.
-       */
-      const upperLip = ellipse(
-        x,
-        y,
-        cx,
-        cy + 55,
-        23,
-        7
-      );
-
-      if (upperLip < 1) {
-        depth +=
-          (1 - upperLip) *
-          (0.14 + tone.lipFullness);
-      }
-
-      const mouthOpening = ellipse(
-        x,
-        y,
-        cx,
-        cy + 58,
-        19,
-        3
-      );
-
-      if (mouthOpening < 1) {
-        depth -=
-          (1 - mouthOpening) * 0.10;
-      }
-
-      /*
-       * Chin.
-       */
-      const chin = ellipse(
-        x,
-        y,
-        cx,
-        cy + 75,
-        30,
-        20
-      );
-
-      if (chin < 1) {
-        depth +=
-          (1 - chin) * 0.17;
-      }
-
-      /*
-       * Hair.
-       */
-      if (config.hairStyle !== 'bald') {
-        const hair = ellipse(
-          x,
-          y,
-          cx,
-          cy - 73,
-          headRX * 1.03,
-          51
-        );
-
-        if (hair < 1) {
-          if (config.hairStyle === 'straight') {
-            depth +=
-              (1 - hair) * 0.32;
-          } else {
-            const curlWave =
-              Math.sin(x * 0.34) *
-              Math.cos(y * 0.21);
-
-            depth +=
-              (1 - hair) *
-              (0.28 + curlWave * 0.045);
-          }
-        }
-
-        /*
-         * Hairline.
-         */
-        const hairline = ellipse(
-          x,
-          y,
-          cx,
-          cy - 42,
-          headRX * 0.82,
-          34
-        );
-
-        if (hairline < 1) {
-          depth +=
-            (1 - hairline) * 0.12;
-        }
-      }
-
-      /*
-       * Male beard.
-       */
-      if (
-        config.gender === 'male' &&
-        config.beardStyle !== 'clean'
-      ) {
-        const beard = ellipse(
-          x,
-          y,
-          cx,
-          cy + 55,
-          55,
-          47
-        );
-
-        if (beard < 1) {
-          if (config.beardStyle === 'stubble') {
-            depth +=
-              (1 - beard) * 0.10;
-          }
-
-          if (config.beardStyle === 'short') {
-            depth +=
-              (1 - beard) * 0.17;
-          }
-
-          if (config.beardStyle === 'full') {
-            depth +=
-              (1 - beard) * 0.25;
-          }
-        }
-      }
+      const hairline = ellipse(x, y, cx, cy - 42, headRX * 0.82, 34);
+      if (hairline < 1) intensity += (1 - hairline) * 0.12;
     }
 
-    /*
-     * Slight gender-specific jaw emphasis.
-     */
-    if (config.gender === 'male') {
-      const maleJaw = ellipse(
-        x,
-        y,
-        cx,
-        cy + 52,
-        64,
-        46
-      );
-
-      if (maleJaw < 1) {
-        depth +=
-          (1 - maleJaw) * 0.10;
-      }
-    } else {
-      const feminineContour = ellipse(
-        x,
-        y,
-        cx,
-        cy + 40,
-        57,
-        54
-      );
-
-      if (feminineContour < 1) {
-        depth +=
-          (1 - feminineContour) * 0.08;
+    // 9. दाढ़ी (Beard Styles)
+    if (config.gender === 'male' && config.beardStyle !== 'clean') {
+      const beard = ellipse(x, y, cx, cy + 55, 55, 47);
+      if (beard < 1) {
+        if (config.beardStyle === 'stubble') intensity += (1 - beard) * 0.10;
+        if (config.beardStyle === 'short') intensity += (1 - beard) * 0.17;
+        if (config.beardStyle === 'full') intensity += (1 - beard) * 0.25;
       }
     }
+  }
 
-    /*
-     * Make the selected structure much more visible
-     * without drawing a visible face.
-     */
-    depth =
-      Math.pow(
-        clamp(depth, 0, 1),
-        0.72
-      );
+  // 10. जेंडर आधारित ढाल (Gender-specific Contours)
+  if (config.gender === 'male') {
+    const maleJaw = ellipse(x, y, cx, cy + 52, 64, 46);
+    if (maleJaw < 1) intensity += (1 - maleJaw) * 0.10;
+  } else {
+    const feminineContour = ellipse(x, y, cx, cy + 40, 57, 54);
+    if (feminineContour < 1) intensity += (1 - feminineContour) * 0.08;
+  }
 
-    depth *= DEPTH_STRENGTH;
-
-    return clamp(depth, 0, 1);
-  };
+  return clamp(intensity, 0, 1);
 }
-
-/* -------------------------------------------------- */
-/* Stereogram separation                              */
-/* -------------------------------------------------- */
-
-function separationFromDepth(depth: number) {
-  const z = clamp(depth, 0, 1);
-
-  /*
-   * Classic stereogram separation relation.
-   */
-  const separation =
-    (EYE_SEPARATION * (1 - MU * z)) /
-    (2 - MU * z);
-
-  return Math.round(
-    clamp(
-      separation,
-      18,
-      EYE_SEPARATION / 2
-    )
-  );
-}
-
-/* -------------------------------------------------- */
-/* Canvas                                             */
-/* -------------------------------------------------- */
 
 export default function StereogramCanvas({
   config,
@@ -696,16 +206,11 @@ export default function StereogramCanvas({
   generateKey,
   onCanvasReady,
 }: StereogramCanvasProps) {
-  const canvasRef =
-    useRef<HTMLCanvasElement>(null);
-
-  const [rendering, setRendering] =
-    useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [rendering, setRendering] = useState(false);
 
   const render = useCallback(() => {
-    const canvas =
-      canvasRef.current;
-
+    const canvas = canvasRef.current;
     if (!canvas) return;
 
     setRendering(true);
@@ -714,325 +219,64 @@ export default function StereogramCanvas({
       canvas.width = WIDTH;
       canvas.height = HEIGHT;
 
-      const ctx =
-        canvas.getContext('2d', {
-          alpha: false,
-        });
+      const ctx = canvas.getContext('2d', { alpha: false });
+      if (!ctx) return;
 
-      if (!ctx) {
-        return;
-      }
+      const image = ctx.createImageData(WIDTH, HEIGHT);
+      const pixels = image.data;
 
-      /*
-       * Keep compatibility with the existing palette
-       * system. The stereogram itself stays B/W because
-       * that is the reference-style visual.
-       */
-      void PALETTES[
-        paletteIndex % PALETTES.length
-      ];
+      const cx = WIDTH / 2;
+      const cy = HEIGHT / 2 - 20;
+      
+      // लाइन्स की मोटाई/दूरी (Frequency) कंट्रोल करने के लिए पैरामीटर
+      const lineFrequency = 0.16; 
 
-      const depthAt =
-        createDepthMap(config);
-
-      const image =
-        ctx.createImageData(
-          WIDTH,
-          HEIGHT
-        );
-
-      const pixels =
-        image.data;
-
-      /*
-       * Process each row independently.
-       */
       for (let y = 0; y < HEIGHT; y++) {
-        const parent =
-          new Int32Array(WIDTH);
-
-        const rank =
-          new Uint8Array(WIDTH);
-
         for (let x = 0; x < WIDTH; x++) {
-          parent[x] = x;
-          rank[x] = 0;
-        }
+          
+          // चेहरे के डेटा से डेंसिटी वैल्यू निकालें
+          const faceValue = calculateFaceDensity(x, y, config);
 
-        const find = (x: number): number => {
-          let root = x;
+          // इमेज 2 के जैसा ज़िग-ज़ैग डायमंड इफेक्ट बनाने के लिए पिक्सेल को डिस्टॉर्ट करना
+          // जहाँ चेहरा उभरा हुआ होगा, वहाँ की रेखाएँ वेव के रूप में झुकेंगी
+          const distortion = faceValue * 38; 
+          
+          const distortedX = x + distortion;
+          const distortedY = y + distortion;
 
-          while (
-            parent[root] !== root
-          ) {
-            root = parent[root];
-          }
+          // डायमंड ज्योमेट्री लाइन फॉर्मूला (इमेज 2 की नकल)
+          const pattern = Math.sin((Math.abs(distortedX - cx) + Math.abs(distortedY - cy)) * lineFrequency);
 
-          while (
-            parent[x] !== x
-          ) {
-            const next =
-              parent[x];
+          // कलर तय करें (0 = ब्लैक, 255 = व्हाइट)
+          const colorValue = pattern > 0 ? 255 : 0;
 
-            parent[x] = root;
-            x = next;
-          }
-
-          return root;
-        };
-
-        const union = (
-          a: number,
-          b: number
-        ) => {
-          if (
-            a < 0 ||
-            b < 0 ||
-            a >= WIDTH ||
-            b >= WIDTH
-          ) {
-            return;
-          }
-
-          let ra = find(a);
-          let rb = find(b);
-
-          if (ra === rb) {
-            return;
-          }
-
-          if (rank[ra] < rank[rb]) {
-            const temp = ra;
-            ra = rb;
-            rb = temp;
-          }
-
-          parent[rb] = ra;
-
-          if (rank[ra] === rank[rb]) {
-            rank[ra]++;
-          }
-        };
-
-        /*
-         * Calculate depth once for the entire row.
-         * This is important for performance and consistency.
-         */
-        const depths =
-          new Float32Array(WIDTH);
-
-        for (let x = 0; x < WIDTH; x++) {
-          depths[x] =
-            depthAt(x, y);
-        }
-
-        /*
-         * The face is deliberately processed from
-         * foreground to background.
-         *
-         * Strong facial structures therefore take
-         * priority over the broad head surface.
-         */
-        const order =
-          Array.from(
-            { length: WIDTH },
-            (_, x) => x
-          );
-
-        order.sort(
-          (a, b) =>
-            depths[b] -
-            depths[a]
-        );
-
-        for (
-          let i = 0;
-          i < order.length;
-          i++
-        ) {
-          const x =
-            order[i];
-
-          const depth =
-            depths[x];
-
-          if (depth < 0.035) {
-            continue;
-          }
-
-          const separation =
-            separationFromDepth(
-              depth
-            );
-
-          const half =
-            Math.floor(
-              separation / 2
-            );
-
-          let left =
-            x - half;
-
-          let right =
-            x + half;
-
-          /*
-           * Keep the pair inside the canvas.
-           */
-          if (left < 0) {
-            right += -left;
-            left = 0;
-          }
-
-          if (right >= WIDTH) {
-            const correction =
-              right - WIDTH + 1;
-
-            left -= correction;
-            right -= correction;
-          }
-
-          if (
-            left < 0 ||
-            right >= WIDTH
-          ) {
-            continue;
-          }
-
-          /*
-           * Hidden-surface protection.
-           *
-           * Do not let a very near surface create
-           * unlimited overlapping constraints.
-           */
-          const middle =
-            Math.floor(
-              (left + right) / 2
-            );
-
-          let blocked = false;
-
-          const nearDepth =
-            depths[x];
-
-          const leftDepth =
-            depths[left];
-
-          const rightDepth =
-            depths[right];
-
-          if (
-            leftDepth >
-              nearDepth + 0.22 ||
-            rightDepth >
-              nearDepth + 0.22
-          ) {
-            blocked = true;
-          }
-
-          if (
-            depths[middle] >
-              nearDepth + 0.28
-          ) {
-            blocked = true;
-          }
-
-          if (!blocked) {
-            union(
-              left,
-              right
-            );
-          }
-        }
-
-        /*
-         * Assign the repeating geometric carrier
-         * to every equivalence group.
-         *
-         * The root position is used as the carrier
-         * coordinate, keeping the pattern coherent.
-         */
-        for (
-          let x = 0;
-          x < WIDTH;
-          x++
-        ) {
-          const root =
-            find(x);
-
-          const sourceX =
-            ((root % TILE_WIDTH) +
-              TILE_WIDTH) %
-            TILE_WIDTH;
-
-          const bit =
-            carrier(
-              sourceX,
-              y
-            );
-
-          const index =
-            (y * WIDTH + x) * 4;
-
-          const value =
-            bit ? 255 : 0;
-
-          pixels[index] =
-            value;
-
-          pixels[index + 1] =
-            value;
-
-          pixels[index + 2] =
-            value;
-
-          pixels[index + 3] =
-            255;
+          const index = (y * WIDTH + x) * 4;
+          pixels[index]     = colorValue; // R
+          pixels[index + 1] = colorValue; // G
+          pixels[index + 2] = colorValue; // B
+          pixels[index + 3] = 255;        // A
         }
       }
 
-      ctx.putImageData(
-        image,
-        0,
-        0
-      );
+      ctx.putImageData(image, 0, 0);
+      
+      const dataUrl = canvas.toDataURL('image/png');
+      onCanvasReady?.(dataUrl);
 
-      const dataUrl =
-        canvas.toDataURL(
-          'image/png'
-        );
-
-      onCanvasReady?.(
-        dataUrl
-      );
     } catch (error) {
-      console.error(
-        'Love Magic Eye generation error:',
-        error
-      );
+      console.error('Love Op-Art generation error:', error);
     } finally {
       setRendering(false);
     }
-  }, [
-    config,
-    paletteIndex,
-    onCanvasReady,
-  ]);
+  }, [config, onCanvasReady]);
 
   useEffect(() => {
     if (generateKey > 0) {
       render();
     }
-  }, [
-    generateKey,
-    render,
-  ]);
+  }, [generateKey, render]);
 
-  const palette =
-    PALETTES[
-      paletteIndex %
-        PALETTES.length
-    ];
+  const palette = PALETTES[paletteIndex % PALETTES.length];
 
   return (
     <div className="w-full flex flex-col items-center">
@@ -1053,9 +297,7 @@ export default function StereogramCanvas({
           width={WIDTH}
           height={HEIGHT}
           className="block w-full h-auto"
-          style={{
-            aspectRatio: '400 / 600',
-          }}
+          style={{ aspectRatio: '400 / 600' }}
         />
 
         {rendering && (
@@ -1067,12 +309,11 @@ export default function StereogramCanvas({
 
       <p
         className="mt-2 text-[10px] sm:text-xs font-mono uppercase tracking-[0.22em]"
-        style={{
-          color: palette.primary,
-        }}
+        style={{ color: palette.primary }}
       >
-        Magic Eye Stereogram
+        Love Illusion Art
       </p>
     </div>
   );
 }
+
