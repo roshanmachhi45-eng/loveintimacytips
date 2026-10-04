@@ -56,24 +56,24 @@ function calculateFaceMap(x: number, y: number, config: MagicEyeConfig): number 
   if (headValue < 1) {
     density = 0.4 + (1 - headValue) * 0.3;
 
-    // आँखें
-    const leftEye = ellipse(x, y, cx - 28, cy - 12, 14, 8);
-    const rightEye = ellipse(x, y, cx + 28, cy - 12, 14, 8);
-    if (leftEye < 1) density -= (1 - leftEye) * 0.25;
-    if (rightEye < 1) density -= (1 - rightEye) * 0.25;
+    // आँखें (Sockets)
+    const leftEye = ellipse(x, y, cx - 28, cy - 12, 16, 10);
+    const rightEye = ellipse(x, y, cx + 28, cy - 12, 16, 10);
+    if (leftEye < 1) density -= (1 - leftEye) * 0.3;
+    if (rightEye < 1) density -= (1 - rightEye) * 0.3;
 
     // नाक
-    const nose = roundedBox(x, y, cx, cy + 15, 8 * tone.noseWidth, 25, 4);
+    const nose = roundedBox(x, y, cx, cy + 15, 9 * tone.noseWidth, 25, 4);
     if (nose < 0) density += 0.35 + tone.browRidge;
 
     // मुँह
-    const mouth = ellipse(x, y, cx, cy + 55, 20, 6);
-    if (mouth < 1) density += (1 - mouth) * 0.2;
+    const mouth = ellipse(x, y, cx, cy + 55, 22, 8);
+    if (mouth < 1) density += (1 - mouth) * 0.25;
 
-    // जबड़ा और दाढ़ी
+    // दाढ़ी और जबड़ा
     if (config.gender === 'male' && config.beardStyle !== 'clean') {
-      const beard = ellipse(x, y, cx, cy + 60, 50, 40);
-      if (beard < 1) density += 0.15;
+      const beard = ellipse(x, y, cx, cy + 60, 55, 45);
+      if (beard < 1) density += 0.2;
     }
   }
   return clamp(density, 0, 1);
@@ -107,34 +107,28 @@ export default function StereogramCanvas({
       const image = ctx.createImageData(WIDTH, HEIGHT);
       const pixels = image.data;
 
-      // ग्रिड पैरामीटर्स (इमेज 2 से बिल्कुल मेल खाते हुए)
-      const linePeriod = 24; // लाइनों के बीच की दूरी (पिक्सल्स में)
+      // पट्टियों की चौड़ाई (Width of Stripes) - इसे बढ़ाकर सॉलिड लुक दिया गया है
+      const stripeWidth = 14; 
 
       for (let y = 0; y < HEIGHT; y++) {
         for (let x = 0; x < WIDTH; x++) {
           
-          // चेहरे का प्रभाव (0 से 1 के बीच)
+          // चेहरे का मैप डेटा प्राप्त करें
           const faceEffect = calculateFaceMap(x, y, config);
 
-          // 1. बेस ग्रिड फॉर्मूला (Pure Mathematical Op-Art Matrix)
-          // यह पूरे कैनवास पर बिना कटे ज़िग-ज़ैग और डायमंड ग्रिड बनाता है
-          const gridX = Math.abs((x % (linePeriod * 2)) - linePeriod);
-          const gridY = Math.abs((y % (linePeriod * 2)) - linePeriod);
-          
-          // 2. वेव मॉड्यूलेशन (चेहरे के फीचर्स के हिसाब से वेव एम्प्लीट्यूड बदलना)
-          // यह फॉर्मूला लाइनों को तोड़ता नहीं है, बल्कि उन्हें एक स्मूथ फ्लो देता है
-          const waveShift = faceEffect * 7.5;
-          
-          // डायमंड पैटर्न्स का कंबिनेशन (इमेज 2 की हुबहू नकल)
-          const basePattern = Math.abs(gridX - gridY);
-          
-          // रेखाओं को ब्लैक और व्हाइट पट्टियों में कनवर्ट करना (थ्रेशोल्डिंग)
-          let finalSignal = Math.sin((basePattern + waveShift) * (Math.PI / linePeriod));
+          // चेहरा दिखाने के लिए स्मूथ शिफ्ट (Offset)। यह पट्टियों को बिना तोड़े मोड़ता है।
+          const shift = Math.round(faceEffect * 16);
 
-          // किनारों को स्मूथ (Anti-aliasing) करना ताकि फटी हुई इमेज न बने
-          const edgeSmoothness = 0.25;
-          const normalizedSignal = clamp((finalSignal / edgeSmoothness + 1) / 2, 0, 1);
-          const colorValue = Math.round(normalizedSignal * 255);
+          // रेफरेंस इमेज जैसा ज़िग-ज़ैग डायमंड ग्रिड कोऑर्डिनेट सिस्टम
+          // चेहरे वाले हिस्से पर 'shift' को जोड़कर पट्टियों को वेव दी जाती है
+          const posX = Math.floor((x + shift) / stripeWidth);
+          const posY = Math.floor((y + shift) / stripeWidth);
+
+          // ज़िग-ज़ैग पट्टियों का मुख्य फॉर्मूला (इमेज 2 की हुबहू नकल)
+          const patternValue = (posX + posY) % 2;
+
+          // कलर सेट करें (0 = प्योर ब्लैक, 255 = प्योर व्हाइट)
+          const colorValue = patternValue === 0 ? 0 : 255;
 
           const index = (y * WIDTH + x) * 4;
           pixels[index]     = colorValue; // R
@@ -149,7 +143,7 @@ export default function StereogramCanvas({
       onCanvasReady?.(dataUrl);
 
     } catch (error) {
-      console.error('Love Op-Art grid generation error:', error);
+      console.error('Love Op-Art Solid Stripe generation error:', error);
     } finally {
       setRendering(false);
     }
