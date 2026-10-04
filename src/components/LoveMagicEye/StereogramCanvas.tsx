@@ -12,44 +12,77 @@ const CANVAS_W = 400;
 const CANVAS_H = 600;
 
 /*
- * ---------------------------------------------------------
- * GEOMETRIC MAGIC-EYE SETTINGS
- * ---------------------------------------------------------
+ * =========================================================
+ * MAGIC EYE ENGINE
+ * =========================================================
  *
- * The carrier pattern is intentionally black/white and
- * geometric, similar to the reference image.
+ * The image consists of:
  *
- * The hidden object is encoded by changing the horizontal
- * correspondence between pixels.
+ * 1. A strong black/white geometric repeating carrier.
+ * 2. A mathematical hidden face depth map.
+ * 3. Horizontal pixel correspondence constraints.
+ *
+ * The face itself is NEVER painted onto the canvas.
  */
 
-const FAR_SEPARATION = 92;
-const MAX_DEPTH_CHANGE = 28;
+const FAR_SEPARATION = 88;
 
 /*
- * ---------------------------------------------------------
- * SMALL HELPERS
- * ---------------------------------------------------------
+ * Difference between the far background and the closest
+ * part of the hidden face.
+ *
+ * Keeping this moderate makes the stereogram easier to
+ * fuse on phones/tablets.
+ */
+const DEPTH_RANGE = 24;
+
+/*
+ * Geometric carrier period.
+ *
+ * The reference image has a clearly repeating pattern.
+ */
+const CARRIER_PERIOD = 32;
+
+/*
+ * =========================================================
+ * BASIC HELPERS
+ * =========================================================
  */
 
 function clamp(
   value: number,
   min: number,
   max: number
-) {
+): number {
   return Math.max(
     min,
     Math.min(max, value)
   );
 }
 
+function smoothstep(
+  value: number
+): number {
+  const x = clamp(
+    value,
+    0,
+    1
+  );
+
+  return (
+    x *
+    x *
+    (3 - 2 * x)
+  );
+}
+
 /*
- * ---------------------------------------------------------
- * SMOOTH SHAPES
- * ---------------------------------------------------------
+ * =========================================================
+ * SHAPE FUNCTIONS
+ * =========================================================
  */
 
-function ellipseDepth(
+function ellipse(
   x: number,
   y: number,
   cx: number,
@@ -63,24 +96,20 @@ function ellipseDepth(
   const dy =
     (y - cy) / ry;
 
-  const d =
+  const distance =
     dx * dx +
     dy * dy;
 
-  if (d >= 1) {
+  if (distance >= 1) {
     return 0;
   }
 
-  /*
-   * Smooth falloff instead of a hard edge.
-   */
-  return Math.pow(
-    1 - d,
-    0.55
+  return smoothstep(
+    1 - distance
   );
 }
 
-function roundedFaceDepth(
+function roundedRectangle(
   x: number,
   y: number,
   cx: number,
@@ -89,60 +118,60 @@ function roundedFaceDepth(
   height: number,
   radius: number
 ): number {
-  const left =
-    cx - width / 2;
+  const halfW =
+    width / 2;
 
-  const right =
-    cx + width / 2;
+  const halfH =
+    height / 2;
 
-  const top =
-    cy - height / 2;
+  const px =
+    Math.abs(x - cx) -
+    halfW +
+    radius;
 
-  const bottom =
-    cy + height / 2;
+  const py =
+    Math.abs(y - cy) -
+    halfH +
+    radius;
 
-  const qx =
-    Math.max(
-      left + radius,
-      Math.min(
-        x,
-        right - radius
-      )
+  const ax =
+    Math.max(px, 0);
+
+  const ay =
+    Math.max(py, 0);
+
+  const outside =
+    Math.sqrt(
+      ax * ax +
+      ay * ay
     );
 
-  const qy =
-    Math.max(
-      top + radius,
-      Math.min(
-        y,
-        bottom - radius
-      )
+  const inside =
+    Math.min(
+      Math.max(px, py),
+      0
     );
 
-  const dx =
-    (x - qx) / radius;
+  const distance =
+    outside + inside;
 
-  const dy =
-    (y - qy) / radius;
-
-  const d =
-    dx * dx +
-    dy * dy;
-
-  if (d >= 1) {
+  if (
+    distance >= radius
+  ) {
     return 0;
   }
 
-  return Math.pow(
-    1 - d,
-    0.58
+  return smoothstep(
+    1 -
+      distance /
+        radius
   );
 }
 
 /*
- * ---------------------------------------------------------
- * HAIR SILHOUETTE
- * ---------------------------------------------------------
+ * =========================================================
+ * HAIR DEPTH
+ * =========================================================
  */
 
 function getHairDepth(
@@ -159,16 +188,16 @@ function getHairDepth(
   }
 
   /*
-   * Main hair cap.
+   * Main head cap.
    */
   const cap =
-    ellipseDepth(
+    ellipse(
       x,
       y,
       cx,
       cy - 55,
-      112,
-      92
+      108,
+      90
     );
 
   if (cap <= 0) {
@@ -176,7 +205,7 @@ function getHairDepth(
   }
 
   /*
-   * Don't let hair cover the entire face.
+   * Hair should not cover the middle/lower face.
    */
   if (
     y >
@@ -185,42 +214,42 @@ function getHairDepth(
     return 0;
   }
 
+  /*
+   * Curly hair gets several soft bumps.
+   */
   if (
     config.hairStyle === 'curly'
   ) {
-    /*
-     * Curly silhouette:
-     * overlapping soft circular masses.
-     */
-    let curls = 0;
-
-    const positions = [
+    const curls = [
       [-82, -78],
-      [-58, -98],
-      [-28, -108],
-      [0, -112],
+      [-58, -96],
+      [-30, -105],
+      [0, -108],
       [30, -105],
-      [60, -94],
-      [84, -72],
+      [58, -96],
+      [82, -78],
     ];
 
+    let result = 0;
+
     for (
-      const [ox, oy] of positions
+      const [offsetX, offsetY]
+      of curls
     ) {
-      curls = Math.max(
-        curls,
-        ellipseDepth(
+      result = Math.max(
+        result,
+        ellipse(
           x,
           y,
-          cx + ox,
-          cy + oy,
-          32,
-          30
+          cx + offsetX,
+          cy + offsetY,
+          31,
+          29
         )
       );
     }
 
-    return curls;
+    return result;
   }
 
   /*
@@ -230,17 +259,16 @@ function getHairDepth(
 }
 
 /*
- * ---------------------------------------------------------
+ * =========================================================
  * FACE DEPTH MAP
- * ---------------------------------------------------------
- *
- * This function NEVER draws the face.
- *
- * It only describes the 3D depth of the hidden object.
+ * =========================================================
  *
  * 0 = background
  * 1 = strongest foreground
- * ---------------------------------------------------------
+ *
+ * Nothing from this function is directly painted.
+ * It only controls stereoscopic displacement.
+ * =========================================================
  */
 
 function getFaceDepth(
@@ -256,16 +284,16 @@ function getFaceDepth(
   let face = 0;
 
   /*
-   * -----------------------------------------------
+   * -------------------------------------------------------
    * FACE STRUCTURE
-   * -----------------------------------------------
+   * -------------------------------------------------------
    */
 
   if (
     config.faceStructure === 'round'
   ) {
     face =
-      ellipseDepth(
+      ellipse(
         x,
         y,
         cx,
@@ -277,21 +305,21 @@ function getFaceDepth(
     config.faceStructure === 'square'
   ) {
     face =
-      roundedFaceDepth(
+      roundedRectangle(
         x,
         y,
         cx,
         cy,
         214,
         250,
-        50
+        48
       );
   } else {
     /*
-     * Oval default.
+     * Oval.
      */
     face =
-      ellipseDepth(
+      ellipse(
         x,
         y,
         cx,
@@ -301,9 +329,6 @@ function getFaceDepth(
       );
   }
 
-  /*
-   * Hair can extend outside the face.
-   */
   const hair =
     getHairDepth(
       x,
@@ -314,117 +339,106 @@ function getFaceDepth(
     );
 
   /*
-   * -----------------------------------------------
-   * OUTSIDE FACE
-   * -----------------------------------------------
+   * Hair can extend outside the face.
    */
-
   if (face <= 0) {
-    return hair * 0.72;
+    return hair * 0.75;
   }
 
   /*
-   * -----------------------------------------------
-   * MAIN FACE RELIEF
-   * -----------------------------------------------
+   * -------------------------------------------------------
+   * MAIN FACE VOLUME
+   * -------------------------------------------------------
    */
 
   let depth =
-    0.38 +
-    face * 0.36;
+    0.34 +
+    face * 0.38;
 
   /*
-   * -----------------------------------------------
+   * -------------------------------------------------------
    * FOREHEAD
-   * -----------------------------------------------
+   * -------------------------------------------------------
    */
 
   depth +=
-    ellipseDepth(
+    ellipse(
       x,
       y,
       cx,
       cy - 52,
       62,
-      52
-    ) * 0.10;
+      48
+    ) * 0.09;
 
   /*
-   * -----------------------------------------------
+   * -------------------------------------------------------
    * CHEEKS
-   * -----------------------------------------------
+   * -------------------------------------------------------
    */
 
   const leftCheek =
-    ellipseDepth(
+    ellipse(
       x,
       y,
       cx - 43,
-      cy + 12,
-      52,
-      48
+      cy + 13,
+      53,
+      49
     );
 
   const rightCheek =
-    ellipseDepth(
+    ellipse(
       x,
       y,
       cx + 43,
-      cy + 12,
-      52,
-      48
+      cy + 13,
+      53,
+      49
     );
 
   depth +=
     Math.max(
       leftCheek,
       rightCheek
-    ) * 0.10;
+    ) * 0.11;
 
   /*
-   * -----------------------------------------------
+   * -------------------------------------------------------
    * EYES
-   * -----------------------------------------------
+   * -------------------------------------------------------
    *
-   * Very shallow features.
-   * We don't want the face to break into many
-   * disconnected objects.
+   * Very shallow so the face stays visually coherent.
    */
-
-  const leftEye =
-    ellipseDepth(
-      x,
-      y,
-      cx - 38,
-      cy - 23,
-      24,
-      9
-    );
-
-  const rightEye =
-    ellipseDepth(
-      x,
-      y,
-      cx + 38,
-      cy - 23,
-      24,
-      9
-    );
 
   depth +=
     Math.max(
-      leftEye,
-      rightEye
+      ellipse(
+        x,
+        y,
+        cx - 38,
+        cy - 24,
+        24,
+        9
+      ),
+      ellipse(
+        x,
+        y,
+        cx + 38,
+        cy - 24,
+        24,
+        9
+      )
     ) * 0.08;
 
   /*
-   * -----------------------------------------------
+   * -------------------------------------------------------
    * NOSE
-   * -----------------------------------------------
+   * -------------------------------------------------------
    */
 
   depth +=
-    ellipseDepth(
+    ellipse(
       x,
       y,
       cx,
@@ -434,13 +448,13 @@ function getFaceDepth(
     ) * 0.16;
 
   /*
-   * -----------------------------------------------
+   * -------------------------------------------------------
    * MOUTH
-   * -----------------------------------------------
+   * -------------------------------------------------------
    */
 
   depth +=
-    ellipseDepth(
+    ellipse(
       x,
       y,
       cx,
@@ -450,80 +464,76 @@ function getFaceDepth(
     ) * 0.07;
 
   /*
-   * -----------------------------------------------
+   * -------------------------------------------------------
    * CHIN
-   * -----------------------------------------------
+   * -------------------------------------------------------
    */
 
   depth +=
-    ellipseDepth(
+    ellipse(
       x,
       y,
       cx,
-      cy + 88,
+      cy + 89,
       47,
       34
     ) * 0.10;
 
   /*
-   * -----------------------------------------------
-   * MALE JAW
-   * -----------------------------------------------
+   * -------------------------------------------------------
+   * GENDER SHAPE
+   * -------------------------------------------------------
    */
 
   if (
     config.gender === 'male'
   ) {
+    /*
+     * Stronger jaw.
+     */
     if (
       config.faceStructure === 'square'
     ) {
       depth +=
-        roundedFaceDepth(
+        roundedRectangle(
           x,
           y,
           cx,
-          cy + 42,
+          cy + 45,
           194,
-          108,
-          36
-        ) * 0.16;
+          105,
+          34
+        ) * 0.14;
     } else {
       depth +=
-        ellipseDepth(
+        ellipse(
           x,
           y,
           cx,
-          cy + 48,
+          cy + 50,
           88,
           72
-        ) * 0.10;
+        ) * 0.11;
     }
-  }
-
-  /*
-   * -----------------------------------------------
-   * FEMALE FACE RELIEF
-   * -----------------------------------------------
-   */
-
-  if (
-    config.gender === 'female'
-  ) {
+  } else {
+    /*
+     * Slightly softer lower-face volume.
+     */
     depth +=
-      ellipseDepth(
+      ellipse(
         x,
         y,
         cx,
         cy + 48,
-        80,
+        79,
         76
       ) * 0.07;
   }
 
   /*
-   * -----------------------------------------------
+   * -------------------------------------------------------
    * BEARD
-   * -----------------------------------------------
+   * -------------------------------------------------------
    */
 
   if (
@@ -535,11 +545,11 @@ function getFaceDepth(
       config.beardStyle === 'stubble'
     ) {
       beard =
-        ellipseDepth(
+        ellipse(
           x,
           y,
           cx,
-          cy + 54,
+          cy + 53,
           72,
           59
         );
@@ -549,13 +559,13 @@ function getFaceDepth(
       config.beardStyle === 'short'
     ) {
       beard =
-        ellipseDepth(
+        ellipse(
           x,
           y,
           cx,
-          cy + 55,
+          cy + 54,
           78,
-          65
+          64
         );
     }
 
@@ -563,28 +573,28 @@ function getFaceDepth(
       config.beardStyle === 'full'
     ) {
       beard =
-        ellipseDepth(
+        ellipse(
           x,
           y,
           cx,
           cy + 48,
-          86,
+          87,
           76
         );
     }
 
     depth +=
-      beard * 0.10;
+      beard * 0.11;
   }
 
   /*
-   * -----------------------------------------------
+   * -------------------------------------------------------
    * HAIR
-   * -----------------------------------------------
+   * -------------------------------------------------------
    */
 
   depth +=
-    hair * 0.16;
+    hair * 0.17;
 
   return clamp(
     depth,
@@ -594,69 +604,73 @@ function getFaceDepth(
 }
 
 /*
- * ---------------------------------------------------------
- * GEOMETRIC CARRIER
- * ---------------------------------------------------------
+ * =========================================================
+ * GEOMETRIC REFERENCE-STYLE CARRIER
+ * =========================================================
  *
- * This creates the visual pattern similar to the reference:
+ * Instead of random dots, we create a continuous,
+ * high-contrast diamond/chevron pattern.
  *
- *     /\/\  /\/\
- *     \/\/  \/\/
+ * The pattern itself is visible to the user.
  *
- * with nested diamond/chevron structures.
- *
- * It is deliberately NOT random noise.
- * ---------------------------------------------------------
+ * The hidden face is created by the pixel constraints,
+ * not by painting a face over it.
+ * =========================================================
  */
 
-function geometricCarrier(
+function carrierPixel(
   x: number,
   y: number
 ): number {
   /*
-   * Primary diagonal.
+   * Two diagonal waves.
    */
-  const a =
-    Math.abs(
-      ((x + y) % 44) - 22
-    );
+  const p1 =
+    ((x + y) %
+      CARRIER_PERIOD +
+      CARRIER_PERIOD) %
+    CARRIER_PERIOD;
+
+  const p2 =
+    ((x - y) %
+      CARRIER_PERIOD +
+      CARRIER_PERIOD) %
+    CARRIER_PERIOD;
 
   /*
-   * Secondary diagonal.
+   * Distance from centre of each diagonal cycle.
    */
-  const b =
+  const d1 =
     Math.abs(
-      ((x - y) % 44) - 22
+      p1 -
+        CARRIER_PERIOD / 2
     );
 
-  /*
-   * Create narrow black/white diagonal lines.
-   */
+  const d2 =
+    Math.abs(
+      p2 -
+        CARRIER_PERIOD / 2
+    );
+
   const distance =
     Math.min(
-      a,
-      b
+      d1,
+      d2
     );
 
   /*
-   * Slightly thicker white lines.
+   * Narrow white geometric strokes
+   * over a black background.
    */
   return distance < 4
     ? 255
-    : 18;
+    : 0;
 }
 
 /*
- * ---------------------------------------------------------
+ * =========================================================
  * UNION-FIND
- * ---------------------------------------------------------
- *
- * This is the important part missing from the previous
- * simple implementation.
- *
- * Pixels that should represent the same visual point are
- * joined into the same equivalence group.
- * ---------------------------------------------------------
+ * =========================================================
  */
 
 function findRoot(
@@ -691,7 +705,7 @@ function union(
   parent: Int32Array,
   a: number,
   b: number
-) {
+): void {
   const rootA =
     findRoot(
       parent,
@@ -713,9 +727,9 @@ function union(
 }
 
 /*
- * ---------------------------------------------------------
+ * =========================================================
  * MAIN COMPONENT
- * ---------------------------------------------------------
+ * =========================================================
  */
 
 export default function StereogramCanvas({
@@ -728,8 +742,10 @@ export default function StereogramCanvas({
       null
     );
 
-  const [rendering, setRendering] =
-    useState(false);
+  const [
+    rendering,
+    setRendering,
+  ] = useState(false);
 
   const render =
     useCallback(() => {
@@ -768,10 +784,9 @@ export default function StereogramCanvas({
           image.data;
 
         /*
-         * Each row is solved independently.
-         *
-         * This is important because stereogram correspondence
-         * is horizontal.
+         * =================================================
+         * SOLVE EACH HORIZONTAL ROW
+         * =================================================
          */
 
         for (
@@ -779,14 +794,17 @@ export default function StereogramCanvas({
           y < CANVAS_H;
           y++
         ) {
+          /*
+           * IMPORTANT:
+           *
+           * Int32Array supports -1 correctly.
+           * We explicitly initialize every pixel.
+           */
           const parent =
             new Int32Array(
               CANVAS_W
             );
 
-          /*
-           * Initially every pixel belongs to itself.
-           */
           for (
             let x = 0;
             x < CANVAS_W;
@@ -797,9 +815,9 @@ export default function StereogramCanvas({
           }
 
           /*
-           * -------------------------------------------
-           * CREATE DEPTH CONSTRAINTS
-           * -------------------------------------------
+           * ------------------------------------------------
+           * DEPTH CONSTRAINTS
+           * ------------------------------------------------
            */
 
           for (
@@ -815,32 +833,37 @@ export default function StereogramCanvas({
               );
 
             /*
-             * Background = FAR_SEPARATION.
+             * Far background:
              *
-             * Foreground = smaller separation.
+             * separation = 88
+             *
+             * Foreground face:
+             *
+             * separation becomes smaller.
              */
             const separation =
               Math.round(
                 FAR_SEPARATION -
                   depth *
-                    MAX_DEPTH_CHANGE
+                    DEPTH_RANGE
               );
 
             /*
-             * Two eyes correspond to points on the
-             * same horizontal row.
+             * Symmetric correspondence.
              */
             const left =
-              Math.floor(
+              Math.round(
                 x -
-                  separation /
-                    2
+                  separation / 2
               );
 
             const right =
               left +
               separation;
 
+            /*
+             * Outside the canvas = no constraint.
+             */
             if (
               left < 0 ||
               right >= CANVAS_W
@@ -849,7 +872,8 @@ export default function StereogramCanvas({
             }
 
             /*
-             * Merge the two corresponding pixels.
+             * These two pixels represent the same
+             * hidden visual point.
              */
             union(
               parent,
@@ -859,30 +883,28 @@ export default function StereogramCanvas({
           }
 
           /*
-           * -------------------------------------------
-           * ASSIGN GEOMETRIC COLORS
-           * -------------------------------------------
+           * ------------------------------------------------
+           * ASSIGN CARRIER TO EACH GROUP
+           * ------------------------------------------------
            *
-           * Every equivalence group receives a colour
-           * derived from its root position.
+           * Every equivalence group gets one black/white
+           * value.
            *
-           * Therefore the carrier remains geometric
-           * instead of becoming random noise.
+           * This is where the visible geometric pattern
+           * comes from.
            */
 
-          const groupColor =
-            new Int8Array(
+          const groupValue =
+            new Int16Array(
               CANVAS_W
             );
 
-          for (
-            let x = 0;
-            x < CANVAS_W;
-            x++
-          ) {
-            groupColor[x] =
-              -1;
-          }
+          /*
+           * -1 means "not assigned yet".
+           */
+          groupValue.fill(
+            -1
+          );
 
           for (
             let x = 0;
@@ -895,23 +917,22 @@ export default function StereogramCanvas({
                 x
               );
 
+            /*
+             * Assign each group exactly once.
+             */
             if (
-              groupColor[root] ===
+              groupValue[root] ===
               -1
             ) {
-              /*
-               * The root's position is used to sample
-               * the geometric carrier.
-               */
-              groupColor[root] =
-                geometricCarrier(
+              groupValue[root] =
+                carrierPixel(
                   root,
                   y
                 );
             }
 
             const value =
-              groupColor[root];
+              groupValue[root];
 
             const index =
               (
@@ -935,9 +956,9 @@ export default function StereogramCanvas({
         }
 
         /*
-         * -------------------------------------------
-         * PUT FINAL IMAGE
-         * -------------------------------------------
+         * =================================================
+         * DRAW
+         * =================================================
          */
 
         ctx.putImageData(
@@ -947,17 +968,21 @@ export default function StereogramCanvas({
         );
 
         /*
-         * IMPORTANT:
+         * =================================================
+         * IMPORTANT
+         * =================================================
          *
-         * Nothing is drawn on top.
+         * NOTHING is drawn over the stereogram.
          *
          * No face.
-         * No name.
          * No heart.
+         * No partner name.
          * No text.
+         * No overlay.
          *
-         * The only information about the face is inside
-         * the stereogram depth constraints.
+         * The hidden face exists only inside the
+         * stereoscopic correspondence.
+         * =================================================
          */
 
         const dataUrl =
@@ -970,7 +995,7 @@ export default function StereogramCanvas({
         );
       } catch (error) {
         console.error(
-          'Love Magic Eye stereogram error:',
+          'Love Magic Eye render error:',
           error
         );
       } finally {
@@ -1007,14 +1032,14 @@ export default function StereogramCanvas({
   return (
     <div className="flex w-full flex-col items-center">
       <div
-        className="relative mx-auto w-full max-w-[400px] overflow-hidden rounded-[1.5rem]"
+        className="relative mx-auto w-full max-w-[400px] overflow-hidden rounded-[18px]"
         style={{
           background:
-            '#111111',
+            '#000000',
           border:
-            '2px solid rgba(255,255,255,0.18)',
+            '2px solid rgba(255,255,255,0.16)',
           boxShadow:
-            '0 12px 45px rgba(0,0,0,0.18)',
+            '0 12px 45px rgba(0,0,0,0.20)',
         }}
       >
         <canvas
@@ -1027,7 +1052,7 @@ export default function StereogramCanvas({
         />
 
         {rendering && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/45">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
             <div className="h-9 w-9 animate-spin rounded-full border-2 border-white/30 border-t-white" />
           </div>
         )}
@@ -1039,8 +1064,8 @@ export default function StereogramCanvas({
 
       <p className="mt-2 max-w-[390px] px-4 text-center text-sm text-gray-600">
         Relax your eyes and look through the
-        pattern. Keep the image still and allow
-        the repeating shapes to merge.
+        repeating pattern. Keep the image still
+        and allow the hidden 3D image to appear.
       </p>
     </div>
   );
