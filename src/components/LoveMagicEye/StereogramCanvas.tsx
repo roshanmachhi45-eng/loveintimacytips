@@ -167,6 +167,42 @@ function carrier(x: number, y: number) {
 /* -------------------------------------------------- */
 
 /*
+ * Face-tone–based structural modifiers.
+ *
+ * Different skin tones correlate (in aggregate morphology studies)
+ * with subtle but real differences in brow ridge prominence,
+ * nasal bridge width, lip fullness, and cheekbone projection.
+ * These values shift the depth map enough that the hidden 3D
+ * face is recognizably different per tone.
+ */
+const TONE_MODIFIERS = {
+  dark: {
+    browRidge: 0.06,
+    noseWidth: 1.18,
+    noseTipDepth: 0.04,
+    lipFullness: 0.10,
+    cheekbone: 0.05,
+    foreheadHeight: 0.97,
+  },
+  wheatish: {
+    browRidge: 0.04,
+    noseWidth: 1.08,
+    noseTipDepth: 0.02,
+    lipFullness: 0.06,
+    cheekbone: 0.03,
+    foreheadHeight: 1.0,
+  },
+  fair: {
+    browRidge: 0.02,
+    noseWidth: 0.92,
+    noseTipDepth: 0.0,
+    lipFullness: 0.03,
+    cheekbone: 0.01,
+    foreheadHeight: 1.03,
+  },
+} as const;
+
+/*
  * Creates a strongly structured frontal face.
  *
  * 0 = background
@@ -175,6 +211,10 @@ function carrier(x: number, y: number) {
 function createDepthMap(config: MagicEyeConfig) {
   const cx = WIDTH / 2;
   const cy = HEIGHT / 2 - 20;
+
+  const tone =
+    TONE_MODIFIERS[config.faceTone] ??
+    TONE_MODIFIERS.wheatish;
 
   return (x: number, y: number) => {
     let depth = 0;
@@ -303,12 +343,14 @@ function createDepthMap(config: MagicEyeConfig) {
 
       if (leftCheek < 1) {
         depth +=
-          (1 - leftCheek) * 0.14;
+          (1 - leftCheek) *
+          (0.14 + tone.cheekbone);
       }
 
       if (rightCheek < 1) {
         depth +=
-          (1 - rightCheek) * 0.14;
+          (1 - rightCheek) *
+          (0.14 + tone.cheekbone);
       }
 
       /*
@@ -384,13 +426,13 @@ function createDepthMap(config: MagicEyeConfig) {
         y,
         cx,
         cy + 11,
-        8,
+        8 * tone.noseWidth,
         29,
         5
       );
 
       if (noseBridge < 0) {
-        depth += 0.23;
+        depth += 0.23 + tone.browRidge;
       }
 
       /*
@@ -407,7 +449,8 @@ function createDepthMap(config: MagicEyeConfig) {
 
       if (noseTip < 1) {
         depth +=
-          (1 - noseTip) * 0.26;
+          (1 - noseTip) *
+          (0.26 + tone.noseTipDepth);
       }
 
       /*
@@ -455,7 +498,8 @@ function createDepthMap(config: MagicEyeConfig) {
 
       if (upperLip < 1) {
         depth +=
-          (1 - upperLip) * 0.14;
+          (1 - upperLip) *
+          (0.14 + tone.lipFullness);
       }
 
       const mouthOpening = ellipse(

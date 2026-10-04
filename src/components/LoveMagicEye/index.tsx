@@ -8,6 +8,17 @@ import ViralShareCard from './ViralShareCard';
 import { DEFAULT_CONFIG, type MagicEyeConfig } from './types';
 import { PALETTES, getRandomPalette } from './palettes';
 
+const ROMANTIC_LINES = [
+  'Your love shines brighter than any star in the galaxy.',
+  'Two souls, one hidden universe waiting to be discovered.',
+  'The magic between you two is written in the stars.',
+  'Every glance reveals a love deeper than words can say.',
+  'Your hearts beat in perfect harmony, seen and unseen.',
+  'A connection so pure, it transcends the visible world.',
+  'In the hidden depths, your love story is etched forever.',
+  'The aura of your bond glows with cosmic energy.',
+];
+
 export default function LoveMagicEye() {
   const [config, setConfig] = useState<MagicEyeConfig>(DEFAULT_CONFIG);
   const [paletteIndex, setPaletteIndex] = useState(0);
@@ -98,6 +109,31 @@ export default function LoveMagicEye() {
               generateKey={generateKey}
               onCanvasReady={handleCanvasReady}
             />
+
+            {/* Partner name + romantic line below the image */}
+            {generateKey > 0 && (
+              <div className="mt-4 text-center">
+                <p
+                  className="font-display text-2xl font-bold"
+                  style={{
+                    background:
+                      'linear-gradient(to right, #8b5cf6, #ec4899)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                  }}
+                >
+                  {config.name.trim() || 'Your Partner'}
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {ROMANTIC_LINES[
+                    Math.floor(
+                      Math.random() * ROMANTIC_LINES.length
+                    )
+                  ]}
+                </p>
+              </div>
+            )}
 
             {/* Viral Share Card with countdown */}
             <ViralShareCard
