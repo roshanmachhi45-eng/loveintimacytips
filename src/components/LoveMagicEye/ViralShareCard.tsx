@@ -16,7 +16,7 @@ interface ViralShareCardProps {
   paletteName: string;
 }
 
-const COUNTDOWN_SECONDS = 110;
+const COUNTDOWN_SECONDS = 60;
 
 const VIRAL_COPY =
   "Did your partner's true face manifest in the digital holographic dimensions? If it appeared clearly, your romantic aura and spiritual connection are remarkably powerful! Still seeing only patterns? Your partner's modern vibes might be shielding their true form — share this instantly with your soulmate or closest friends to ask what hidden reality they can decipher in your custom aura chart!";
