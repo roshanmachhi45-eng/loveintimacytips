@@ -3,11 +3,7 @@ import { PALETTES, type ColorPalette } from './palettes';
 import type { MagicEyeConfig } from './types';
 
 interface StereogramCanvasProps {
-  config: MagicEyeConfig & {
-    faceStructure?: string;
-    faceTone?: string;
-    hairStyle?: string;
-  };
+  config: MagicEyeConfig;
   paletteIndex: number;
   generateKey: number;
   onCanvasReady?: (dataUrl: string) => void;
@@ -17,27 +13,39 @@ const CANVAS_W = 400;
 const CANVAS_H = 600;
 
 /*
- * Simple beginner-friendly stereogram.
+ * Geometric Magic Eye settings.
  *
- * The first version deliberately uses one large heart.
- * Once this renders correctly, we can put the personalized
- * face depth back into the same engine.
+ * The pattern is intentionally much clearer than random dots.
+ * This makes the image easier for beginners to look through.
  */
-const PATTERN_W = 96;
-const MAX_SHIFT = 24;
+const PATTERN_PERIOD = 72;
+const MAX_DEPTH_SHIFT = 18;
 
-function hexToRgb(hex: string) {
-  const value = String(hex || '#888888').replace('#', '');
+/*
+ * ---------------------------------------------------------
+ * SAFE PALETTE HELPERS
+ * ---------------------------------------------------------
+ */
 
-  const safe =
-    value.length === 6 ? value : '888888';
+function getPaletteValue(
+  palette: ColorPalette,
+  key: string,
+  fallback: string
+): string {
+  const value = (
+    palette as unknown as Record<string, unknown>
+  )[key];
 
-  return {
-    r: parseInt(safe.slice(0, 2), 16),
-    g: parseInt(safe.slice(2, 4), 16),
-    b: parseInt(safe.slice(4, 6), 16),
-  };
+  return typeof value === 'string'
+    ? value
+    : fallback;
 }
+
+/*
+ * ---------------------------------------------------------
+ * SEEDED RANDOM
+ * ---------------------------------------------------------
+ */
 
 function seededRandom(seed: number) {
   let value = seed >>> 0;
@@ -65,125 +73,605 @@ function seededRandom(seed: number) {
 }
 
 /*
- * Large smooth heart depth.
+ * ---------------------------------------------------------
+ * FACE GEOMETRY
+ * ---------------------------------------------------------
  *
- * 0 = background
- * 1 = centre/closest part
+ * The important point here:
+ *
+ * We do NOT draw a face onto the canvas.
+ *
+ * We only create a mathematical DEPTH MAP.
+ *
+ * The stereogram pattern is then displaced according to
+ * this depth map.
+ * ---------------------------------------------------------
  */
-function getHeartDepth(
+
+function ellipse(
   x: number,
-  y: number
+  y: number,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number
 ): number {
-  const cx = CANVAS_W / 2;
-  const cy = 285;
+  const dx = (x - cx) / rx;
+  const dy = (y - cy) / ry;
 
-  const px = (x - cx) / 118;
-  const py = (y - cy) / 108;
+  const distance =
+    dx * dx + dy * dy;
 
-  const x2 = px * px;
-  const y2 = py * py;
-
-  const equation =
-    Math.pow(
-      x2 + y2 - 1,
-      3
-    ) -
-    x2 * Math.pow(py, 3);
-
-  if (equation > 0) {
+  if (distance >= 1) {
     return 0;
   }
 
-  const distance = Math.sqrt(
-    Math.min(
-      1,
-      px * px + py * py
-    )
+  return Math.pow(
+    1 - distance,
+    0.65
   );
+}
 
-  let depth =
-    1 - distance * 0.65;
+function roundedRect(
+  x: number,
+  y: number,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+  radius: number
+): number {
+  const cx =
+    Math.max(
+      left + radius,
+      Math.min(
+        x,
+        right - radius
+      )
+    );
 
-  /*
-   * Smooth the depth so there is no hard
-   * transition around the heart.
-   */
-  depth *=
-    0.88 +
-    Math.cos(distance * Math.PI) * 0.12;
+  const cy =
+    Math.max(
+      top + radius,
+      Math.min(
+        y,
+        bottom - radius
+      )
+    );
 
-  return Math.max(
-    0,
-    Math.min(1, depth)
+  const dx =
+    (x - cx) / radius;
+
+  const dy =
+    (y - cy) / radius;
+
+  const distance =
+    dx * dx + dy * dy;
+
+  if (distance >= 1) {
+    return 0;
+  }
+
+  return Math.pow(
+    1 - distance,
+    0.7
   );
 }
 
 /*
- * Very faint visual guide.
- *
- * This is intentionally subtle.
+ * ---------------------------------------------------------
+ * FACE DEPTH MAP
+ * ---------------------------------------------------------
  */
-function drawSoftHeart(
-  ctx: CanvasRenderingContext2D,
-  color: string
-) {
-  const cx = CANVAS_W / 2;
-  const cy = 285;
 
-  ctx.save();
+function getFaceDepth(
+  x: number,
+  y: number,
+  config: MagicEyeConfig
+): number {
+  const centerX =
+    CANVAS_W / 2;
 
-  ctx.globalAlpha = 0.12;
-  ctx.filter = 'blur(9px)';
-  ctx.fillStyle = color;
+  /*
+   * Move the face slightly upward so there is space below
+   * for the result text outside the canvas.
+   */
+  const centerY = 285;
 
-  ctx.beginPath();
+  /*
+   * -----------------------------------------------
+   * FACE OUTLINE
+   * -----------------------------------------------
+   */
 
-  ctx.moveTo(
-    cx,
-    cy + 100
+  let face = 0;
+
+  if (
+    config.faceStructure === 'round'
+  ) {
+    face = ellipse(
+      x,
+      y,
+      centerX,
+      centerY,
+      112,
+      132
+    );
+  } else if (
+    config.faceStructure === 'square'
+  ) {
+    face = roundedRect(
+      x,
+      y,
+      centerX - 108,
+      centerY - 132,
+      centerX + 108,
+      centerY + 130,
+      48
+    );
+  } else {
+    /*
+     * Default / oval.
+     */
+    face = ellipse(
+      x,
+      y,
+      centerX,
+      centerY,
+      103,
+      137
+    );
+  }
+
+  if (face <= 0) {
+    /*
+     * Hair can extend above the face.
+     */
+    const hairTop =
+      getHairDepth(
+        x,
+        y,
+        centerX,
+        centerY,
+        config
+      );
+
+    return hairTop * 0.55;
+  }
+
+  /*
+   * -----------------------------------------------
+   * BASE FACE DEPTH
+   * -----------------------------------------------
+   */
+
+  let depth =
+    0.30 +
+    face * 0.38;
+
+  /*
+   * -----------------------------------------------
+   * CHEEKS
+   * -----------------------------------------------
+   */
+
+  const leftCheek =
+    ellipse(
+      x,
+      y,
+      centerX - 46,
+      centerY + 15,
+      54,
+      52
+    );
+
+  const rightCheek =
+    ellipse(
+      x,
+      y,
+      centerX + 46,
+      centerY + 15,
+      54,
+      52
+    );
+
+  depth +=
+    Math.max(
+      leftCheek,
+      rightCheek
+    ) * 0.10;
+
+  /*
+   * -----------------------------------------------
+   * EYES
+   * -----------------------------------------------
+   *
+   * Eyes are shallow features rather than deep holes.
+   */
+
+  const leftEye =
+    ellipse(
+      x,
+      y,
+      centerX - 40,
+      centerY - 25,
+      23,
+      10
+    );
+
+  const rightEye =
+    ellipse(
+      x,
+      y,
+      centerX + 40,
+      centerY - 25,
+      23,
+      10
+    );
+
+  depth +=
+    Math.max(
+      leftEye,
+      rightEye
+    ) * 0.12;
+
+  /*
+   * -----------------------------------------------
+   * NOSE
+   * -----------------------------------------------
+   */
+
+  const nose =
+    ellipse(
+      x,
+      y,
+      centerX,
+      centerY + 5,
+      18,
+      42
+    );
+
+  depth +=
+    nose * 0.18;
+
+  /*
+   * -----------------------------------------------
+   * MOUTH
+   * -----------------------------------------------
+   */
+
+  const mouth =
+    ellipse(
+      x,
+      y,
+      centerX,
+      centerY + 55,
+      35,
+      12
+    );
+
+  depth +=
+    mouth * 0.10;
+
+  /*
+   * -----------------------------------------------
+   * CHIN
+   * -----------------------------------------------
+   */
+
+  const chin =
+    ellipse(
+      x,
+      y,
+      centerX,
+      centerY + 91,
+      48,
+      34
+    );
+
+  depth +=
+    chin * 0.12;
+
+  /*
+   * -----------------------------------------------
+   * MALE JAW
+   * -----------------------------------------------
+   */
+
+  if (config.gender === 'male') {
+    if (
+      config.faceStructure === 'square'
+    ) {
+      const jaw =
+        roundedRect(
+          x,
+          y,
+          centerX - 100,
+          centerY + 32,
+          centerX + 100,
+          centerY + 116,
+          35
+        );
+
+      depth += jaw * 0.16;
+    } else {
+      const jaw =
+        ellipse(
+          x,
+          y,
+          centerX,
+          centerY + 55,
+          90,
+          75
+        );
+
+      depth += jaw * 0.10;
+    }
+  }
+
+  /*
+   * -----------------------------------------------
+   * FEMALE CHEEK / JAW SHAPE
+   * -----------------------------------------------
+   */
+
+  if (config.gender === 'female') {
+    const feminineJaw =
+      ellipse(
+        x,
+        y,
+        centerX,
+        centerY + 48,
+        82,
+        80
+      );
+
+    depth +=
+      feminineJaw * 0.08;
+  }
+
+  /*
+   * -----------------------------------------------
+   * BEARD
+   * -----------------------------------------------
+   */
+
+  if (config.gender === 'male') {
+    if (
+      config.beardStyle === 'stubble'
+    ) {
+      const beard =
+        ellipse(
+          x,
+          y,
+          centerX,
+          centerY + 55,
+          73,
+          61
+        );
+
+      depth += beard * 0.08;
+    }
+
+    if (
+      config.beardStyle === 'short'
+    ) {
+      const beard =
+        ellipse(
+          x,
+          y,
+          centerX,
+          centerY + 55,
+          78,
+          65
+        );
+
+      depth += beard * 0.12;
+    }
+
+    if (
+      config.beardStyle === 'full'
+    ) {
+      const beard =
+        ellipse(
+          x,
+          y,
+          centerX,
+          centerY + 45,
+          86,
+          78
+        );
+
+      depth += beard * 0.16;
+    }
+  }
+
+  /*
+   * -----------------------------------------------
+   * HAIR
+   * -----------------------------------------------
+   */
+
+  depth +=
+    getHairDepth(
+      x,
+      y,
+      centerX,
+      centerY,
+      config
+    ) * 0.18;
+
+  /*
+   * Keep everything in a safe range.
+   */
+
+  return Math.max(
+    0,
+    Math.min(
+      1,
+      depth
+    )
   );
-
-  ctx.bezierCurveTo(
-    cx - 20,
-    cy + 75,
-    cx - 112,
-    cy + 22,
-    cx - 112,
-    cy - 35
-  );
-
-  ctx.bezierCurveTo(
-    cx - 112,
-    cy - 84,
-    cx - 55,
-    cy - 100,
-    cx,
-    cy - 48
-  );
-
-  ctx.bezierCurveTo(
-    cx + 55,
-    cy - 100,
-    cx + 112,
-    cy - 84,
-    cx + 112,
-    cy - 35
-  );
-
-  ctx.bezierCurveTo(
-    cx + 112,
-    cy + 22,
-    cx + 20,
-    cy + 75,
-    cx,
-    cy + 100
-  );
-
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.restore();
 }
+
+/*
+ * ---------------------------------------------------------
+ * HAIR DEPTH
+ * ---------------------------------------------------------
+ */
+
+function getHairDepth(
+  x: number,
+  y: number,
+  centerX: number,
+  centerY: number,
+  config: MagicEyeConfig
+): number {
+  if (
+    config.hairStyle === 'bald'
+  ) {
+    return 0;
+  }
+
+  /*
+   * Hair starts above the face.
+   */
+
+  const top =
+    centerY - 145;
+
+  if (y > centerY - 70) {
+    return 0;
+  }
+
+  const head =
+    ellipse(
+      x,
+      y,
+      centerX,
+      centerY - 42,
+      112,
+      100
+    );
+
+  if (head <= 0) {
+    return 0;
+  }
+
+  if (
+    config.hairStyle === 'curly'
+  ) {
+    /*
+     * Small repeated bumps create a curly silhouette
+     * in the depth map.
+     */
+    const wave =
+      Math.sin(
+        x * 0.20
+      ) * 0.5 +
+      0.5;
+
+    return (
+      head *
+      (0.55 + wave * 0.35)
+    );
+  }
+
+  /*
+   * Straight hair.
+   */
+
+  const vertical =
+    Math.max(
+      0,
+      Math.min(
+        1,
+        (centerY - 55 - y) /
+          90
+      )
+    );
+
+  return (
+    head *
+    (0.65 + vertical * 0.20)
+  );
+}
+
+/*
+ * ---------------------------------------------------------
+ * GEOMETRIC PATTERN
+ * ---------------------------------------------------------
+ *
+ * This is inspired by the high-contrast geometric style
+ * from the reference image.
+ *
+ * It does NOT draw the hidden face.
+ *
+ * It only creates the repeating source pattern.
+ * ---------------------------------------------------------
+ */
+
+function getPatternPixel(
+  x: number,
+  y: number,
+  random: () => number
+): number {
+  const px =
+    ((x % PATTERN_PERIOD) +
+      PATTERN_PERIOD) %
+    PATTERN_PERIOD;
+
+  /*
+   * Diagonal bands.
+   */
+  const diagonal =
+    (px + y * 0.32) %
+    18;
+
+  /*
+   * Secondary diagonal creates a chevron-like
+   * geometric texture.
+   */
+  const second =
+    (px - y * 0.18) %
+    24;
+
+  const bandA =
+    diagonal < 7;
+
+  const bandB =
+    second < 5;
+
+  /*
+   * Occasionally invert a small block so the pattern
+   * isn't perfectly mechanical.
+   */
+  const block =
+    Math.floor(
+      x / PATTERN_PERIOD
+    ) +
+    Math.floor(
+      y / 18
+    );
+
+  const variation =
+    random() > 0.985;
+
+  const white =
+    bandA !== bandB;
+
+  if (variation) {
+    return white ? 0 : 255;
+  }
+
+  return white ? 255 : 0;
+}
+
+/*
+ * ---------------------------------------------------------
+ * MAIN COMPONENT
+ * ---------------------------------------------------------
+ */
 
 export default function StereogramCanvas({
   config,
@@ -197,200 +685,160 @@ export default function StereogramCanvas({
   const [rendering, setRendering] =
     useState(false);
 
-  const render = useCallback(() => {
-    const canvas =
-      canvasRef.current;
+  const render =
+    useCallback(() => {
+      const canvas =
+        canvasRef.current;
 
-    if (!canvas) {
-      return;
-    }
-
-    setRendering(true);
-
-    try {
-      const palette: ColorPalette =
-        PALETTES[
-          paletteIndex %
-            PALETTES.length
-        ];
-
-      /*
-       * ------------------------------------------------
-       * CANVAS SETUP
-       * ------------------------------------------------
-       */
-
-      canvas.width = CANVAS_W;
-      canvas.height = CANVAS_H;
-
-      const ctx =
-        canvas.getContext('2d');
-
-      if (!ctx) {
+      if (!canvas) {
         return;
       }
 
-      /*
-       * ------------------------------------------------
-       * BACKGROUND
-       * ------------------------------------------------
-       */
+      setRendering(true);
 
-      ctx.fillStyle =
-        palette.bg || '#111827';
-
-      ctx.fillRect(
-        0,
-        0,
-        CANVAS_W,
-        CANVAS_H
-      );
-
-      /*
-       * ------------------------------------------------
-       * SAFE PATTERN COLORS
-       * ------------------------------------------------
-       *
-       * Do NOT assume patternColors exists.
-       */
-
-      const paletteObject =
-        palette as ColorPalette & {
-          patternColors?: string[];
-          heartColor?: string;
-          textColor?: string;
-        };
-
-      const availableColors =
-        Array.isArray(
-          paletteObject.patternColors
-        ) &&
-        paletteObject.patternColors.length
-          ? paletteObject.patternColors
-          : [
-              palette.primary ||
-                '#8b5cf6',
-              palette.secondary ||
-                '#ec4899',
-              '#ffffff',
-            ];
-
-      /*
-       * ------------------------------------------------
-       * RANDOM PATTERN
-       * ------------------------------------------------
-       */
-
-      const pattern =
-        new Uint8ClampedArray(
-          PATTERN_W * 4
-        );
-
-      const random =
-        seededRandom(
-          generateKey * 7919 +
-            paletteIndex * 997 +
-            config.name.length * 31
-        );
-
-      for (
-        let x = 0;
-        x < PATTERN_W;
-        x++
-      ) {
-        const color =
-          availableColors[
-            Math.floor(
-              random() *
-                availableColors.length
-            )
+      try {
+        const palette =
+          PALETTES[
+            paletteIndex %
+              PALETTES.length
           ];
 
-        const rgb =
-          hexToRgb(color);
+        canvas.width =
+          CANVAS_W;
 
-        const index =
-          x * 4;
+        canvas.height =
+          CANVAS_H;
 
-        pattern[index] =
-          rgb.r;
+        const ctx =
+          canvas.getContext('2d');
 
-        pattern[index + 1] =
-          rgb.g;
+        if (!ctx) {
+          return;
+        }
 
-        pattern[index + 2] =
-          rgb.b;
+        /*
+         * ------------------------------------------------
+         * TRUE BLACK / WHITE BASE
+         * ------------------------------------------------
+         *
+         * This keeps the geometric stereogram close to
+         * the reference image regardless of the selected
+         * Loveons colour palette.
+         */
 
-        pattern[index + 3] =
-          255;
-      }
-
-      /*
-       * ------------------------------------------------
-       * FINAL IMAGE
-       * ------------------------------------------------
-       */
-
-      const image =
-        ctx.createImageData(
-          CANVAS_W,
-          CANVAS_H
-        );
-
-      const output =
-        image.data;
-
-      /*
-       * ------------------------------------------------
-       * ROW-BY-ROW STEREOGRAM
-       * ------------------------------------------------
-       */
-
-      for (
-        let y = 0;
-        y < CANVAS_H;
-        y++
-      ) {
-        const row =
-          new Uint8ClampedArray(
-            CANVAS_W * 4
+        const image =
+          ctx.createImageData(
+            CANVAS_W,
+            CANVAS_H
           );
 
+        const pixels =
+          image.data;
+
+        const random =
+          seededRandom(
+            generateKey * 104729 +
+              paletteIndex * 1543
+          );
+
+        /*
+         * ------------------------------------------------
+         * GENERATE EACH ROW
+         * ------------------------------------------------
+         */
+
         for (
-          let x = 0;
-          x < CANVAS_W;
-          x++
+          let y = 0;
+          y < CANVAS_H;
+          y++
         ) {
-          const depth =
-            getHeartDepth(
-              x,
-              y
+          const row =
+            new Uint8ClampedArray(
+              CANVAS_W * 4
             );
 
-          /*
-           * Background repeats every PATTERN_W.
-           *
-           * Heart gradually reduces the repetition
-           * distance, creating the hidden depth.
-           */
-          const separation =
-            PATTERN_W -
-            Math.round(
-              depth * MAX_SHIFT
-            );
-
-          let sourceX =
-            x - separation;
-
-          /*
-           * The beginning of every row is seeded
-           * directly from the random pattern.
-           */
-          if (
-            x < PATTERN_W
+          for (
+            let x = 0;
+            x < CANVAS_W;
+            x++
           ) {
-            sourceX =
-              x % PATTERN_W;
+            const depth =
+              getFaceDepth(
+                x,
+                y,
+                config
+              );
+
+            /*
+             * Background uses the full pattern period.
+             *
+             * Face areas progressively shorten the
+             * separation.
+             */
+
+            const separation =
+              PATTERN_PERIOD -
+              Math.round(
+                depth *
+                  MAX_DEPTH_SHIFT
+              );
+
+            let sourceX =
+              x - separation;
+
+            /*
+             * Seed the first pattern period.
+             */
+
+            if (
+              x < PATTERN_PERIOD
+            ) {
+              sourceX =
+                x;
+
+              const value =
+                getPatternPixel(
+                  sourceX,
+                  y,
+                  random
+                );
+
+              const index =
+                x * 4;
+
+              row[index] =
+                value;
+
+              row[index + 1] =
+                value;
+
+              row[index + 2] =
+                value;
+
+              row[index + 3] =
+                255;
+
+              continue;
+            }
+
+            /*
+             * Safety.
+             */
+
+            if (
+              sourceX < 0
+            ) {
+              sourceX =
+                x %
+                PATTERN_PERIOD;
+            }
+
+            if (
+              sourceX >= x
+            ) {
+              sourceX =
+                x - 1;
+            }
 
             const source =
               sourceX * 4;
@@ -398,211 +846,87 @@ export default function StereogramCanvas({
             const target =
               x * 4;
 
+            /*
+             * Copy already generated pixel.
+             *
+             * This is what creates the controlled
+             * stereoscopic repetition.
+             */
+
             row[target] =
-              pattern[source];
+              row[source];
 
             row[target + 1] =
-              pattern[source + 1];
+              row[source + 1];
 
             row[target + 2] =
-              pattern[source + 2];
+              row[source + 2];
 
             row[target + 3] =
               255;
-
-            continue;
           }
 
-          /*
-           * Safety clamp.
-           */
-          if (
-            sourceX < 0
-          ) {
-            sourceX =
-              x % PATTERN_W;
-          }
-
-          if (
-            sourceX >= x
-          ) {
-            sourceX =
-              x - 1;
-          }
-
-          const source =
-            sourceX * 4;
-
-          const target =
-            x * 4;
-
-          row[target] =
-            row[source];
-
-          row[target + 1] =
-            row[source + 1];
-
-          row[target + 2] =
-            row[source + 2];
-
-          row[target + 3] =
-            255;
+          pixels.set(
+            row,
+            y * CANVAS_W * 4
+          );
         }
 
         /*
-         * Copy completed row.
+         * ------------------------------------------------
+         * DRAW FINAL STEREOGRAM
+         * ------------------------------------------------
          */
-        const rowStart =
-          y * CANVAS_W * 4;
 
-        output.set(
-          row,
-          rowStart
-        );
-      }
-
-      /*
-       * ------------------------------------------------
-       * DRAW GENERATED IMAGE
-       * ------------------------------------------------
-       */
-
-      ctx.putImageData(
-        image,
-        0,
-        0
-      );
-
-      /*
-       * ------------------------------------------------
-       * VERY FAINT HEART GUIDE
-       * ------------------------------------------------
-       */
-
-      drawSoftHeart(
-        ctx,
-        paletteObject.heartColor ||
-          palette.primary ||
-          '#ec4899'
-      );
-
-      /*
-       * ------------------------------------------------
-       * VIEWING DOTS
-       * ------------------------------------------------
-       */
-
-      ctx.save();
-
-      ctx.globalAlpha = 0.7;
-
-      ctx.fillStyle =
-        paletteObject.textColor ||
-        '#ffffff';
-
-      ctx.beginPath();
-
-      ctx.arc(
-        CANVAS_W / 2 - 18,
-        32,
-        3,
-        0,
-        Math.PI * 2
-      );
-
-      ctx.fill();
-
-      ctx.beginPath();
-
-      ctx.arc(
-        CANVAS_W / 2 + 18,
-        32,
-        3,
-        0,
-        Math.PI * 2
-      );
-
-      ctx.fill();
-
-      ctx.restore();
-
-      /*
-       * ------------------------------------------------
-       * PARTNER NAME
-       * ------------------------------------------------
-       *
-       * Only a subtle visible label for now.
-       * We will integrate the name into the depth map
-       * after the heart engine is confirmed.
-       */
-
-      if (
-        config.name &&
-        config.name.trim()
-      ) {
-        ctx.save();
-
-        ctx.globalAlpha =
-          0.08;
-
-        ctx.filter =
-          'blur(1px)';
-
-        ctx.fillStyle =
-          paletteObject.textColor ||
-          palette.primary ||
-          '#ffffff';
-
-        ctx.font =
-          '600 14px system-ui, sans-serif';
-
-        ctx.textAlign =
-          'center';
-
-        ctx.fillText(
-          config.name.trim(),
-          CANVAS_W / 2,
-          CANVAS_H - 30
+        ctx.putImageData(
+          image,
+          0,
+          0
         );
 
-        ctx.restore();
-      }
+        /*
+         * IMPORTANT:
+         *
+         * No heart.
+         * No partner name.
+         * No face outline.
+         * No text.
+         * No visible guide.
+         *
+         * The canvas itself is ONLY the stereogram.
+         */
 
-      /*
-       * ------------------------------------------------
-       * SHARE IMAGE
-       * ------------------------------------------------
-       */
+        /*
+         * ------------------------------------------------
+         * EXPORT FOR SHARE CARD
+         * ------------------------------------------------
+         */
 
-      const dataUrl =
-        canvas.toDataURL(
-          'image/png'
-        );
+        const dataUrl =
+          canvas.toDataURL(
+            'image/png'
+          );
 
-      if (onCanvasReady) {
-        onCanvasReady(
+        onCanvasReady?.(
           dataUrl
         );
+      } catch (error) {
+        console.error(
+          'Love Magic Eye render error:',
+          error
+        );
+      } finally {
+        /*
+         * Never leave the spinner running.
+         */
+        setRendering(false);
       }
-    } catch (error) {
-      /*
-       * Important:
-       * A rendering error must NEVER leave the
-       * loading spinner permanently active.
-       */
-      console.error(
-        'Love Magic Eye rendering error:',
-        error
-      );
-    } finally {
-      setRendering(false);
-    }
-  }, [
-    config,
-    paletteIndex,
-    generateKey,
-    onCanvasReady,
-  ]);
+    }, [
+      config,
+      paletteIndex,
+      generateKey,
+      onCanvasReady,
+    ]);
 
   useEffect(() => {
     if (
@@ -613,9 +937,7 @@ export default function StereogramCanvas({
 
     const frame =
       window.requestAnimationFrame(
-        () => {
-          render();
-        }
+        render
       );
 
     return () => {
@@ -628,36 +950,30 @@ export default function StereogramCanvas({
     render,
   ]);
 
-  const palette: ColorPalette =
+  const palette =
     PALETTES[
       paletteIndex %
         PALETTES.length
     ];
 
+  const glow =
+    getPaletteValue(
+      palette,
+      'primary',
+      '#8b5cf6'
+    );
+
   return (
     <div className="flex w-full flex-col items-center">
       <div
-        className="relative mx-auto w-full max-w-[400px]"
+        className="relative mx-auto w-full max-w-[400px] overflow-hidden rounded-[1.5rem]"
         style={{
-          boxShadow: `
-            0 0 30px ${
-              palette.primary || '#8b5cf6'
-            }40,
-            0 0 60px ${
-              palette.secondary || '#ec4899'
-            }20
-          `,
-          borderRadius:
-            '1.5rem',
-          overflow:
-            'hidden',
-          border: `2px solid ${
-            palette.primary ||
-            '#8b5cf6'
-          }30`,
           background:
-            palette.bg ||
-            '#111827',
+            '#ffffff',
+          border:
+            `2px solid ${glow}30`,
+          boxShadow:
+            `0 0 35px ${glow}30`,
         }}
       >
         <canvas
@@ -670,43 +986,29 @@ export default function StereogramCanvas({
         />
 
         {rendering && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          <div className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+            <div
+              className="h-9 w-9 animate-spin rounded-full border-2 border-gray-300 border-t-purple-500"
+            />
           </div>
         )}
       </div>
 
       <p
-        className="mt-2 text-xs font-mono uppercase tracking-widest"
+        className="mt-3 text-xs font-mono uppercase tracking-[0.2em]"
         style={{
-          color:
-            palette.primary ||
-            '#8b5cf6',
+          color: glow,
         }}
       >
         {palette.name} Magic Eye
       </p>
 
-      <div
-        className="mt-3 max-w-[400px] px-5 text-center"
-        style={{
-          color:
-            palette.textColor ||
-            palette.primary ||
-            '#8b5cf6',
-        }}
-      >
-        <p className="text-sm font-medium">
-          Relax your eyes and look
-          slightly behind the screen.
-        </p>
-
-        <p className="mt-1 text-xs opacity-70">
-          A soft heart guide is
-          visible while the hidden
-          3D pattern is generated.
-        </p>
-      </div>
+      <p className="mt-2 max-w-[380px] px-4 text-center text-sm text-gray-600">
+        Relax your eyes and look slightly
+        behind the pattern. Let the repeated
+        shapes merge to reveal the hidden
+        3D image.
+      </p>
     </div>
   );
 }
