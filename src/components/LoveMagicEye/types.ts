@@ -8,6 +8,8 @@ export type HairStyle = 'bald' | 'curly' | 'straight';
 
 export type BeardStyle = 'clean' | 'stubble' | 'short' | 'full';
 
+export type GlassesStyle = 'none' | 'glasses';
+
 export interface MagicEyeConfig {
   name: string;
   gender: Gender;
@@ -15,6 +17,7 @@ export interface MagicEyeConfig {
   faceStructure: FaceStructure;
   hairStyle: HairStyle;
   beardStyle: BeardStyle;
+  glasses: GlassesStyle;
 }
 
 export const FACE_TONES: {
@@ -97,6 +100,20 @@ export const BEARD_STYLES: {
   },
 ];
 
+export const GLASSES_STYLES: {
+  id: GlassesStyle;
+  label: string;
+}[] = [
+  {
+    id: 'none',
+    label: 'No Glasses',
+  },
+  {
+    id: 'glasses',
+    label: 'Glasses',
+  },
+];
+
 export const DEFAULT_CONFIG: MagicEyeConfig = {
   name: '',
   gender: 'female',
@@ -104,4 +121,5 @@ export const DEFAULT_CONFIG: MagicEyeConfig = {
   faceStructure: 'oval',
   hairStyle: 'straight',
   beardStyle: 'clean',
+  glasses: 'none',
 };
