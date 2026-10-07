@@ -509,7 +509,8 @@ export default function Home() {
   
                   
                   
-                  Authentic
+                  <span className="block text-purple-600">Authentic</span>
+
   
 
                           
