@@ -503,9 +503,9 @@ export default function Home() {
 
                 </div>
 
-<h1 className="max-w-xl text-4xl font-bold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.6rem] flex flex-col">
-    <span>Build</span>
-    <span>Authentic</span>
+<h1 className="max-w-xl text-4xl font-bold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.6rem]">
+    <span className="block">Build</span>
+    <span className="block">Authentic</span>
     <span className="block bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">
         Connections Beyond the Screen
     </span>
