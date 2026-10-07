@@ -503,22 +503,14 @@ export default function Home() {
 
                 </div>
 
-<h1 className="max-w-xl text-4xl font-bold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.6rem] xl:text-[4rem]">
+<h1 className="max-w-xl text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-[3.6rem] xl:text-[4rem]">
+  <span className="block text-purple-600">Build</span>
+  <span className="block text-purple-600">Authentic</span>
+  <span className="mt-1 block bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">
+    Connections Beyond the Screen
+  </span>
+</h1>
 
-                  Build
-  
-                  
-                  
-                  <span className="block text-purple-600">Authentic</span>
-
-  
-
-                          
-                  <span className="mt-1 block bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">
-                    Connections Beyond the Screen
-                  </span>
-
-                </h1>
                 <p className="mt-5 max-w-xl text-base leading-7 text-slate-500 sm:text-lg">
                   Tired of endless swiping? Move away from algorithms and discover real-world screen-free love with our actionable guides off-app dating strategies and psychological insights.
                 </p>
