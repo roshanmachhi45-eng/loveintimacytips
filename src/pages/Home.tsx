@@ -506,8 +506,11 @@ export default function Home() {
 <h1 className="max-w-xl text-4xl font-bold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.6rem] xl:text-[4rem]">
 
                   Build
+  
                   
-                  <span className="block text-slate-900">Authentic</span>
+                  
+                  Authentic
+  
 
                           
                   <span className="mt-1 block bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">
