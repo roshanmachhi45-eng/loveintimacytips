@@ -507,10 +507,8 @@ export default function Home() {
 
                   Build
                   
-
-                  <span className="block text-slate-900">Authentic</span>
-
-
+                  Authentic
+                          
                   <span className="mt-1 block bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">
                     Connections Beyond the Screen
                   </span>
