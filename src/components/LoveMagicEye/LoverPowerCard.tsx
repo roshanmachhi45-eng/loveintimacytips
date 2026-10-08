@@ -19,96 +19,53 @@ export default function LoverPowerCard({
 
   const faceWidth =
     config.faceStructure === 'round'
-      ? 118
+      ? 112
       : config.faceStructure === 'square'
-        ? 126
-        : 112;
+        ? 120
+        : 108;
 
   const faceHeight =
     config.faceStructure === 'round'
-      ? 132
+      ? 120
       : config.faceStructure === 'square'
-        ? 128
-        : 142;
+        ? 116
+        : 130;
 
   const displayName =
     config.name.trim().slice(0, 20) || 'YOUR LOVER';
 
   return (
-    <div className="mx-auto w-full max-w-[600px] px-2 sm:px-4">
+    <div className="mx-auto w-full max-w-[560px] px-1 sm:px-3">
       <div
         className="
-          relative overflow-hidden rounded-[28px]
+          relative overflow-hidden rounded-[26px]
           border-[4px] border-black
-          bg-[#171022]
-          shadow-[0_14px_0_#000,0_22px_40px_rgba(0,0,0,0.35)]
+          bg-[#120c1c]
+          shadow-[0_10px_0_#000,0_18px_32px_rgba(0,0,0,0.28)]
         "
       >
-        {/* Decorative background */}
+        {/* Background glow */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div
-            className="
-              absolute -left-24 -top-24 h-64 w-64 rounded-full
-              bg-pink-500/30 blur-3xl
-            "
-          />
+          <div className="absolute -left-20 -top-20 h-52 w-52 rounded-full bg-pink-500/25 blur-3xl" />
+          <div className="absolute -right-20 top-32 h-60 w-60 rounded-full bg-violet-500/25 blur-3xl" />
+          <div className="absolute bottom-0 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-fuchsia-500/10 blur-3xl" />
 
-          <div
-            className="
-              absolute -right-24 top-40 h-72 w-72 rounded-full
-              bg-violet-500/30 blur-3xl
-            "
-          />
-
-          <div
-            className="
-              absolute bottom-0 left-1/2 h-80 w-80
-              -translate-x-1/2 rounded-full
-              bg-fuchsia-500/10 blur-3xl
-            "
-          />
-
-          {/* Comic rays */}
-          <div className="absolute inset-0 opacity-20">
-            <div
-              className="
-                absolute left-1/2 top-[28%] h-[500px] w-[3px]
-                -translate-x-1/2 rotate-[18deg] bg-white
-              "
-            />
-            <div
-              className="
-                absolute left-1/2 top-[28%] h-[500px] w-[3px]
-                -translate-x-1/2 -rotate-[18deg] bg-white
-              "
-            />
-            <div
-              className="
-                absolute left-1/2 top-[28%] h-[500px] w-[3px]
-                -translate-x-1/2 rotate-[42deg] bg-white
-              "
-            />
-            <div
-              className="
-                absolute left-1/2 top-[28%] h-[500px] w-[3px]
-                -translate-x-1/2 -rotate-[42deg] bg-white
-              "
-            />
-          </div>
+          <div className="absolute left-[8%] top-[25%] h-px w-[85%] rotate-[18deg] bg-white/10" />
+          <div className="absolute left-[8%] top-[42%] h-px w-[85%] rotate-[-16deg] bg-white/10" />
         </div>
 
-        {/* Main card content */}
-        <div className="relative z-10 p-3 sm:p-5">
+        <div className="relative z-10 p-3 sm:p-4">
 
-          {/* Top label */}
-          <div className="mb-2 flex items-center justify-between gap-2">
+          {/* Top strip */}
+          <div className="mb-2.5 flex items-center justify-between gap-2">
             <div
               className="
                 rounded-full border-2 border-black
                 bg-yellow-300 px-3 py-1
-                text-[10px] font-black uppercase tracking-[0.16em]
-                text-black shadow-[3px_3px_0_#000]
-                sm:text-xs
+                text-[9px] font-black uppercase
+                tracking-[0.15em] text-black
+                shadow-[3px_3px_0_#000]
+                sm:text-[10px]
               "
             >
               LOVEONS • POWER CARD
@@ -118,7 +75,7 @@ export default function LoverPowerCard({
               className="
                 rounded-full border-2 border-black
                 bg-white px-3 py-1
-                text-[10px] font-black text-black
+                text-[9px] font-black text-black
                 shadow-[3px_3px_0_#000]
               "
             >
@@ -126,29 +83,23 @@ export default function LoverPowerCard({
             </div>
           </div>
 
-          {/* Name title */}
+          {/* Name */}
           <div
             className="
               relative overflow-hidden rounded-2xl
               border-[3px] border-black
               bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-600
-              px-4 py-3
-              text-center
-              shadow-[5px_5px_0_#000]
+              px-3 py-2.5 text-center
+              shadow-[4px_4px_0_#000]
             "
           >
-            <div
-              className="
-                absolute inset-x-0 top-0 h-1/2
-                bg-white/15
-              "
-            />
+            <div className="absolute inset-x-0 top-0 h-1/2 bg-white/10" />
 
             <h2
               className="
                 relative z-10 break-words
                 text-xl font-black uppercase italic
-                tracking-tight text-white
+                leading-none tracking-tight text-white
                 [text-shadow:3px_3px_0_#000]
                 sm:text-2xl
               "
@@ -158,63 +109,57 @@ export default function LoverPowerCard({
 
             <p
               className="
-                relative z-10 mt-0.5
-                text-[10px] font-black uppercase
-                tracking-[0.3em] text-yellow-300
+                relative z-10 mt-1
+                text-[8px] font-black uppercase
+                tracking-[0.32em] text-yellow-300
                 [text-shadow:1px_1px_0_#000]
-                sm:text-xs
+                sm:text-[10px]
               "
             >
               THE LOVE BOSS
             </p>
           </div>
 
-          {/* Character area */}
+          {/* Character panel */}
           <div
             className="
-              relative mt-4 overflow-hidden rounded-2xl
+              relative mt-3 overflow-hidden rounded-2xl
               border-[3px] border-black
-              bg-gradient-to-b from-[#3b195b] via-[#24133b] to-[#100b18]
-              shadow-[5px_5px_0_#000]
+              bg-gradient-to-b from-[#32145a] via-[#21112f] to-[#110a18]
+              shadow-[4px_4px_0_#000]
             "
           >
-            {/* Character glow */}
-            <div
-              className="
-                absolute left-1/2 top-[52%]
-                h-48 w-48 -translate-x-1/2 -translate-y-1/2
-                rounded-full bg-pink-500/30 blur-3xl
-              "
-            />
-
-            {/* Sparkles */}
-            <div className="absolute left-4 top-5 text-xl text-yellow-300">
+            {/* Decorative stars */}
+            <span className="absolute left-4 top-4 text-xl text-yellow-300">
               ✦
-            </div>
+            </span>
 
-            <div className="absolute right-5 top-8 text-lg text-pink-300">
+            <span className="absolute right-5 top-6 text-lg text-pink-300">
               ✦
-            </div>
+            </span>
 
-            <div className="absolute left-8 top-28 text-sm text-white/70">
+            <span className="absolute left-8 top-24 text-sm text-white/60">
               ✧
-            </div>
+            </span>
 
-            <div className="absolute right-10 top-36 text-xl text-fuchsia-300">
+            <span className="absolute right-8 top-28 text-xl text-fuchsia-300">
               ✦
-            </div>
+            </span>
 
-            {/* Character SVG */}
-            <div className="relative flex h-[330px] items-end justify-center sm:h-[360px]">
+            {/* Glow */}
+            <div className="absolute left-1/2 top-[48%] h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full bg-fuchsia-500/20 blur-3xl" />
+
+            {/* Character */}
+            <div className="relative flex h-[270px] items-end justify-center sm:h-[300px]">
               <svg
-                viewBox="0 0 360 380"
-                className="h-full w-full max-w-[360px]"
+                viewBox="0 0 360 330"
+                className="h-full w-full max-w-[350px]"
                 role="img"
-                aria-label={`${displayName} anime love power avatar`}
+                aria-label={`${displayName} anime love character`}
               >
                 <defs>
                   <linearGradient
-                    id="bodyGradient"
+                    id="lpBody"
                     x1="0"
                     y1="0"
                     x2="1"
@@ -225,7 +170,7 @@ export default function LoverPowerCard({
                   </linearGradient>
 
                   <linearGradient
-                    id="hairGradient"
+                    id="lpHair"
                     x1="0"
                     y1="0"
                     x2="1"
@@ -233,87 +178,87 @@ export default function LoverPowerCard({
                   >
                     <stop
                       offset="0%"
-                      stopColor={isFemale ? '#ff4fa3' : '#7c3aed'}
+                      stopColor={isFemale ? '#ff4fa3' : '#8b5cf6'}
                     />
                     <stop
                       offset="100%"
-                      stopColor={isFemale ? '#7c3aed' : '#312e81'}
+                      stopColor={isFemale ? '#8b5cf6' : '#312e81'}
                     />
                   </linearGradient>
 
                   <linearGradient
-                    id="eyeGradient"
+                    id="lpEye"
                     x1="0"
                     y1="0"
                     x2="0"
                     y2="1"
                   >
                     <stop offset="0%" stopColor="#ffffff" />
-                    <stop offset="100%" stopColor="#ffd6f2" />
+                    <stop offset="100%" stopColor="#ffd6f5" />
                   </linearGradient>
 
-                  <filter id="avatarShadow">
-                    <feDropShadow
-                      dx="0"
-                      dy="7"
-                      stdDeviation="5"
-                      floodColor="#000000"
-                      floodOpacity="0.55"
-                    />
-                  </filter>
+                  <linearGradient
+                    id="lpIris"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="0%" stopColor="#d946ef" />
+                    <stop offset="100%" stopColor="#5b21b6" />
+                  </linearGradient>
                 </defs>
 
-                {/* Cape / shoulders */}
+                {/* Shoulder / body */}
                 <path
-                  d="M74 380 C82 316 112 292 180 288 C248 292 278 316 286 380Z"
-                  fill="url(#bodyGradient)"
+                  d="M72 330 C78 274 116 254 180 254 C244 254 282 274 288 330Z"
+                  fill="url(#lpBody)"
                   stroke="#000"
                   strokeWidth="8"
                 />
 
-                {/* Collar */}
+                {/* Inner shirt */}
                 <path
-                  d="M139 300 L180 338 L221 300 L238 380 L122 380Z"
-                  fill="#17101f"
+                  d="M128 330 L145 266 L180 295 L215 266 L232 330Z"
+                  fill="#17111f"
                   stroke="#000"
                   strokeWidth="7"
                 />
 
                 {/* Neck */}
                 <path
-                  d="M151 272 L151 314 Q180 335 209 314 L209 272Z"
+                  d="M151 237 L151 274 Q180 294 209 274 L209 237Z"
                   fill={faceColor}
                   stroke="#000"
                   strokeWidth="7"
                 />
 
-                {/* Hair behind face */}
+                {/* Hair behind head */}
                 {config.hairStyle !== 'bald' && (
                   <path
                     d={
                       config.hairStyle === 'curly'
-                        ? 'M111 172 Q94 123 118 90 Q132 53 180 55 Q228 53 242 90 Q266 123 249 172 L231 135 Q218 107 180 108 Q142 107 129 135Z'
-                        : 'M108 170 Q91 117 116 82 Q138 48 180 50 Q222 48 244 82 Q269 117 252 170 L232 125 Q214 90 180 90 Q146 90 128 125Z'
+                        ? 'M105 150 Q88 105 108 72 Q125 39 180 42 Q235 39 252 72 Q272 105 255 150 L235 119 Q219 91 180 91 Q141 91 125 119Z'
+                        : 'M104 151 Q87 98 110 62 Q133 32 180 35 Q227 32 250 62 Q273 98 256 151 L235 110 Q215 78 180 78 Q145 78 125 110Z'
                     }
-                    fill="url(#hairGradient)"
+                    fill="url(#lpHair)"
                     stroke="#000"
                     strokeWidth="8"
-                    filter="url(#avatarShadow)"
                   />
                 )}
 
                 {/* Face */}
                 <rect
                   x={180 - faceWidth / 2}
-                  y={88}
+                  y="72"
                   width={faceWidth}
                   height={faceHeight}
                   rx={
                     config.faceStructure === 'square'
-                      ? 28
+                      ? 24
                       : config.faceStructure === 'round'
-                        ? 55
-                        : 48
+                        ? 52
+                        : 45
                   }
                   fill={faceColor}
                   stroke="#000"
@@ -325,50 +270,50 @@ export default function LoverPowerCard({
                   <>
                     {config.hairStyle === 'straight' ? (
                       <path
-                        d="M111 128 Q111 66 180 63 Q249 66 249 128 L229 107 Q214 87 180 87 Q146 87 131 107Z"
-                        fill="url(#hairGradient)"
+                        d="M106 113 Q108 52 180 48 Q252 52 254 113 L230 92 Q212 69 180 69 Q148 69 130 92Z"
+                        fill="url(#lpHair)"
                         stroke="#000"
                         strokeWidth="7"
                       />
                     ) : (
                       <>
                         <circle
-                          cx="122"
-                          cy="101"
-                          r="24"
-                          fill="url(#hairGradient)"
+                          cx="116"
+                          cy="85"
+                          r="23"
+                          fill="url(#lpHair)"
                           stroke="#000"
                           strokeWidth="6"
                         />
                         <circle
-                          cx="146"
-                          cy="77"
-                          r="27"
-                          fill="url(#hairGradient)"
+                          cx="143"
+                          cy="58"
+                          r="26"
+                          fill="url(#lpHair)"
                           stroke="#000"
                           strokeWidth="6"
                         />
                         <circle
                           cx="180"
-                          cy="69"
-                          r="30"
-                          fill="url(#hairGradient)"
+                          cy="51"
+                          r="29"
+                          fill="url(#lpHair)"
                           stroke="#000"
                           strokeWidth="6"
                         />
                         <circle
-                          cx="214"
-                          cy="77"
-                          r="27"
-                          fill="url(#hairGradient)"
+                          cx="217"
+                          cy="58"
+                          r="26"
+                          fill="url(#lpHair)"
                           stroke="#000"
                           strokeWidth="6"
                         />
                         <circle
-                          cx="238"
-                          cy="101"
-                          r="24"
-                          fill="url(#hairGradient)"
+                          cx="244"
+                          cy="85"
+                          r="23"
+                          fill="url(#lpHair)"
                           stroke="#000"
                           strokeWidth="6"
                         />
@@ -379,88 +324,88 @@ export default function LoverPowerCard({
 
                 {/* Eyebrows */}
                 <path
-                  d="M131 153 Q148 143 161 151"
+                  d="M130 132 Q146 123 160 130"
                   fill="none"
-                  stroke="#25151b"
-                  strokeWidth="7"
+                  stroke="#28171d"
+                  strokeWidth="6"
                   strokeLinecap="round"
                 />
 
                 <path
-                  d="M199 151 Q212 143 229 153"
+                  d="M200 130 Q214 123 230 132"
                   fill="none"
-                  stroke="#25151b"
-                  strokeWidth="7"
+                  stroke="#28171d"
+                  strokeWidth="6"
                   strokeLinecap="round"
                 />
 
-                {/* Left anime eye */}
+                {/* Left eye */}
                 <ellipse
-                  cx="147"
-                  cy="176"
-                  rx="23"
-                  ry="27"
-                  fill="url(#eyeGradient)"
+                  cx="146"
+                  cy="157"
+                  rx="22"
+                  ry="25"
+                  fill="url(#lpEye)"
                   stroke="#000"
-                  strokeWidth="6"
+                  strokeWidth="5"
                 />
 
                 <ellipse
-                  cx="147"
-                  cy="181"
+                  cx="146"
+                  cy="161"
                   rx="12"
                   ry="17"
-                  fill="#7c3aed"
+                  fill="url(#lpIris)"
                   stroke="#000"
                   strokeWidth="3"
                 />
 
                 <ellipse
-                  cx="147"
-                  cy="184"
-                  rx="6"
-                  ry="10"
+                  cx="146"
+                  cy="165"
+                  rx="5"
+                  ry="9"
                   fill="#111827"
                 />
 
-                <circle cx="142" cy="170" r="5" fill="#fff" />
-                <circle cx="152" cy="177" r="2.5" fill="#fff" />
+                <circle cx="140" cy="151" r="5" fill="#fff" />
+                <circle cx="151" cy="157" r="2.5" fill="#fff" />
 
-                {/* Right anime eye */}
+                {/* Right eye */}
                 <ellipse
-                  cx="213"
-                  cy="176"
-                  rx="23"
-                  ry="27"
-                  fill="url(#eyeGradient)"
+                  cx="214"
+                  cy="157"
+                  rx="22"
+                  ry="25"
+                  fill="url(#lpEye)"
                   stroke="#000"
-                  strokeWidth="6"
+                  strokeWidth="5"
                 />
 
                 <ellipse
-                  cx="213"
-                  cy="181"
+                  cx="214"
+                  cy="161"
                   rx="12"
                   ry="17"
-                  fill="#7c3aed"
+                  fill="url(#lpIris)"
                   stroke="#000"
                   strokeWidth="3"
                 />
 
                 <ellipse
-                  cx="213"
-                  cy="184"
-                  rx="6"
-                  ry="10"
+                  cx="214"
+                  cy="165"
+                  rx="5"
+                  ry="9"
                   fill="#111827"
                 />
 
-                <circle cx="208" cy="170" r="5" fill="#fff" />
-                <circle cx="218" cy="177" r="2.5" fill="#fff" />
+                <circle cx="208" cy="151" r="5" fill="#fff" />
+                <circle cx="219" cy="157" r="2.5" fill="#fff" />
 
                 {/* Blush */}
                 <path
-                  d="M124 215 l8 3 M122 221 l9 3 M236 215 l-8 3 M238 221 l-9 3"
+                  d="M123 194 l8 3 M121 200 l9 3 M237 194 l-8 3 M239 200 l-9 3"
                   stroke="#ff4f81"
                   strokeWidth="4"
                   strokeLinecap="round"
@@ -468,7 +413,7 @@ export default function LoverPowerCard({
 
                 {/* Nose */}
                 <path
-                  d="M180 190 Q175 207 181 209"
+                  d="M180 174 Q175 190 181 192"
                   fill="none"
                   stroke="#6b3f32"
                   strokeWidth="4"
@@ -477,7 +422,7 @@ export default function LoverPowerCard({
 
                 {/* Smile */}
                 <path
-                  d="M163 222 Q180 239 197 222"
+                  d="M163 204 Q180 219 197 204"
                   fill="none"
                   stroke="#4a1f2c"
                   strokeWidth="5"
@@ -487,60 +432,56 @@ export default function LoverPowerCard({
                 {/* Glasses */}
                 {config.glasses === 'glasses' && (
                   <g
-                    fill="none"
+                    fill="rgba(255,255,255,0.10)"
                     stroke="#111827"
                     strokeWidth="6"
                   >
                     <rect
-                      x="119"
-                      y="155"
-                      width="53"
-                      height="42"
+                      x="117"
+                      y="138"
+                      width="57"
+                      height="43"
                       rx="13"
-                      fill="#ffffff"
-                      fillOpacity="0.16"
                     />
 
                     <rect
-                      x="188"
-                      y="155"
-                      width="53"
-                      height="42"
+                      x="186"
+                      y="138"
+                      width="57"
+                      height="43"
                       rx="13"
-                      fill="#ffffff"
-                      fillOpacity="0.16"
                     />
 
-                    <path d="M172 171 Q180 166 188 171" />
+                    <path d="M174 153 Q180 149 186 153" />
 
                     <path
-                      d="M119 166 L105 160"
+                      d="M117 149 L103 144"
                       strokeLinecap="round"
                     />
 
                     <path
-                      d="M241 166 L255 160"
+                      d="M243 149 L257 144"
                       strokeLinecap="round"
                     />
                   </g>
                 )}
 
-                {/* Beard - male only */}
+                {/* Beard */}
                 {!isFemale && config.beardStyle !== 'clean' && (
                   <path
                     d={
                       config.beardStyle === 'stubble'
-                        ? 'M139 222 Q180 248 221 222 L214 249 Q180 267 146 249Z'
+                        ? 'M138 201 Q180 228 222 201 L216 226 Q180 242 144 226Z'
                         : config.beardStyle === 'short'
-                          ? 'M135 219 Q180 255 225 219 L218 260 Q180 280 142 260Z'
-                          : 'M131 217 Q180 260 229 217 L220 279 Q180 307 140 279Z'
+                          ? 'M134 199 Q180 232 226 199 L218 242 Q180 258 142 242Z'
+                          : 'M130 198 Q180 237 230 198 L220 263 Q180 283 140 263Z'
                     }
                     fill="#34251f"
                     fillOpacity={
                       config.beardStyle === 'stubble'
-                        ? 0.45
+                        ? 0.42
                         : config.beardStyle === 'short'
-                          ? 0.75
+                          ? 0.78
                           : 1
                     }
                     stroke="#000"
@@ -548,17 +489,17 @@ export default function LoverPowerCard({
                   />
                 )}
 
-                {/* Heart power symbol */}
+                {/* Heart */}
                 <path
-                  d="M180 326 C168 312 143 328 180 355 C217 328 192 312 180 326Z"
+                  d="M180 277 C168 263 145 278 180 303 C215 278 192 263 180 277Z"
                   fill="#ff2f92"
                   stroke="#000"
                   strokeWidth="5"
                 />
 
-                {/* Character sparkle */}
+                {/* Power sparkle */}
                 <path
-                  d="M279 116 L284 129 L297 134 L284 139 L279 152 L274 139 L261 134 L274 129Z"
+                  d="M277 105 L282 118 L295 123 L282 128 L277 141 L272 128 L259 123 L272 118Z"
                   fill="#ffe14a"
                   stroke="#000"
                   strokeWidth="3"
@@ -566,15 +507,15 @@ export default function LoverPowerCard({
               </svg>
             </div>
 
-            {/* Character type badge */}
+            {/* Character badge */}
             <div
               className="
-                absolute bottom-3 left-1/2
+                absolute bottom-2.5 left-1/2
                 -translate-x-1/2
                 rounded-full border-2 border-black
-                bg-white px-4 py-1.5
-                text-[10px] font-black uppercase
-                tracking-[0.18em] text-black
+                bg-white px-4 py-1
+                text-[9px] font-black uppercase
+                tracking-[0.16em] text-black
                 shadow-[3px_3px_0_#000]
               "
             >
@@ -582,66 +523,62 @@ export default function LoverPowerCard({
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="mt-4">
-            <div
+          {/* Stats heading */}
+          <div className="mt-3 flex items-center justify-between">
+            <h3
               className="
-                mb-2 flex items-center justify-between
-                text-white
+                text-xs font-black uppercase italic
+                tracking-[0.12em] text-white
+                [text-shadow:2px_2px_0_#000]
+                sm:text-sm
               "
             >
-              <h3
-                className="
-                  text-sm font-black uppercase italic
-                  tracking-[0.12em]
-                  [text-shadow:2px_2px_0_#000]
-                "
-              >
-                Partner Stats
-              </h3>
+              Partner Stats
+            </h3>
 
-              <span className="text-xs font-bold text-pink-300">
-                POWER RANK
-              </span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <StatBox
-                label="Arguments Won"
-                value="99%"
-                type="danger"
-              />
-
-              <StatBox
-                label="Patience Level"
-                value="12%"
-                type="warning"
-                warning
-              />
-
-              <StatBox
-                label="Cuteness"
-                value="100%"
-                type="success"
-              />
-            </div>
+            <span className="text-[9px] font-black uppercase text-pink-300 sm:text-[10px]">
+              POWER RANK
+            </span>
           </div>
 
-          {/* Special ability */}
+          {/* Stats */}
+          <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+            <StatBox
+              label="Arguments Won"
+              value="99%"
+              type="danger"
+            />
+
+            <StatBox
+              label="Patience Level"
+              value="12%"
+              type="warning"
+              warning
+            />
+
+            <StatBox
+              label="Cuteness"
+              value="100%"
+              type="success"
+            />
+          </div>
+
+          {/* Ability */}
           <div
             className="
-              mt-4 rounded-2xl border-[3px] border-dashed
-              border-pink-300 bg-black/30
-              p-4
+              mt-2.5 rounded-xl border-2 border-dashed
+              border-pink-300 bg-black/25
+              px-3 py-2.5
             "
           >
-            <div className="mb-1 flex items-center gap-2">
-              <span className="text-lg">⚡</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm">⚡</span>
 
               <span
                 className="
-                  text-xs font-black uppercase
+                  text-[9px] font-black uppercase
                   tracking-[0.12em] text-yellow-300
+                  sm:text-[10px]
                 "
               >
                 Special Ability
@@ -650,51 +587,49 @@ export default function LoverPowerCard({
 
             <h4
               className="
-                text-lg font-black uppercase italic
+                mt-0.5 text-base font-black uppercase italic
                 text-white
                 [text-shadow:2px_2px_0_#000]
+                sm:text-lg
               "
             >
               Emotional Damage
             </h4>
 
-            <p className="mt-1 text-xs font-medium leading-relaxed text-white/80">
+            <p className="mt-0.5 text-[10px] leading-relaxed text-white/75 sm:text-xs">
               Can get any gift by just looking cute.
             </p>
           </div>
 
-          {/* Bottom power strip */}
+          {/* Love power */}
           <div
             className="
-              mt-4 flex items-center justify-between
+              mt-2.5 flex items-center justify-between
               rounded-xl border-[3px] border-black
-              bg-yellow-300 px-3 py-2
-              text-black shadow-[4px_4px_0_#000]
+              bg-yellow-300 px-3 py-1.5
+              text-black shadow-[3px_3px_0_#000]
             "
           >
-            <span className="text-[10px] font-black uppercase tracking-wider">
+            <span className="text-[9px] font-black uppercase tracking-wider">
               LOVE POWER
             </span>
 
-            <div className="flex items-center gap-1">
-              <span className="text-sm">♥</span>
-              <span className="text-sm">♥</span>
-              <span className="text-sm">♥</span>
-              <span className="text-sm">♥</span>
-              <span className="text-sm">♥</span>
+            <div className="flex items-center gap-0.5 text-xs">
+              ♥ ♥ ♥ ♥ ♥
             </div>
 
-            <span className="text-[10px] font-black uppercase tracking-wider">
+            <span className="text-[9px] font-black uppercase tracking-wider">
               MAX
             </span>
           </div>
 
           {/* Footer */}
-          <div className="mt-4 text-center">
+          <div className="mt-2 text-center">
             <p
               className="
-                text-[10px] font-black uppercase
-                tracking-[0.28em] text-white/60
+                text-[8px] font-black uppercase
+                tracking-[0.3em] text-white/55
+                sm:text-[9px]
               "
             >
               Loveons.com
@@ -746,16 +681,16 @@ function StatBox({
       className={`
         relative rounded-xl border-2
         ${current.border} ${current.bg}
-        px-2 py-3 text-center
+        px-1.5 py-2 text-center
       `}
     >
       {warning && (
         <span
           className="
-            absolute -right-1.5 -top-2
+            absolute -right-1 -top-2
             rounded-full border-2 border-black
             bg-orange-400 px-1.5 py-0.5
-            text-[7px] font-black uppercase
+            text-[6px] font-black uppercase
             text-black
           "
         >
@@ -765,10 +700,10 @@ function StatBox({
 
       <div
         className={`
-          text-xl font-black
+          text-lg font-black
           ${current.value}
           [text-shadow:1px_1px_0_#000]
-          sm:text-2xl
+          sm:text-xl
         `}
       >
         {value}
@@ -776,9 +711,9 @@ function StatBox({
 
       <div
         className="
-          mt-1 text-[8px] font-bold
+          mt-0.5 text-[7px] font-bold
           uppercase leading-tight text-white/65
-          sm:text-[9px]
+          sm:text-[8px]
         "
       >
         {label}
