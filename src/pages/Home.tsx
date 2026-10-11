@@ -793,7 +793,7 @@ export default function Home() {
                 </div>
 
                 <h3 className="font-display text-lg font-bold text-slate-900 sm:text-xl">
-                  Love Magic Eye
+                  Lover Astro Card
                 </h3>
 
                 <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
