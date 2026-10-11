@@ -32,7 +32,7 @@ const TOOLS = [
   },
   {
     id: 'love-magic-eye',
-    label: 'Love Magic Eye Tool',
+    label: 'Lover Astro Card',
     icon: Eye,
   },
 ];
