@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { MagicEyeConfig } from './types';
 import { getCosmicDailyResult } from './cosmicCardLogic';
@@ -6,15 +7,35 @@ interface LoverPowerCardProps {
   config: MagicEyeConfig;
 }
 
+const DISCLAIMER =
+  'Disclaimer: For entertainment and romantic inspiration only. Not a scientific prediction.';
+
+const SITE_URL = 'https://loveons.com/';
+
 function StarField() {
   const stars = [
-    [8, 12, 2], [19, 25, 1.5], [85, 11, 2],
-    [92, 29, 1.5], [12, 42, 1], [78, 37, 2],
-    [90, 53, 1], [7, 65, 2], [24, 72, 1.5],
-    [83, 76, 2], [15, 88, 1], [94, 91, 1.5],
-    [35, 9, 1], [67, 18, 1.5], [6, 31, 1],
-    [95, 43, 1.5], [28, 56, 1], [72, 61, 1.5],
-    [42, 81, 2], [62, 91, 1],
+    [8, 12, 1.4],
+    [19, 25, 1],
+    [85, 11, 1.5],
+    [92, 29, 1],
+    [12, 42, 0.8],
+    [78, 37, 1.5],
+    [90, 53, 0.8],
+    [7, 65, 1.5],
+    [24, 72, 1],
+    [83, 76, 1.5],
+    [15, 88, 0.8],
+    [94, 91, 1],
+    [35, 9, 0.8],
+    [67, 18, 1],
+    [6, 31, 0.8],
+    [95, 43, 1],
+    [28, 56, 0.8],
+    [72, 61, 1],
+    [42, 81, 1.5],
+    [62, 91, 0.8],
+    [48, 16, 0.8],
+    [56, 70, 1],
   ];
 
   return (
@@ -46,35 +67,41 @@ function PlanetArtwork({
     <svg
       viewBox="0 0 320 270"
       role="img"
-      aria-label="A glowing planet floating in a cosmic nebula"
+      aria-label="A glowing planet in a cosmic universe"
       className="h-auto w-full"
     >
       <defs>
-        <radialGradient id="cosmicPlanetSurface" cx="30%" cy="25%" r="80%">
+        <radialGradient id="loveonsPlanetSurface" cx="30%" cy="25%" r="80%">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
           <stop offset="22%" stopColor={secondary} />
           <stop offset="62%" stopColor={primary} />
           <stop offset="100%" stopColor="#130b31" />
         </radialGradient>
 
-        <linearGradient id="cosmicPlanetRing" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient
+          id="loveonsPlanetRing"
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="100%"
+        >
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.1" />
           <stop offset="40%" stopColor={secondary} />
           <stop offset="70%" stopColor={primary} />
           <stop offset="100%" stopColor="#ffffff" stopOpacity="0.25" />
         </linearGradient>
 
-        <radialGradient id="cosmicPlanetGlow">
+        <radialGradient id="loveonsPlanetGlow">
           <stop offset="0%" stopColor={glow} stopOpacity="0.65" />
           <stop offset="65%" stopColor={glow} stopOpacity="0.16" />
           <stop offset="100%" stopColor={glow} stopOpacity="0" />
         </radialGradient>
 
-        <clipPath id="cosmicPlanetClip">
+        <clipPath id="loveonsPlanetClip">
           <circle cx="160" cy="126" r="68" />
         </clipPath>
 
-        <filter id="cosmicPlanetShadow">
+        <filter id="loveonsPlanetShadow">
           <feGaussianBlur stdDeviation="9" />
         </filter>
       </defs>
@@ -83,7 +110,7 @@ function PlanetArtwork({
         cx="160"
         cy="126"
         r="112"
-        fill="url(#cosmicPlanetGlow)"
+        fill="url(#loveonsPlanetGlow)"
       />
 
       <circle
@@ -92,7 +119,7 @@ function PlanetArtwork({
         r="78"
         fill={glow}
         opacity="0.18"
-        filter="url(#cosmicPlanetShadow)"
+        filter="url(#loveonsPlanetShadow)"
       />
 
       <ellipse
@@ -102,31 +129,19 @@ function PlanetArtwork({
         ry="32"
         transform="rotate(-19 160 143)"
         fill="none"
-        stroke="url(#cosmicPlanetRing)"
+        stroke="url(#loveonsPlanetRing)"
         strokeWidth="2.5"
         opacity="0.9"
-      />
-
-      <ellipse
-        cx="160"
-        cy="143"
-        rx="112"
-        ry="32"
-        transform="rotate(-19 160 143)"
-        fill="none"
-        stroke="#ffffff"
-        strokeWidth="0.7"
-        opacity="0.65"
       />
 
       <circle
         cx="160"
         cy="126"
         r="68"
-        fill="url(#cosmicPlanetSurface)"
+        fill="url(#loveonsPlanetSurface)"
       />
 
-      <g clipPath="url(#cosmicPlanetClip)">
+      <g clipPath="url(#loveonsPlanetClip)">
         <path
           d="M75 112 Q110 75 145 104 T220 91 T250 119"
           fill="none"
@@ -211,19 +226,25 @@ function GemstoneArtwork({
       className="h-auto w-full"
     >
       <defs>
-        <linearGradient id="cosmicGemSurface" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient
+          id="loveonsGemSurface"
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="100%"
+        >
           <stop offset="0%" stopColor="#ffffff" />
           <stop offset="28%" stopColor={secondary} />
           <stop offset="62%" stopColor={primary} />
           <stop offset="100%" stopColor="#1b0c3b" />
         </linearGradient>
 
-        <radialGradient id="cosmicGemGlow">
+        <radialGradient id="loveonsGemGlow">
           <stop offset="0%" stopColor={glow} stopOpacity="0.65" />
           <stop offset="100%" stopColor={glow} stopOpacity="0" />
         </radialGradient>
 
-        <filter id="cosmicGemShadow">
+        <filter id="loveonsGemShadow">
           <feGaussianBlur stdDeviation="7" />
         </filter>
       </defs>
@@ -232,7 +253,7 @@ function GemstoneArtwork({
         cx="75"
         cy="73"
         r="61"
-        fill="url(#cosmicGemGlow)"
+        fill="url(#loveonsGemGlow)"
       />
 
       <circle
@@ -241,13 +262,13 @@ function GemstoneArtwork({
         r="37"
         fill={glow}
         opacity="0.28"
-        filter="url(#cosmicGemShadow)"
+        filter="url(#loveonsGemShadow)"
       />
 
       <g transform="translate(75 70)">
         <path
           d="M-36 -17 L-17 -37 L17 -37 L36 -17 L26 20 L0 40 L-26 20 Z"
-          fill="url(#cosmicGemSurface)"
+          fill="url(#loveonsGemSurface)"
           stroke="#ffffff"
           strokeWidth="1.2"
           strokeOpacity="0.85"
@@ -320,10 +341,38 @@ function GemstoneArtwork({
   );
 }
 
+function makeShareMessage(
+  name: string,
+  planet: string,
+  gemstone: string,
+  loveMessage: string
+) {
+  return [
+    `✨ The Universe of ${name} ✨`,
+    '',
+    '🌌 Your Cosmic Love Reading',
+    `🪐 Planet: ${planet}`,
+    `💎 Gemstone: ${gemstone}`,
+    '',
+    '💕 A Message for Your Heart',
+    loveMessage,
+    '',
+    '✨ Let the universe inspire your love story.',
+    '',
+    `Discover your cosmic love card on Loveons: ${SITE_URL}`,
+    '',
+    DISCLAIMER,
+  ].join('\n');
+}
+
 export default function LoverPowerCard({
   config,
 }: LoverPowerCardProps) {
   const result = getCosmicDailyResult(config);
+  const [copyStatus, setCopyStatus] = useState('');
+  const [shareStatus, setShareStatus] = useState('');
+
+  const name = config.name.trim() || 'Your Love';
 
   const cardStyle = {
     '--cosmic-background': result.background,
@@ -332,15 +381,94 @@ export default function LoverPowerCard({
     '--cosmic-glow': result.glowColor,
   } as CSSProperties;
 
+  const shareMessage = makeShareMessage(
+    name,
+    result.planetName,
+    result.gemstoneName,
+    result.loveMessage
+  );
+
+  const encodedMessage = encodeURIComponent(shareMessage);
+  const encodedUrl = encodeURIComponent(SITE_URL);
+
+  const shareToWhatsApp = () => {
+    window.open(
+      `https://wa.me/?text=${encodedMessage}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+  };
+
+  const shareToTelegram = () => {
+    window.open(
+      `https://t.me/share/url?url=${encodedUrl}&text=${encodedMessage}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+  };
+
+  const shareToX = () => {
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodedMessage}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+  };
+
+  const shareToPinterest = () => {
+    const description = encodeURIComponent(
+      `The Universe of ${name} ✨ ${result.planetName}, ${result.gemstoneName}. ${result.loveMessage} ${DISCLAIMER}`
+    );
+
+    window.open(
+      `https://pinterest.com/pin/create/button/?url=${encodedUrl}&description=${description}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+  };
+
+  const copyMessage = async () => {
+    try {
+      await navigator.clipboard.writeText(shareMessage);
+      setCopyStatus('Message copied successfully! 💖');
+    } catch {
+      setCopyStatus(
+        'Copy was unavailable in this browser. Please select and copy the message manually.'
+      );
+    }
+  };
+
+  const nativeShare = async () => {
+    if (!navigator.share) {
+      setShareStatus('Quick sharing is not supported by this browser.');
+      return;
+    }
+
+    try {
+      await navigator.share({
+        title: `The Universe of ${name} | Loveons`,
+        text: shareMessage,
+        url: SITE_URL,
+      });
+      setShareStatus('Share menu opened successfully.');
+    } catch (error) {
+      if (error instanceof Error && error.name !== 'AbortError') {
+        setShareStatus('Sharing could not be completed. Please try another option.');
+      }
+    }
+  };
+
   return (
     <section
       className="mx-auto w-full max-w-md"
-      aria-label={`Cosmic Love Astro Card for ${config.name || 'you'}`}
+      aria-label={`Cosmic Love Astro Card for ${name}`}
     >
+      {/* Cosmic card: 3:4 ratio, matching a 600 × 800 design */}
       <div
-        className="relative isolate overflow-hidden rounded-[28px] border border-white/20 p-5 text-white shadow-2xl sm:p-7"
+        className="relative isolate flex w-full flex-col overflow-hidden rounded-[28px] border border-white/20 p-4 text-white shadow-2xl sm:p-5"
         style={{
           ...cardStyle,
+          aspectRatio: '3 / 4',
           background: `
             radial-gradient(ellipse at 12% 12%, ${result.primaryColor}35 0%, transparent 42%),
             radial-gradient(ellipse at 90% 55%, ${result.secondaryColor}30 0%, transparent 42%),
@@ -399,35 +527,35 @@ export default function LoverPowerCard({
         </div>
 
         {/* Header */}
-        <header className="relative z-10 text-center">
+        <header className="relative z-10 shrink-0 text-center">
           <p
-            className="text-[10px] font-semibold uppercase tracking-[0.35em] sm:text-xs"
+            className="text-[9px] font-semibold uppercase tracking-[0.3em] sm:text-[10px]"
             style={{ color: result.secondaryColor }}
           >
             LOVEONS • COSMIC LOVE
           </p>
 
-          <div className="mx-auto mt-4 flex items-center justify-center gap-3">
+          <div className="mx-auto mt-2 flex items-center justify-center gap-2">
             <span
-              className="h-px w-9"
+              className="h-px w-7"
               style={{ background: result.primaryColor }}
             />
 
             <span
-              className="text-[10px] uppercase tracking-[0.25em]"
+              className="text-[8px] uppercase tracking-[0.2em] sm:text-[9px]"
               style={{ color: result.secondaryColor }}
             >
               Your Cosmic Universe
             </span>
 
             <span
-              className="h-px w-9"
+              className="h-px w-7"
               style={{ background: result.primaryColor }}
             />
           </div>
 
           <h2
-            className="mt-4 break-words text-3xl font-semibold leading-tight tracking-tight sm:text-4xl"
+            className="mt-2 break-words text-2xl font-semibold leading-tight tracking-tight sm:text-3xl"
             style={{
               color: '#ffffff',
               textShadow: `0 0 22px ${result.glowColor}90`,
@@ -436,17 +564,17 @@ export default function LoverPowerCard({
             The Universe
             <br />
             <span style={{ color: result.primaryColor }}>
-              of {config.name.trim() || 'Your Love'}
+              of {name}
             </span>
           </h2>
 
-          <p className="mt-3 text-xs tracking-wide text-white/65">
+          <p className="mt-1 text-[10px] tracking-wide text-white/65 sm:text-xs">
             A little universe made just for you
           </p>
         </header>
 
         {/* Planet illustration */}
-        <div className="relative z-10 mx-auto mt-2 w-full max-w-[320px]">
+        <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-[245px] flex-1 items-center justify-center">
           <PlanetArtwork
             primary={result.primaryColor}
             secondary={result.secondaryColor}
@@ -455,40 +583,40 @@ export default function LoverPowerCard({
         </div>
 
         {/* Planet and gemstone information */}
-        <div className="relative z-10 -mt-1 grid grid-cols-2 gap-3">
+        <div className="relative z-10 grid shrink-0 grid-cols-2 gap-2">
           <div
-            className="rounded-2xl border p-3 text-center"
+            className="rounded-xl border p-2 text-center sm:p-3"
             style={{
               background: '#ffffff08',
               borderColor: `${result.primaryColor}55`,
               backdropFilter: 'blur(12px)',
             }}
           >
-            <p className="text-[9px] uppercase tracking-[0.25em] text-white/55">
+            <p className="text-[8px] uppercase tracking-[0.18em] text-white/55">
               Your Planet
             </p>
 
             <p
-              className="mt-2 text-lg font-semibold"
+              className="mt-1 text-base font-semibold sm:text-lg"
               style={{ color: result.primaryColor }}
             >
               {result.planetName}
             </p>
 
-            <p className="mt-1 text-[10px] text-white/60">
+            <p className="mt-1 text-[9px] text-white/60">
               Cosmic guide
             </p>
           </div>
 
           <div
-            className="rounded-2xl border p-3 text-center"
+            className="rounded-xl border p-2 text-center sm:p-3"
             style={{
               background: '#ffffff08',
               borderColor: `${result.secondaryColor}55`,
               backdropFilter: 'blur(12px)',
             }}
           >
-            <div className="mx-auto w-14">
+            <div className="mx-auto w-10 sm:w-12">
               <GemstoneArtwork
                 primary={result.primaryColor}
                 secondary={result.secondaryColor}
@@ -497,21 +625,21 @@ export default function LoverPowerCard({
             </div>
 
             <p
-              className="text-base font-semibold"
+              className="text-sm font-semibold sm:text-base"
               style={{ color: result.secondaryColor }}
             >
               {result.gemstoneName}
             </p>
 
-            <p className="mt-1 text-[10px] text-white/60">
+            <p className="mt-1 text-[9px] text-white/60">
               Cosmic gemstone
             </p>
           </div>
         </div>
 
-        {/* Romantic message panel */}
+        {/* Romantic message */}
         <div
-          className="relative z-10 mt-5 rounded-2xl border px-4 py-5 text-center sm:px-5"
+          className="relative z-10 mt-3 shrink-0 rounded-xl border px-3 py-3 text-center sm:px-4"
           style={{
             background: 'linear-gradient(135deg, #ffffff12, #ffffff05)',
             borderColor: `${result.primaryColor}60`,
@@ -520,7 +648,7 @@ export default function LoverPowerCard({
           }}
         >
           <div
-            className="mb-3 text-xl"
+            className="mb-1 text-base"
             style={{ color: result.primaryColor }}
             aria-hidden="true"
           >
@@ -528,48 +656,128 @@ export default function LoverPowerCard({
           </div>
 
           <p
-            className="text-[10px] font-semibold uppercase tracking-[0.3em]"
+            className="text-[9px] font-semibold uppercase tracking-[0.2em]"
             style={{ color: result.secondaryColor }}
           >
             A Message for Your Heart
           </p>
 
-          <p className="mt-4 text-sm leading-7 text-white/90 sm:text-base">
+          <p className="mt-2 text-xs leading-5 text-white/90 sm:text-sm sm:leading-6">
             {result.loveMessage}
           </p>
 
-          <div
-            className="mx-auto mt-4 h-px w-16"
-            style={{
-              background: `linear-gradient(90deg, transparent, ${result.primaryColor}, transparent)`,
-            }}
-          />
-
-          <p className="mt-3 text-xs italic text-white/65">
+          <p className="mt-2 text-[10px] italic text-white/65">
             The universe is full of little moments worth cherishing.
           </p>
         </div>
 
-        {/* Footer */}
-        <footer className="relative z-10 mt-5 text-center">
+        {/* Footer and disclaimer */}
+        <footer className="relative z-10 mt-auto shrink-0 pt-2 text-center">
           <div
-            className="mx-auto mb-3 h-px w-20"
+            className="mx-auto mb-2 h-px w-16"
             style={{
               background: `linear-gradient(90deg, transparent, ${result.secondaryColor}, transparent)`,
             }}
           />
 
           <p
-            className="text-[10px] font-medium uppercase tracking-[0.3em]"
+            className="text-[8px] font-medium uppercase tracking-[0.2em] sm:text-[9px]"
             style={{ color: result.secondaryColor }}
           >
             Made of stars • Made for love
           </p>
 
-          <p className="mt-2 text-[9px] text-white/40">
+          <p className="mt-1 text-[8px] text-white/45">
             A creative cosmic reflection by Loveons
           </p>
+
+          <p className="mt-1 text-[7px] leading-3 text-white/40 sm:text-[8px]">
+            {DISCLAIMER}
+          </p>
         </footer>
+      </div>
+
+      {/* Sharing tools */}
+      <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-white shadow-lg">
+        <h3 className="text-center text-lg font-semibold">
+          Share the Cosmic Love 💖
+        </h3>
+
+        <p className="mt-1 text-center text-sm text-white/65">
+          Send a little cosmic romance to someone special.
+        </p>
+
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <button
+            type="button"
+            onClick={shareToWhatsApp}
+            className="rounded-xl bg-green-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-300"
+          >
+            WhatsApp
+          </button>
+
+          <button
+            type="button"
+            onClick={shareToTelegram}
+            className="rounded-xl bg-sky-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-300"
+          >
+            Telegram
+          </button>
+
+          <button
+            type="button"
+            onClick={shareToX}
+            className="rounded-xl bg-neutral-800 px-3 py-3 text-sm font-semibold text-white transition hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-white/50"
+          >
+            Share on X
+          </button>
+
+          <button
+            type="button"
+            onClick={shareToPinterest}
+            className="rounded-xl bg-red-700 px-3 py-3 text-sm font-semibold text-white transition hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300"
+          >
+            Pinterest
+          </button>
+
+          <button
+            type="button"
+            onClick={copyMessage}
+            className="rounded-xl border border-white/20 bg-white/10 px-3 py-3 text-sm font-semibold text-white transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/50"
+          >
+            Copy Message
+          </button>
+
+          <button
+            type="button"
+            onClick={nativeShare}
+            className="rounded-xl border border-white/20 bg-white/10 px-3 py-3 text-sm font-semibold text-white transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/50"
+          >
+            More Options
+          </button>
+        </div>
+
+        {copyStatus && (
+          <p
+            role="status"
+            className="mt-3 break-words text-center text-sm text-emerald-300"
+          >
+            {copyStatus}
+          </p>
+        )}
+
+        {shareStatus && (
+          <p
+            role="status"
+            className="mt-3 break-words text-center text-sm text-white/70"
+          >
+            {shareStatus}
+          </p>
+        )}
+
+        <p className="mt-4 text-center text-[11px] leading-5 text-white/45">
+          {DISCLAIMER}
+        </p>
       </div>
     </section>
   );
