@@ -168,10 +168,10 @@ export default function App() {
 
             {/* LOVE MAGIC EYE */}
 
-            <Route
-              path="/love-magic-eye"
-              element={<LoveMagicEye />}
-            />
+<Route
+  path="/lover-astro-card"
+  element={<LoveMagicEye />}
+/> 
             {/* =========================================
                 BLOG LISTING
 
