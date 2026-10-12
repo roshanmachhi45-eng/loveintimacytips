@@ -41,7 +41,7 @@ export default function LoveMagicEye() {
       <Seo
         title="Lover Power Card — Create Your Partner's Love Power Card | Loveons.com"
         description="Create a personalized anime-style Lover Power Card for your partner. Choose their look, generate their love stats, and discover their special love power."
-        path="/love-magic-eye"
+        path="/lover-astro-card"
       />
 
       <div className="mx-auto max-w-md px-1">
