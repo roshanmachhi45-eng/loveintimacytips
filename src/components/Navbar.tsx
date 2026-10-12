@@ -373,7 +373,7 @@ const handleLogin = async () => {
 
     if (toolId === 'love-magic-eye') {
       closeEverything();
-      navigate('/love-magic-eye');
+      navigate('/lover-astro-card');
       return;
     }
   };
