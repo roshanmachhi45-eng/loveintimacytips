@@ -1,4 +1,5 @@
-import { AlertTriangle, Heart, Sparkles, ShieldCheck } from 'lucide-react';
+// 1. सबसे ऊपर 'Image' आइकॉन को इम्पोर्ट लिस्ट में जोड़ दिया है
+import { AlertTriangle, Heart, Sparkles, ShieldCheck, Image } from 'lucide-react';
 import Seo from '../components/Seo';
 import PageLayout from '../components/PageLayout';
 
@@ -29,6 +30,14 @@ const sections = [
     title: 'Comfort & Safe Boundaries',
     paragraphs: [
       'Stepping away from dating apps and meeting people in the real world should always feel exciting and safe. Never pressure yourself or anyone else into a situation that feels uncomfortable. If you ever feel stuck, overwhelmed, or need deeper guidance, we highly encourage reaching out to a compassionate relationship expert or counselor.'
+    ],
+  },
+  // 2. यहाँ पर नया AI इमेजेस वाला सेक्शन जोड़ दिया है
+  {
+    icon: Image,
+    title: 'Visuals & Conceptual Illustrations',
+    paragraphs: [
+      'Some of the images, illustrations, and graphics used across Loveons.com are generated using Artificial Intelligence (AI) tools. These visuals are purely symbolic and intended for illustrative and conceptual purposes to enhance your reading experience. They do not represent real individuals, actual historical events, or exact scenarios.'
     ],
   },
 ];
@@ -73,3 +82,4 @@ export default function Disclaimer() {
     </>
   );
 }
+
