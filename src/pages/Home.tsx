@@ -385,8 +385,8 @@ export default function Home() {
   // =====================================================
 
   const openLoveMagicEye = () => {
-    navigate('/love-magic-eye');
-  };
+  navigate('/lover-astro-card');
+};
 
   // =====================================================
   // CLOSE LOVE CALCULATOR
