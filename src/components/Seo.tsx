@@ -125,15 +125,15 @@ export default function Seo({
     setMeta(
       'property',
       'og:image',
-      image
+      image      
     );
-
+    
     setMeta(
       'property',
       'og:image:type',
-      'image/png'
+      'image/webp'
     );
-
+    
     setMeta(
       'property',
       'og:image:width',
