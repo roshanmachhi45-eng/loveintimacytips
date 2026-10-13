@@ -54,7 +54,7 @@ export default function LoveMagicEye() {
 
             <div>
               <h1 className="font-display text-xl font-bold text-slate-900">
-                Lover Power Card
+                Lover Astro Card
               </h1>
 
               <p className="text-xs text-slate-400">
