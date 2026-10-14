@@ -803,7 +803,7 @@ export default function Home() {
 
                 <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-violet-500 transition-colors group-hover:text-violet-600">
 
-                  Try Love Magic Eye
+                  Try Lover Astro Card 
 
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
 
