@@ -797,8 +797,9 @@ export default function Home() {
                 </h3>
 
                 <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
-                  Decode your lover's hidden 3D aura in a mesmerizing
-                  holographic magic eye stereogram.
+                  Discover the beauty of a celestial planet and
+                  a sparkling gemstone in your Lover Astro Card.
+                  
                 </p>
 
                 <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-violet-500 transition-colors group-hover:text-violet-600">
