@@ -57,6 +57,8 @@ export default function Home() {
 
   const [validationError, setValidationError] =
     useState('');
+  const [showCalculatorHelp, setShowCalculatorHelp] =
+  useState(false);
 
   /*
    * IMPORTANT:
@@ -859,6 +861,14 @@ export default function Home() {
                   <p className="mt-1 pl-11 text-xs text-slate-400">
                     Enter your details to explore your connection.
                   </p>
+<button
+  type="button"
+  onClick={() => setShowCalculatorHelp(true)}
+  aria-expanded={showCalculatorHelp}
+  className="mt-3 ml-11 inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-100"
+>
+  How to Use Love Calculator
+</button>
 
                 </div>
 
@@ -875,6 +885,80 @@ export default function Home() {
                 </button>
 
               </div>
+              {showCalculatorHelp && (
+  <div
+    className="mb-5 rounded-2xl border border-rose-100 bg-white p-5 shadow-sm"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="calculator-help-title"
+  >
+    <div className="mb-4 flex items-center justify-between gap-3">
+      <h3
+        id="calculator-help-title"
+        className="text-lg font-bold text-slate-900"
+      >
+        How to Use the Love Calculator
+      </h3>
+
+      <button
+        type="button"
+        onClick={() => setShowCalculatorHelp(false)}
+        aria-label="Close instructions"
+        className="rounded-full px-3 py-1 text-xl text-slate-500 hover:bg-rose-50"
+      >
+        ×
+      </button>
+    </div>
+
+    <p className="mb-4 text-sm leading-6 text-slate-600">
+      Discover your connection with our Love Calculator.
+      Follow these simple steps to get started.
+    </p>
+
+    <ol className="list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-600">
+      <li>Enter your name to begin.</li>
+
+      <li>Select your gender and enter your age and height.</li>
+
+      <li>Enter your partner's name and choose their gender.</li>
+
+      <li>Add your partner's age and height.</li>
+
+      <li>Select the love stage that best describes your relationship.</li>
+
+      <li>
+        Select Get My Relationship Tips to explore your result.
+      </li>
+    </ol>
+
+    <div className="mt-5 border-t border-rose-100 pt-4">
+      <h4 className="mb-2 text-sm font-bold text-slate-800">
+        How Your Result Is Created
+      </h4>
+
+      <p className="text-sm leading-6 text-slate-600">
+        Our team has researched and developed this experience
+        using the details you enter. Your result is designed
+        to offer an enjoyable way to explore relationship
+        themes and discover helpful tips.
+      </p>
+    </div>
+
+    <div className="mt-4 rounded-xl bg-rose-50 p-3">
+      <h4 className="mb-1 text-sm font-bold text-rose-700">
+        A Little Disclaimer
+      </h4>
+
+      <p className="text-xs leading-5 text-slate-600">
+        This Love Calculator is made for entertainment and
+        self-reflection only. It does not scientifically
+        measure compatibility or predict the future of a
+        relationship. Real relationships grow through
+        communication trust and mutual understanding.
+      </p>
+    </div>
+  </div>
+)}
 
               <InputCard
                 person1={person1}
