@@ -296,6 +296,7 @@ export default function CosmicTarot() {
   const [result, setResult] = useState(null);
   const [hasReading, setHasReading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const todayKey = useMemo(() => getTodayKey(), []);
   const todayDisplay = useMemo(() => formatTodayDate(), []);
@@ -659,7 +660,69 @@ For entertainment and self-reflection only.`
             Enter your name and birth date to reveal your
             personalized cosmic love reading for today.
           </p>
+<button
+  type="button"
+  onClick={() => setShowHelp(true)}
+  aria-expanded={showHelp}
+  className="mt-4 rounded-full border border-purple-300 bg-purple-50 px-5 py-2.5 text-sm font-semibold text-purple-700 transition hover:bg-purple-100"
+>
+  How to Use Cosmic Love Tarot
+</button>
         </div>
+        
+{showHelp && (
+  <div
+    className="mb-6 rounded-2xl border border-purple-200 bg-white p-5 text-left shadow-sm"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cosmic-help-title"
+  >
+    <div className="mb-4 flex items-start justify-between gap-3">
+      <h3
+        id="cosmic-help-title"
+        className="text-lg font-bold text-slate-900"
+      >
+        How to Use Cosmic Love Tarot
+      </h3>
+
+      <button
+        type="button"
+        onClick={() => setShowHelp(false)}
+        aria-label="Close instructions"
+        className="rounded-full px-3 py-1 text-xl text-slate-500 hover:bg-purple-50"
+      >
+        ×
+      </button>
+    </div>
+
+    <p className="mb-4 text-sm leading-6 text-slate-600">
+      Discover a personalized cosmic love reading inspired
+      by astrology and your birth details. Follow these
+      simple steps to explore your reading.
+    </p>
+
+    <ol className="list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-600">
+      <li>Enter your name to begin your reading.</li>
+      <li>Select your day month and year of birth.</li>
+      <li>Choose Generate My Love Tarot to reveal your card.</li>
+      <li>Read your cosmic message and explore its meaning for your love life.</li>
+      <li>Use the message as an opportunity to reflect on your feelings and relationships.</li>
+    </ol>
+
+    <div className="mt-5 rounded-xl bg-purple-50 p-4">
+      <h4 className="mb-1 text-sm font-bold text-purple-800">
+        A Little Disclaimer
+      </h4>
+
+      <p className="text-xs leading-5 text-slate-600">
+        This tool is created for entertainment and self-reflection
+        only. Astrology-inspired tarot readings are not scientifically
+        proven predictions of the future and cannot guarantee
+        relationship outcomes.
+      </p>
+    </div>
+  </div>
+)}
 
         {!hasReading && (
           <div className={styles.formCard}>
