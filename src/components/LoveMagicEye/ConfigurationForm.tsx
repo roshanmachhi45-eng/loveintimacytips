@@ -64,7 +64,7 @@ export default function ConfigurationForm({
             </h3>
 
             <p className="text-xs text-slate-400">
-              Create a personalized anime-style love power card.
+              Create a personalized love power card.
             </p>
             <button
               type="button"
