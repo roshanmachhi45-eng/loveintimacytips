@@ -122,7 +122,7 @@ export default function LoveMagicEye() {
               <span className="font-semibold text-pink-600">
                 Generate Lover Power Card
               </span>{' '}
-              to create their personalized anime-style love card.
+              to create their personalized lover card.
             </p>
           </div>
         )}
