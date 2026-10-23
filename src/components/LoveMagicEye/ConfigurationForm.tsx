@@ -27,6 +27,7 @@ export default function ConfigurationForm({
   collapsed,
 }: ConfigurationFormProps) {
   const [error, setError] = useState('');
+  const [showHelp, setShowHelp] = useState(false);
 
   const update = (field: keyof MagicEyeConfig, value: string) => {
     setError('');
@@ -65,8 +66,72 @@ export default function ConfigurationForm({
             <p className="text-xs text-slate-400">
               Create a personalized anime-style love power card.
             </p>
+            <button
+              type="button"
+              onClick={() => setShowHelp(true)}
+              aria-expanded={showHelp}
+              className="mt-3 rounded-full border border-purple-200 bg-purple-50 px-4 py-2 text-xs font-semibold text-purple-700 transition hover:bg-purple-100"
+            >
+              ✨ How to Use Lover Astro Card
+            </button>
           </div>
         </div>
+        
+        {/* How to Use Popup */}
+        {showHelp && (
+          <div
+            className="mb-5 rounded-2xl border border-purple-200 bg-gradient-to-br from-pink-50 to-purple-50 p-5 shadow-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="lover-astro-help-title"
+          >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h4
+                id="lover-astro-help-title"
+                className="text-base font-bold text-slate-900"
+              >
+                How to Use Lover Astro Card
+              </h4>
+
+              <button
+                type="button"
+                onClick={() => setShowHelp(false)}
+                aria-label="Close instructions"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xl text-slate-500 transition hover:bg-white"
+              >
+                ×
+              </button>
+            </div>
+
+            <p className="mb-3 text-sm leading-6 text-slate-600">
+              Create a personalized anime-style love card for your
+              partner by following these simple steps.
+            </p>
+
+            <ol className="list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-600">
+              <li>Enter your partner's name in the name field.</li>
+              <li>Choose the gender for the character you want to create.</li>
+              <li>Select a face tone and hairstyle that match your preferred look.</li>
+              <li>If you select male, you can also choose a beard design.</li>
+              <li>Choose whether the character should wear eyeglasses.</li>
+              <li>Click Generate Lover Astro Card to reveal your personalized cosmic card.</li>
+              <li>Explore your card and share it with someone special using the available sharing options.</li>
+            </ol>
+
+            <div className="mt-4 rounded-xl border border-purple-100 bg-white/80 p-3">
+              <h5 className="mb-1 text-sm font-bold text-purple-800">
+                A Little Disclaimer
+              </h5>
+
+              <p className="text-xs leading-5 text-slate-600">
+                This tool is designed for entertainment and romantic
+                inspiration. Its cosmic themes are creative and are not
+                scientifically proven predictions or guarantees about
+                love and relationships.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Partner Name */}
         <div className="mb-4">
