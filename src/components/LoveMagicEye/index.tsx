@@ -120,7 +120,7 @@ export default function LoveMagicEye() {
             <p className="text-sm leading-relaxed text-slate-600">
               Enter your partner's details above and click{' '}
               <span className="font-semibold text-pink-600">
-                Generate Lover Power Card
+                Generate Lover Astro Card
               </span>{' '}
               to create their personalized lover card.
             </p>
