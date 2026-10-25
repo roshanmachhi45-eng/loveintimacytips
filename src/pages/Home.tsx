@@ -69,7 +69,19 @@ export default function Home() {
    */
 
   const [activeTool, setActiveTool] =
-    useState<ActiveTool>(null);
+  useState<ActiveTool>(() => {
+    const path = window.location.pathname;
+
+    if (path === '/tools/love-calculator') {
+      return 'love-calculator';
+    }
+
+    if (path === '/tools/tarot') {
+      return 'cosmic-tarot';
+    }
+
+    return null;
+  });
 
   const navigate = useNavigate();
 
