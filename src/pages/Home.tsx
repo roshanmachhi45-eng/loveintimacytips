@@ -406,16 +406,21 @@ export default function Home() {
   // CLOSE LOVE CALCULATOR
   // =====================================================
 
-  const closeCalculator = () => {
-    if (loading) return;
+const closeCalculator = () => {
+  if (loading) return;
 
-    setActiveTool(null);
-    setResult(null);
-    setValidationError('');
+  setActiveTool(null);
+  setResult(null);
+  setValidationError('');
 
-    const raw = sessionStorage.getItem(
-      'loveons:tool-return'
-    );
+  if (window.location.pathname === '/tools/love-calculator') {
+    navigate('/');
+    return;
+  }
+
+  const raw = sessionStorage.getItem(
+    'loveons:tool-return'
+  );
 
     if (raw) {
       try {
@@ -444,12 +449,17 @@ export default function Home() {
   // CLOSE COSMIC LOVE TAROT
   // =====================================================
 
-  const closeCosmicTarot = () => {
-    setActiveTool(null);
+const closeCosmicTarot = () => {
+  setActiveTool(null);
 
-    const raw = sessionStorage.getItem(
-      'loveons:tool-return'
-    );
+  if (window.location.pathname === '/tools/tarot') {
+    navigate('/');
+    return;
+  }
+
+  const raw = sessionStorage.getItem(
+    'loveons:tool-return'
+  );
 
     if (raw) {
       try {
@@ -475,12 +485,16 @@ export default function Home() {
   };
 
   return (
-    <>
-      <Seo
-        title="Loveons — Build Authentic Connections Beyond the Screen"
-        description="Tired of endless swiping? Move away from algorithms and discover real-world screen-free love with our actionable guides off-app dating strategies and psychological insights."
-        path="/"
-      />
+<>
+  {!isStandaloneToolRoute && (
+    <Seo
+      title="Loveons — Build Authentic Connections Beyond the Screen"
+      description="Tired of endless swiping? Move away from algorithms and discover real-world screen-free love with our actionable guides off-app dating strategies and psychological insights."
+      path="/"
+    />
+  )}
+  {!isStandaloneToolRoute && (
+    <> 
 
       {/* =====================================================
           HERO
@@ -831,6 +845,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+    </>
+)}
 
       {/* =====================================================
           LOVE CALCULATOR
