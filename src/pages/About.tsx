@@ -99,9 +99,28 @@ export default function About() {
                 <p>
                   I created this platform not just as a website but as a sanctuary for those who want to step back from the digital screen and rediscover the magic of <strong>off-app real-world dating</strong>. Every single blog and relationship guide and practical insight here is backed by real life offering relatable and honest advice for everyday connection.
                 </p>
-                <p>
-                  To balance the serious journey of finding love with a bit of joy and self-reflection I also custom-designed our popular interactive tools the <a href="/love-calculator" className="text-rose-500 font-semibold hover:underline">Love Calculator</a> and the <a href="/cosmic-love-tarot" className="text-rose-500 font-semibold hover:underline">Cosmic Love Tarot</a>. Whether you are navigating a heartbreak or looking for modern dating clarity or just exploring the universe of love I am right here walking this path beside you.
-                </p>
+                
+<p>
+  To balance the serious journey of finding love with a bit of joy
+  and self-reflection I also created our interactive tools the{' '}
+  <a
+    href="/tools/love-calculator"
+    className="text-rose-500 font-semibold hover:underline"
+  >
+    Love Calculator
+  </a>{' '}
+  and the{' '}
+  <a
+    href="/tools/tarot"
+    className="text-rose-500 font-semibold hover:underline"
+  >
+    Cosmic Love Tarot
+  </a>
+  . Whether you are navigating a heartbreak or looking for modern
+  dating clarity or just exploring the universe of love I am right
+  here walking this path beside you.
+</p>
+                
               </div>
 
             </div>
