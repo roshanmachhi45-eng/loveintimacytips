@@ -84,7 +84,10 @@ export default function Home() {
   });
 
   const navigate = useNavigate();
-
+  const isStandaloneToolRoute =
+  window.location.pathname === '/tools/love-calculator' ||
+  window.location.pathname === '/tools/tarot';
+  
   // =====================================================
   // NAVBAR → LOVE CALCULATOR
   // =====================================================
