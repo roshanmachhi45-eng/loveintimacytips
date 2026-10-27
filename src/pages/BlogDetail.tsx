@@ -424,6 +424,17 @@ export default function BlogDetail() {
             if (!href) {
                 return;
             }
+            
+            // Save the current blog before opening another blog
+            if (href.startsWith('/blog/')) {
+                sessionStorage.setItem(
+                    'loveons:blog-return',
+                    JSON.stringify({
+                        path: window.location.pathname,
+                        scrollY: window.scrollY,
+                    })
+                );
+            }
 
             if (
                 href.includes('/tools/tarot') ||
@@ -1103,24 +1114,55 @@ export default function BlogDetail() {
 
             <div className="min-h-screen pb-12 pt-14">
                 <div className="mx-auto max-w-2xl px-4">
+                    
+<Link
+    to="/blog"
+    onClick={(e) => {
+        e.preventDefault();
 
-                    <Link
-                        to="/"
-                        className="
-                            mb-4
-                            inline-flex
-                            items-center
-                            gap-1
-                            text-sm
-                            font-semibold
-                            text-rose-500
-                            transition-all
-                            hover:gap-2
-                        "
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        Back to Home
-                    </Link>
+        const raw = sessionStorage.getItem(
+            'loveons:blog-return'
+        );
+
+        if (raw) {
+            try {
+                const data = JSON.parse(raw);
+
+                if (data.path?.startsWith('/blog/')) {
+                    navigate(data.path);
+
+                    window.setTimeout(() => {
+                        window.scrollTo({
+                            top: data.scrollY || 0,
+                            left: 0,
+                            behavior: 'auto',
+                        });
+                    }, 300);
+
+                    return;
+                }
+            } catch {
+                // Use the blog listing as fallback
+            }
+        }
+
+        navigate('/blog');
+    }}
+    className="
+        mb-4
+        inline-flex
+        items-center
+        gap-1
+        text-sm
+        font-semibold
+        text-rose-500
+        transition-all
+        hover:gap-2
+    "
+>
+    <ArrowLeft className="h-4 w-4" />
+    Back to Home
+</Link>
 
                     <article>
 
