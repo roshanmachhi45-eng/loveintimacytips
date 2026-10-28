@@ -425,31 +425,39 @@ export default function BlogDetail() {
                 return;
             }
             
-            // Save the current blog before opening another blog
-            if (href.startsWith('/blog/')) {
-                sessionStorage.setItem(
-                    'loveons:blog-return',
-                    JSON.stringify({
-                        path: window.location.pathname,
-                        scrollY: window.scrollY,
-                    })
-                );
-            }
+// Save the current blog position before opening another blog
+if (
+  href.startsWith('/blog/') &&
+  href !== window.location.pathname
+) {
+  let blogHistory: { path: string; scrollY: number }[] = [];
 
-            if (
-                href.includes('/tools/tarot') ||
-                href.includes('/cosmic-tarot') ||
-                href.includes('/cosmic-love-tarot')
-            ) {
-                e.preventDefault();
-                e.stopPropagation();
-                sessionStorage.setItem(
-               'loveons:tool-return',
-                JSON.stringify({
-                path: window.location.pathname,
-                scrollY: window.scrollY,
-             })
-          );
+  try {
+    const savedHistory = sessionStorage.getItem(
+      'loveons:blog-history'
+    );
+
+    const parsedHistory = savedHistory
+      ? JSON.parse(savedHistory)
+      : [];
+
+    if (Array.isArray(parsedHistory)) {
+      blogHistory = parsedHistory;
+    }
+  } catch {
+    blogHistory = [];
+  }
+
+  blogHistory.push({
+    path: window.location.pathname,
+    scrollY: window.scrollY,
+  });
+
+  sessionStorage.setItem(
+    'loveons:blog-history',
+    JSON.stringify(blogHistory)
+  );
+}
                                
                 navigate('/');
                 
@@ -507,39 +515,39 @@ export default function BlogDetail() {
         };
     }, [navigate, post]);
 
-    useLayoutEffect(() => {
-        if (
-            window.location.hash
-        ) {
-            window.history.replaceState(
-                null,
-                '',
-                window.location.pathname +
-                    window.location.search
-            );
-        }
+useLayoutEffect(() => {
+    if (
+        window.location.hash
+    ) {
+        window.history.replaceState(
+            null,
+            '',
+            window.location.pathname +
+                window.location.search
+        );
+    }
 
-        forcePageTop();
+    forcePageTop();
 
-        const frame1 =
-            window.requestAnimationFrame(
-                () => {
-                    forcePageTop();
+    const frame1 =
+        window.requestAnimationFrame(
+            () => {
+                forcePageTop();
 
-                    window.requestAnimationFrame(
-                        () => {
-                            forcePageTop();
-                        }
-                    );
-                }
-            );
+                window.requestAnimationFrame(
+                    () => {
+                        forcePageTop();
+                    }
+                );
+            }
+        );
 
-        return () => {
-            window.cancelAnimationFrame(
-                frame1
-            );
-        };
-    }, [slug]);
+    return () => {
+        window.cancelAnimationFrame(
+            frame1
+        );
+    };
+}, [slug]);    
 
     useEffect(() => {
         let cancelled = false;
@@ -660,89 +668,116 @@ export default function BlogDetail() {
     }, [post]);
 
     useEffect(() => {
-        if (!post) {
-            setTocItems([]);
+    if (!post) {
+        setTocItems([]);
+        return;
+    }
+
+    let cancelled = false;
+    let attempts = 0;
+    let timer: number | undefined;
+
+    const setupToc = () => {
+        if (cancelled) {
             return;
         }
 
-        let cancelled = false;
-        let attempts = 0;
-        let timer:
-            number | undefined;
+        const container = document.getElementById(
+            'blog-article-content'
+        );
 
-        const setupToc = () => {
-            if (cancelled) {
-                return;
+        if (!container) {
+            attempts += 1;
+
+            if (attempts < 30) {
+                timer = window.setTimeout(
+                    setupToc,
+                    50
+                );
             }
 
-            const container =
-                document.getElementById(
-                    'blog-article-content'
-                );
+            return;
+        }
 
-            if (!container) {
-                attempts += 1;
+        const items = getTocFromArticle(container);
 
-                if (attempts < 30) {
-                    timer =
-                        window.setTimeout(
-                            setupToc,
-                            50
-                        );
+        if (cancelled) {
+            return;
+        }
+
+        setTocItems(items);
+        setTocOpen(true);
+
+        if (items.length > 0) {
+            setActiveTocId(items[0].id);
+        }
+
+        let restoreData: {
+            path: string;
+            scrollY: number;
+        } | null = null;
+
+        try {
+            const raw = sessionStorage.getItem(
+                'loveons:blog-scroll-restore'
+            );
+
+            if (raw) {
+                const data = JSON.parse(raw);
+
+                if (
+                    data.path === window.location.pathname &&
+                    typeof data.scrollY === 'number'
+                ) {
+                    restoreData = data;
+                }
+            }
+        } catch {
+            restoreData = null;
+        }
+
+        if (restoreData) {
+            const savedScrollY = restoreData.scrollY;
+
+            window.requestAnimationFrame(() => {
+                if (cancelled) {
+                    return;
                 }
 
-                return;
-            }
+                window.scrollTo({
+                    top: savedScrollY,
+                    left: 0,
+                    behavior: 'auto',
+                });
 
-            const items =
-                getTocFromArticle(
-                    container
+                sessionStorage.removeItem(
+                    'loveons:blog-scroll-restore'
                 );
-
-            if (cancelled) {
-                return;
-            }
-
-            setTocItems(items);
-            setTocOpen(true);
-
-            if (
-                items.length > 0
-            ) {
-                setActiveTocId(
-                    items[0].id
-                );
-            }
-
+            });
+        } else {
             forcePageTop();
 
-            window.requestAnimationFrame(
-                () => {
-                    if (!cancelled) {
-                        forcePageTop();
-                    }
+            window.requestAnimationFrame(() => {
+                if (!cancelled) {
+                    forcePageTop();
                 }
-            );
-        };
+            });
+        }
+    };
 
-        timer =
-            window.setTimeout(
-                setupToc,
-                0
-            );
+    timer = window.setTimeout(
+        setupToc,
+        0
+    );
 
-        return () => {
-            cancelled = true;
+    return () => {
+        cancelled = true;
 
-            if (
-                timer !== undefined
-            ) {
-                window.clearTimeout(
-                    timer
-                );
-            }
-        };
-    }, [post]);
+        if (timer !== undefined) {
+            window.clearTimeout(timer);
+        }
+    };
+}, [post]);
 
     useEffect(() => {
         if (
@@ -1116,37 +1151,58 @@ export default function BlogDetail() {
                 <div className="mx-auto max-w-2xl px-4">
                     
 <Link
-    to="/blog"
+    to="/"
     onClick={(e) => {
         e.preventDefault();
 
-        const raw = sessionStorage.getItem(
-            'loveons:blog-return'
-        );
+        let blogHistory: {
+            path: string;
+            scrollY: number;
+        }[] = [];
 
-        if (raw) {
-            try {
-                const data = JSON.parse(raw);
+        try {
+            const raw = sessionStorage.getItem(
+                'loveons:blog-history'
+            );
 
-                if (data.path?.startsWith('/blog/')) {
-                    navigate(data.path);
+            const parsed = raw ? JSON.parse(raw) : [];
 
-                    window.setTimeout(() => {
-                        window.scrollTo({
-                            top: data.scrollY || 0,
-                            left: 0,
-                            behavior: 'auto',
-                        });
-                    }, 300);
-
-                    return;
-                }
-            } catch {
-                // Use the blog listing as fallback
+            if (Array.isArray(parsed)) {
+                blogHistory = parsed;
             }
+        } catch {
+            blogHistory = [];
         }
 
-        navigate('/blog');
+        const previousBlog = blogHistory.pop();
+
+        sessionStorage.setItem(
+            'loveons:blog-history',
+            JSON.stringify(blogHistory)
+        );
+
+        if (
+            previousBlog &&
+            typeof previousBlog.path === 'string' &&
+            previousBlog.path.startsWith('/blog/')
+        ) {
+            sessionStorage.setItem(
+                'loveons:blog-scroll-restore',
+                JSON.stringify({
+                    path: previousBlog.path,
+                    scrollY: previousBlog.scrollY || 0,
+                })
+            );
+
+            navigate(previousBlog.path);
+            return;
+        }
+
+        sessionStorage.removeItem(
+            'loveons:blog-scroll-restore'
+        );
+
+        navigate('/');
     }}
     className="
         mb-4
@@ -1161,7 +1217,7 @@ export default function BlogDetail() {
     "
 >
     <ArrowLeft className="h-4 w-4" />
-    Back to Home
+    Back
 </Link>
 
                     <article>
