@@ -457,7 +457,7 @@ if (
     'loveons:blog-history',
     JSON.stringify(blogHistory)
   );
-} else {
+} if (href.includes('cosmic-tarot')) {
                                
                 navigate('/');
                 
