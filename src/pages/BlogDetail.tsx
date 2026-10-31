@@ -1831,36 +1831,45 @@ useLayoutEffect(() => {
                                             );
                                         }
 
-                                        if (block.nodeType.startsWith('heading-')) {
-                                            const HeadingTag =
-                                                `h${block.nodeType.split('-')[1]}` as any;
+// ✅ इस नए और सुरक्षित कोड को वहाँ पेस्ट करें:
+if (block.nodeType.startsWith('heading-')) {
+    let headingLevel = block.nodeType.split('-')[1];
+    
+    // सुरक्षा जाँच: अगर कंटेंटफुल में गलती से Heading 1 (h1) चुना गया है, तो उसे h2 में बदलें
+    if (headingLevel === '1') {
+        headingLevel = '2';
+    }
+    
+    const HeadingTag = `h${headingLevel}` as any;
 
-                                            const text =
-                                                block.content
-                                                    ?.map((c: any) => c.value)
-                                                    .join('') || '';
+    const text =
+        block.content
+            ?.map((c: any) => c.value)
+            .join('') || '';
 
-                                            const headingId =
-                                                text
-                                                    .toLowerCase()
-                                                    .replace(
-                                                        /[^a-z0-9]+/g,
-                                                        '-'
-                                                    )
-                                                    .replace(
-                                                        /(^-|-$)/g,
-                                                        ''
-                                                    );
+    const headingId =
+        text
+            .toLowerCase()
+            .replace(
+                /[^a-z0-9]+/g,
+                '-'
+            )
+            .replace(
+                /(^-|-$)/g,
+                ''
+            );
 
-                                            return (
-                                                <HeadingTag
-                                                    key={idx}
-                                                    id={headingId}
-                                                >
-                                                    {text}
-                                                </HeadingTag>
-                                            );
-                                        }
+    return (
+        <HeadingTag
+            key={idx}
+            id={headingId}
+        >
+            {text}
+        </HeadingTag>
+    );
+}
+
+                                       
 
                                         if (block.nodeType === 'paragraph') {
                                             const text =
