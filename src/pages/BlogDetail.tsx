@@ -425,53 +425,70 @@ export default function BlogDetail() {
                 return;
             }
             
-// Save the current blog position before opening another blog
-if (
-  href.startsWith('/blog/') &&
-  href !== window.location.pathname
-) {
-  let blogHistory: { path: string; scrollY: number }[] = [];
+            // 1. जब एक ब्लॉग से दूसरे ब्लॉग पर जा रहे हों
+            if (
+              href.startsWith('/blog/') &&
+              href !== window.location.pathname
+            ) {
+              let blogHistory: { path: string; scrollY: number }[] = [];
+              try {
+                const savedHistory = sessionStorage.getItem('loveons:blog-history');
+                const parsedHistory = savedHistory ? JSON.parse(savedHistory) : [];
+                if (Array.isArray(parsedHistory)) {
+                  blogHistory = parsedHistory;
+                }
+              } catch {
+                blogHistory = [];
+              }
 
-  try {
-    const savedHistory = sessionStorage.getItem(
-      'loveons:blog-history'
-    );
+              blogHistory.push({
+                path: window.location.pathname,
+                scrollY: window.scrollY,
+              });
 
-    const parsedHistory = savedHistory
-      ? JSON.parse(savedHistory)
-      : [];
+              sessionStorage.setItem('loveons:blog-history', JSON.stringify(blogHistory));
+            } 
 
-    if (Array.isArray(parsedHistory)) {
-      blogHistory = parsedHistory;
-    }
-  } catch {
-    blogHistory = [];
-  }
-
-  blogHistory.push({
-    path: window.location.pathname,
-    scrollY: window.scrollY,
-  });
-
-  sessionStorage.setItem(
-    'loveons:blog-history',
-    JSON.stringify(blogHistory)
-  );
-} if (href.includes('cosmic-tarot')) {
+            // 2. Cosmic Tarot के लिए
+            if (href.includes('tarot')) {
+                e.preventDefault();
+                e.stopPropagation();
+                sessionStorage.setItem(
+                    'loveons:tool-return',
+                    JSON.stringify({
+                        path: window.location.pathname,
+                        scrollY: window.scrollY,
+                    })
+                );
                                
                 navigate('/');
                 
                 window.setTimeout(() => {
                     window.dispatchEvent(
-                        new CustomEvent(
-                            'loveons:open-cosmic-tarot'
-                        )
+                        new CustomEvent('loveons:open-cosmic-tarot')
                     );
                 }, 400);
 
                 return;
             }
 
+            // 3. Lover Astro Card के लिए
+            if (href.includes('lover-astro-card')) {
+                e.preventDefault();
+                e.stopPropagation();
+                sessionStorage.setItem(
+                    'loveons:tool-return',
+                    JSON.stringify({
+                        path: window.location.pathname,
+                        scrollY: window.scrollY,
+                    })
+                );
+
+                navigate('/lover-astro-card');
+                return;
+            }
+
+            // 4. Love Calculator के लिए
             if (
                 href.includes('/tools/love-calculator') ||
                 href.includes('/love-calculator')
@@ -479,27 +496,25 @@ if (
                 e.preventDefault();
                 e.stopPropagation();
                 sessionStorage.setItem(
-               'loveons:tool-return',
-                JSON.stringify({
-                path: window.location.pathname,
-                scrollY: window.scrollY,
-            })
-         );
+                    'loveons:tool-return',
+                    JSON.stringify({
+                        path: window.location.pathname,
+                        scrollY: window.scrollY,
+                    })
+                );
 
                 navigate('/');
                                                 
                 window.setTimeout(() => {
                     window.dispatchEvent(
-                        new CustomEvent(
-                            'loveons:open-calculator'
-                        )
+                        new CustomEvent('loveons:open-calculator')
                     );
                 }, 400);
 
                 return;
             }
         };
-
+        
         document.addEventListener(
             'click',
             handleHtmlClick,
