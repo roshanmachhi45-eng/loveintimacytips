@@ -531,38 +531,34 @@ export default function BlogDetail() {
     }, [navigate, post]);
 
 useLayoutEffect(() => {
-    if (
-        window.location.hash
-    ) {
+    // चेक करें कि क्या कोई टूल से वापस लौट रहा है
+    const hasRestoreData = sessionStorage.getItem('loveons:blog-scroll-restore');
+    
+    if (window.location.hash) {
         window.history.replaceState(
             null,
             '',
-            window.location.pathname +
-                window.location.search
+            window.location.pathname + window.location.search
         );
     }
 
-    forcePageTop();
+    // अगर टूल से वापस लौट रहे हैं, तो जबरदस्ती टॉप पर स्क्रॉल न करें
+    if (!hasRestoreData) {
+        forcePageTop();
 
-    const frame1 =
-        window.requestAnimationFrame(
-            () => {
+        const frame1 = window.requestAnimationFrame(() => {
+            forcePageTop();
+
+            window.requestAnimationFrame(() => {
                 forcePageTop();
+            });
+        });
 
-                window.requestAnimationFrame(
-                    () => {
-                        forcePageTop();
-                    }
-                );
-            }
-        );
-
-    return () => {
-        window.cancelAnimationFrame(
-            frame1
-        );
-    };
-}, [slug]);    
+        return () => {
+            window.cancelAnimationFrame(frame1);
+        };
+    }
+}, [slug]);
 
     useEffect(() => {
         let cancelled = false;
