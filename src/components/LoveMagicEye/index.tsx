@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ArrowLeft, RefreshCw, Sparkles } from 'lucide-react';
+import { X, RefreshCw, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Seo from '../Seo';
 import ConfigurationForm from './ConfigurationForm';
@@ -62,13 +62,14 @@ export default function LoveMagicEye() {
             </div>
           </div>
 
-          <Link
-            to="/"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition-all hover:border-pink-200 hover:bg-pink-50 hover:text-pink-500"
-            aria-label="Back to home"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+<Link
+  to="/"
+  className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition-all hover:border-pink-200 hover:bg-pink-50 hover:text-pink-500"
+  aria-label="Back to home"
+>
+  <X className="h-4 w-4" />
+</Link>
+
         </div>
 
         {/* Configuration Form */}
