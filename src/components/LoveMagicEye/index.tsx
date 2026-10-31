@@ -70,14 +70,38 @@ export default function LoveMagicEye() {
               </p>
             </div>
           </div>
-
-<Link
-  to="/"
+<button
+  type="button"
+  onClick={() => {
+    try {
+      const raw = sessionStorage.getItem('loveons:tool-return');
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data && data.path) {
+          // ब्लॉग का रास्ता और स्क्रॉल पोजीशन सेव करें ताकि वापस जा सकें
+          sessionStorage.setItem(
+            'loveons:blog-scroll-restore',
+            JSON.stringify({
+              path: data.path,
+              scrollY: data.scrollY || 0,
+            })
+          );
+          sessionStorage.removeItem('loveons:tool-return');
+          window.location.href = data.path;
+          return;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    // अगर कोई डेटा नहीं है, तो डिफ़ॉल्ट होमपेज पर जाएं
+    window.location.href = '/';
+  }}
   className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition-all hover:border-pink-200 hover:bg-pink-50 hover:text-pink-500"
   aria-label="Back to home"
 >
   <X className="h-4 w-4" />
-</Link>
+</button>
 
         </div>
 
