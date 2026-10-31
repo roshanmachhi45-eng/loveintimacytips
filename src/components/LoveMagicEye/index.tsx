@@ -10,6 +10,15 @@ export default function LoveMagicEye() {
   const [config, setConfig] = useState<MagicEyeConfig>(DEFAULT_CONFIG);
   const [generateKey, setGenerateKey] = useState(0);
   const [formCollapsed, setFormCollapsed] = useState(false);
+    // टूल को लोड होते ही स्क्रीन के बीच (Middle) में लाने के लिए:
+  useState(() => {
+    window.setTimeout(() => {
+      window.scrollTo({
+        top: 120, // इसे आप अपने हिसाब से 100 से 150 के बीच एडजस्ट कर सकते हैं
+        behavior: 'smooth'
+      });
+    }, 100);
+  });
 
   const handleGenerate = useCallback(() => {
     setGenerateKey((prev) => prev + 1);
