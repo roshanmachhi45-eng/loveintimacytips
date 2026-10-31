@@ -542,8 +542,35 @@ useLayoutEffect(() => {
         );
     }
 
-    // अगर टूल से वापस लौट रहे हैं, तो जबरदस्ती टॉप पर स्क्रॉल न करें
-    if (!hasRestoreData) {
+    // टूल रिटर्न डेटा को चेक करने के लिए एक ऑटो-चेकर लॉजिक
+    const checkAndRestoreScroll = () => {
+        try {
+            const rawReturn = sessionStorage.getItem('loveons:tool-return');
+            if (rawReturn) {
+                const returnData = JSON.parse(rawReturn);
+                if (returnData && returnData.path === window.location.pathname && typeof returnData.scrollY === 'number') {
+                    // अगर टूल बंद हुआ है, तो तुरंत पुरानी स्क्रॉल पोजीशन पर भेजें
+                    window.scrollTo({
+                        top: returnData.scrollY,
+                        left: 0,
+                        behavior: 'auto'
+                    });
+                    // डेटा को रिस्टोर लिस्ट में डाल दें ताकि दूसरा लॉजिक इसे संभाल सके
+                    sessionStorage.setItem('loveons:blog-scroll-restore', rawReturn);
+                    sessionStorage.removeItem('loveons:tool-return');
+                }
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    // जब भी पेज फोकस में आए या यूजर वापस लौटे, स्क्रॉल पोजीशन जबरदस्ती लॉक करें
+    checkAndRestoreScroll();
+    window.addEventListener('focus', checkAndRestoreScroll);
+
+    // अगर सामान्य रूप से पेज पर आए हैं (टूल से नहीं), तभी टॉप पर स्क्रॉल करें
+    if (!hasRestoreData && !sessionStorage.getItem('loveons:tool-return')) {
         forcePageTop();
 
         const frame1 = window.requestAnimationFrame(() => {
@@ -556,8 +583,13 @@ useLayoutEffect(() => {
 
         return () => {
             window.cancelAnimationFrame(frame1);
+            window.removeEventListener('focus', checkAndRestoreScroll);
         };
     }
+
+    return () => {
+        window.removeEventListener('focus', checkAndRestoreScroll);
+    };
 }, [slug]);
 
     useEffect(() => {
