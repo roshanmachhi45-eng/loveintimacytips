@@ -1,4 +1,5 @@
 {
+  "trailingSlash": false,
   "redirects": [
     {
       "source": "/:path*",
@@ -26,11 +27,12 @@
       "destination": "/api/love-share"
     },
     {
-      "source": "/((?!api|assets|images|favicon.ico|_next|loveons-logo.svg).*)",
+      "source": "/((?!api|assets|images|favicon.ico|_next|loveons-logo.svg).*)" ,
       "destination": "/index.html"
     }
   ]
 }
+
 
 
 
