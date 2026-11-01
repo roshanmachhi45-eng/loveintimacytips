@@ -24,6 +24,7 @@ import {
 
 import Seo from '../components/Seo';
 import BlogCard from '../components/BlogCard';
+import { getContentfulSrcSet } from '../lib/contentfulImage';
 import BlogTTS from '../components/BlogTTS';
 import BlogShare from '../components/BlogShare';
 import BlogComments from "../components/BlogComments";
@@ -1386,6 +1387,8 @@ useLayoutEffect(() => {
                                 <img
                                     src="/images/rocksy-avatar.webp"
                                     alt="Rocksy"
+                                    width={20}
+                                    height={20}
                                     className="h-5 w-5 rounded-full object-cover border border-rose-100 shadow-sm"
                                 />
                                 {post.author || 'Rocksy'}
@@ -1807,6 +1810,7 @@ useLayoutEffect(() => {
                                             const asset = block.data?.target?.fields;
                                             const imageUrl = asset?.file?.url || asset?.file?.['en-US']?.url;
                                             const altText = asset?.title || asset?.title?.['en-US'] || 'blog image';
+                                            const imageDetails = asset?.file?.details?.image || asset?.file?.['en-US']?.details?.image;
 
                                             if (!imageUrl) {
                                                 return null;
@@ -1820,7 +1824,13 @@ useLayoutEffect(() => {
                                                             ? `https:${imageUrl}`
                                                             : imageUrl
                                                     }
+                                                    srcSet={getContentfulSrcSet(imageUrl.startsWith('//') ? `https:${imageUrl}` : imageUrl)}
+                                                    sizes="(max-width: 768px) 100vw, 720px"
                                                     alt={altText}
+                                                    width={imageDetails?.width}
+                                                    height={imageDetails?.height}
+                                                    loading="lazy"
+                                                    decoding="async"
                                                     style={{
                                                         maxWidth: '100%',
                                                         height: 'auto',

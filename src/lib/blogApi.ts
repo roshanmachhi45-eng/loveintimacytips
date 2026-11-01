@@ -471,11 +471,19 @@ function richTextToHtml(
       asset?.fields?.title ||
       "Blog image";
 
+    const imageDetails =
+      asset?.fields?.file?.details?.image;
+    const dimensionAttributes =
+      imageDetails?.width && imageDetails?.height
+        ? `width="${imageDetails.width}" height="${imageDetails.height}"`
+        : "";
+
     return `
       <img
         src="${escapeHtmlAttribute(
           imageUrl
         )}"
+        ${dimensionAttributes}
         srcset="${escapeHtmlAttribute(
           getContentfulSrcSet(imageUrl) ?? ""
         )}"
