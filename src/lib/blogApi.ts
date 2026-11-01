@@ -4,7 +4,7 @@
    With automatic TOC heading IDs
    ========================================================= */
 
-import { getContentfulSrcSet } from "./contentfulImage";
+import { ARTICLE_IMAGE_PRESET, getContentfulSrcSet } from "./contentfulImage";
 
 export interface ChatGameOption {
   text: string;
@@ -485,7 +485,7 @@ function richTextToHtml(
         )}"
         ${dimensionAttributes}
         srcset="${escapeHtmlAttribute(
-          getContentfulSrcSet(imageUrl) ?? ""
+          getContentfulSrcSet(imageUrl, ARTICLE_IMAGE_PRESET) ?? ""
         )}"
         sizes="(max-width: 768px) 100vw, 720px"
         alt="${escapeHtmlAttribute(

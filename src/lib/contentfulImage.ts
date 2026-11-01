@@ -3,7 +3,25 @@ const CONTENTFUL_IMAGE_HOSTS = [
   'downloads.ctfassets.net',
 ];
 
-export const RESPONSIVE_IMAGE_WIDTHS = [480, 750, 1080, 1440];
+interface ContentfulImagePreset {
+  widths: number[];
+  quality: number;
+}
+
+export const THUMBNAIL_IMAGE_PRESET: ContentfulImagePreset = {
+  widths: [400, 600, 800],
+  quality: 75,
+};
+
+export const ARTICLE_IMAGE_PRESET: ContentfulImagePreset = {
+  widths: [480, 750, 1000],
+  quality: 75,
+};
+
+export const HERO_IMAGE_PRESET: ContentfulImagePreset = {
+  widths: [750, 1000, 1400],
+  quality: 80,
+};
 
 export function isContentfulImageUrl(src: string | null | undefined): boolean {
   if (!src) return false;
@@ -32,11 +50,14 @@ export function getContentfulImageUrl(
 
 export function getContentfulSrcSet(
   src: string | null | undefined,
-  quality = 80
+  preset: ContentfulImagePreset = THUMBNAIL_IMAGE_PRESET
 ): string | undefined {
   if (!src || !isContentfulImageUrl(src)) return undefined;
 
-  return RESPONSIVE_IMAGE_WIDTHS.map(
-    (width) => `${getContentfulImageUrl(src, width, quality)} ${width}w`
-  ).join(', ');
+  return preset.widths
+    .map(
+      (width) =>
+        `${getContentfulImageUrl(src, width, preset.quality)} ${width}w`
+    )
+    .join(', ');
 }

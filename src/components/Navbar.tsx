@@ -100,10 +100,11 @@ export default function Navbar() {
     }
   };
 
-  initializeAuth();
+  const idleTimer = window.setTimeout(initializeAuth, 1500);
 
   return () => {
     cancelled = true;
+    window.clearTimeout(idleTimer);
     unsubscribe?.();
   };
 }, []);

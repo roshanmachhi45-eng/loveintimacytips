@@ -24,7 +24,7 @@ import {
 
 import Seo from '../components/Seo';
 import BlogCard from '../components/BlogCard';
-import { getContentfulSrcSet } from '../lib/contentfulImage';
+import { ARTICLE_IMAGE_PRESET, HERO_IMAGE_PRESET, getContentfulSrcSet } from '../lib/contentfulImage';
 import BlogTTS from '../components/BlogTTS';
 import BlogShare from '../components/BlogShare';
 import BlogComments from "../components/BlogComments";
@@ -1293,6 +1293,8 @@ useLayoutEffect(() => {
 
                             <img
                                 src={imageSrc}
+                                srcSet={getContentfulSrcSet(imageSrc, HERO_IMAGE_PRESET)}
+                                sizes="(max-width: 768px) 100vw, 900px"
                                 alt={
                                     post.image_alt ||
                                     post.title
@@ -1824,7 +1826,7 @@ useLayoutEffect(() => {
                                                             ? `https:${imageUrl}`
                                                             : imageUrl
                                                     }
-                                                    srcSet={getContentfulSrcSet(imageUrl.startsWith('//') ? `https:${imageUrl}` : imageUrl)}
+                                                    srcSet={getContentfulSrcSet(imageUrl.startsWith('//') ? `https:${imageUrl}` : imageUrl, ARTICLE_IMAGE_PRESET)}
                                                     sizes="(max-width: 768px) 100vw, 720px"
                                                     alt={altText}
                                                     width={imageDetails?.width}
