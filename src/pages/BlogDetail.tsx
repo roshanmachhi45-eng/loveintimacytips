@@ -1297,6 +1297,7 @@ useLayoutEffect(() => {
                                     post.title
                                 }
                                 loading="eager"
+                                fetchPriority="high"
                                 decoding="async"
                                 onLoad={() => {
                                     setImageLoaded(

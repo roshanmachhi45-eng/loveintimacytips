@@ -3,6 +3,9 @@
    Contentful-powered version
    With automatic TOC heading IDs
    ========================================================= */
+
+import { getContentfulSrcSet } from "./contentfulImage";
+
 export interface ChatGameOption {
   text: string;
   nextId: number | string;
@@ -473,10 +476,15 @@ function richTextToHtml(
         src="${escapeHtmlAttribute(
           imageUrl
         )}"
+        srcset="${escapeHtmlAttribute(
+          getContentfulSrcSet(imageUrl) ?? ""
+        )}"
+        sizes="(max-width: 768px) 100vw, 720px"
         alt="${escapeHtmlAttribute(
           altText
         )}"
         loading="lazy"
+        decoding="async"
         style="max-width:100%;height:auto;display:block;margin:25px auto;border-radius:8px;"
       />
     `;
