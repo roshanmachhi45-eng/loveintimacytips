@@ -602,23 +602,21 @@ const closeCosmicTarot = () => {
                 </div>
 
               </div>
-
-              {/* HERO IMAGE */}
-
-              <div className="relative min-h-[330px] h-[330px] sm:h-auto overflow-hidden sm:min-h-[440px] lg:min-h-[600px] bg-rose-50/30">
-
-                <img
-                  src={HERO_IMAGE}
-                  srcSet="/images/loveons-hero-600.webp 600w, /images/loveons-hero.webp 1440w"
-                  sizes="(max-width: 640px) 100vw, 50vw"
-                  alt="Couple sharing a loving moment"
-                  width="600"
-                  height="600"
-                  className="absolute inset-0 h-full w-full object-cover object-center aspect-square sm:aspect-auto"
-                  loading="eager"
-                  fetchPriority="high"
-                  decoding="sync"
-                />
+              
+{/* HERO IMAGE */}
+<div className="relative w-full aspect-[4/3] sm:aspect-auto sm:min-h-[440px] lg:min-h-[600px] overflow-hidden bg-rose-50/30">
+  <img
+    src="/images/loveons-hero-600.webp"
+    srcSet="/images/loveons-hero-600.webp 600w, /images/loveons-hero.webp 1440w"
+    sizes="(max-width: 640px) 100vw, 50vw"
+    alt="Couple sharing a loving moment"
+    width="600"
+    height="450"
+    className="absolute inset-0 h-full w-full object-cover object-center"
+    loading="eager"
+    fetchPriority="high"
+    decoding="sync"
+  />
 
                 <div
                   aria-hidden="true"
