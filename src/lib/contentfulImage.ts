@@ -8,11 +8,6 @@ interface ContentfulImagePreset {
   quality: number;
 }
 
-export const THUMBNAIL_IMAGE_PRESET: ContentfulImagePreset = {
-  widths: [400, 600, 800],
-  quality: 75,
-};
-
 export const ARTICLE_IMAGE_PRESET: ContentfulImagePreset = {
   widths: [480, 750, 1000],
   quality: 75,
@@ -50,7 +45,7 @@ export function getContentfulImageUrl(
 
 export function getContentfulSrcSet(
   src: string | null | undefined,
-  preset: ContentfulImagePreset = THUMBNAIL_IMAGE_PRESET
+  preset: ContentfulImagePreset
 ): string | undefined {
   if (!src || !isContentfulImageUrl(src)) return undefined;
 

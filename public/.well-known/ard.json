@@ -1,0 +1,27 @@
+{
+  "identifier": "did:web:loveons.com",
+  "displayName": "Loveons",
+  "entries": [
+    {
+      "identifier": "urn:ai:loveons.com:love-calculator",
+      "displayName": "Love Calculator",
+      "type": "text/html",
+      "url": "https://loveons.com/tools/love-calculator",
+      "description": "Check love compatibility between two people."
+    },
+    {
+      "identifier": "urn:ai:loveons.com:cosmic-tarot",
+      "displayName": "Cosmic Tarot",
+      "type": "text/html",
+      "url": "https://loveons.com/cosmic-tarot",
+      "description": "Draw tarot cards for relationship guidance."
+    },
+    {
+      "identifier": "urn:ai:loveons.com:blog",
+      "displayName": "Loveons Blog",
+      "type": "text/html",
+      "url": "https://loveons.com/blog",
+      "description": "Relationship, communication and wellness articles."
+    }
+  ]
+}

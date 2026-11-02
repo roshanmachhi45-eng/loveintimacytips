@@ -167,7 +167,7 @@ export default function BlogCard({
               gap-y-1.5
               text-[11px]
               font-medium
-              text-slate-400
+              text-slate-600
             "
           >
             {date && (
@@ -209,7 +209,7 @@ export default function BlogCard({
     truncate
     text-xs
     font-medium
-    text-slate-400
+    text-slate-600
   "
 >
   {/* वीड्थ और हाइट को फिक्स स्टाइल में देने से इमेज कभी क्रैक नहीं होगी */}
@@ -243,7 +243,7 @@ export default function BlogCard({
                 gap-1
                 text-xs
                 font-bold
-                text-rose-500
+                text-rose-600
                 transition-all
                 duration-200
                 group-hover:gap-2

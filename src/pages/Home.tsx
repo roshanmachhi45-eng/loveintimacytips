@@ -36,7 +36,7 @@ const initialPerson: Person = {
   height: '',
 };
 
-const HERO_IMAGE = '/images/loveons-hero.webp';
+const HERO_IMAGE = '/images/loveons-hero-600.webp';
 
 type ActiveTool = 'love-calculator' | 'cosmic-tarot' | null;
 
@@ -609,6 +609,8 @@ const closeCosmicTarot = () => {
 
                 <img
                   src={HERO_IMAGE}
+                  srcSet="/images/loveons-hero-600.webp 600w, /images/loveons-hero.webp 1440w"
+                  sizes="(max-width: 640px) 100vw, 50vw"
                   alt="Couple sharing a loving moment"
                   width="600"
                   height="600"
@@ -700,7 +702,7 @@ const closeCosmicTarot = () => {
 
                   </div>
 
-                  <span className="rounded-full border border-rose-100 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-500">
+                  <span className="rounded-full border border-rose-100 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700">
                     Available
                   </span>
 
@@ -758,7 +760,7 @@ const closeCosmicTarot = () => {
 
                   </div>
 
-                  <span className="rounded-full border border-purple-100 bg-purple-50 px-2.5 py-1 text-[11px] font-semibold text-purple-500">
+                  <span className="rounded-full border border-purple-100 bg-purple-50 px-2.5 py-1 text-[11px] font-semibold text-purple-700">
                     Daily Reading
                   </span>
 
@@ -817,7 +819,7 @@ const closeCosmicTarot = () => {
 
                   </div>
 
-                  <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-500">
+                  <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700">
                     New Tool
                   </span>
 

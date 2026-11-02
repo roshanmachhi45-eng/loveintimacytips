@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { getContentfulSrcSet } from '../lib/contentfulImage';
+import { getContentfulImageUrl, isContentfulImageUrl } from '../lib/contentfulImage';
 
 const DEFAULT_BLOG_IMAGE = '/images/blogs/default.webp';
 
@@ -10,7 +10,6 @@ interface BlogImageProps {
   className?: string;
   loading?: 'lazy' | 'eager';
   priority?: boolean;
-  sizes?: string;
 }
 
 /**
@@ -142,7 +141,6 @@ export default function BlogImage({
   className = '',
   loading = 'lazy',
   priority = false,
-  sizes = '(max-width: 640px) 100vw, 50vw',
 }: BlogImageProps) {
   const [candidates, setCandidates] = useState<string[]>(() =>
     buildImageCandidates(src)
@@ -164,6 +162,10 @@ export default function BlogImage({
 
   const currentSrc =
     candidates[candidateIndex] || DEFAULT_BLOG_IMAGE;
+
+  const displaySrc = isContentfulImageUrl(currentSrc)
+    ? getContentfulImageUrl(currentSrc, 400, 70)
+    : currentSrc;
 
   const handleLoad = () => {
     setLoaded(true);
@@ -217,9 +219,7 @@ export default function BlogImage({
 
       <img
         key={currentSrc}
-        src={currentSrc}
-        srcSet={getContentfulSrcSet(currentSrc)}
-        sizes={sizes}
+        src={displaySrc}
         alt={alt}
         loading={priority ? 'eager' : loading}
         fetchPriority={priority ? 'high' : 'auto'}

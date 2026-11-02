@@ -1,0 +1,24 @@
+# Loveons
+
+> Loveons is a relationship guide offering love compatibility checks, personalized relationship tips, cosmic tarot readings, and expert wellness articles for couples.
+
+## Tools
+
+- [Love Calculator](https://loveons.com/tools/love-calculator): Check love compatibility between two people.
+- [Cosmic Tarot](https://loveons.com/cosmic-tarot): Draw tarot cards for relationship guidance.
+- [Lover Astro Card](https://loveons.com/lover-astro-card): Generate a shareable love card.
+
+## Blog
+
+- [Blog](https://loveons.com/blog): Relationship, communication and wellness articles.
+
+## About
+
+- [About Loveons](https://loveons.com/about): Who we are and what we offer.
+- [Contact](https://loveons.com/contact): Get in touch with the Loveons team.
+
+## Legal
+
+- [Privacy Policy](https://loveons.com/privacy-policy)
+- [Terms](https://loveons.com/terms)
+- [Disclaimer](https://loveons.com/disclaimer)
