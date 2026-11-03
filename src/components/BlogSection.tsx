@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { ArrowRight, BookOpen, Loader2 } from 'lucide-react';
+import { ArrowRight, BookOpen } from 'lucide-react';
 import BlogCard from './BlogCard';
 import { fetchPublishedPosts, type BlogPost } from '../lib/blogApi';
 
@@ -54,8 +54,13 @@ export default function BlogSection() {
 
         {/* Articles List (Fixed to Maximum 6 Blogs for Professional Look) */}
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-rose-400" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2" aria-busy="true" aria-label="Loading articles">
+            {Array.from({ length: 6 }, (_, index) => (
+              <div
+                key={index}
+                className="h-[392px] animate-pulse rounded-[1.35rem] border border-rose-100 bg-white sm:h-[408px]"
+              />
+            ))}
           </div>
         ) : posts.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
