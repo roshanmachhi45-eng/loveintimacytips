@@ -22,8 +22,23 @@ export default function BlogSection() {
         if (!cancelled) setLoading(false);
       }
     }
-    loadPosts();
-    return () => { cancelled = true; };
+    const idleCallback = window.requestIdleCallback?.(
+      loadPosts,
+      { timeout: 3000 }
+    );
+    const timeoutId = idleCallback === undefined
+      ? window.setTimeout(loadPosts, 2000)
+      : undefined;
+
+    return () => {
+      cancelled = true;
+      if (idleCallback !== undefined) {
+        window.cancelIdleCallback?.(idleCallback);
+      }
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+    };
   }, []);
 
   return (

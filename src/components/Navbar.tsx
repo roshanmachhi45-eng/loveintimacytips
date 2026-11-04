@@ -100,11 +100,22 @@ export default function Navbar() {
     }
   };
 
-  const idleTimer = window.setTimeout(initializeAuth, 1500);
+  const idleCallback = window.requestIdleCallback?.(
+    initializeAuth,
+    { timeout: 5000 }
+  );
+  const timeoutId = idleCallback === undefined
+    ? window.setTimeout(initializeAuth, 3000)
+    : undefined;
 
   return () => {
     cancelled = true;
-    window.clearTimeout(idleTimer);
+    if (idleCallback !== undefined) {
+      window.cancelIdleCallback?.(idleCallback);
+    }
+    if (timeoutId !== undefined) {
+      window.clearTimeout(timeoutId);
+    }
     unsubscribe?.();
   };
 }, []);
