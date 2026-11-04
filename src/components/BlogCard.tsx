@@ -214,7 +214,7 @@ export default function BlogCard({
 >
   {/* वीड्थ और हाइट को फिक्स स्टाइल में देने से इमेज कभी क्रैक नहीं होगी */}
   <img
-    src="/images/rocksy-avatar.webp"
+    src="/images/rocksy-avatar-32.webp"
     alt="Rocksy"
     className="rounded-full object-cover border border-rose-100 shadow-sm"
     style={{ 

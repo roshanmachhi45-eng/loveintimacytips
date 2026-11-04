@@ -36,8 +36,6 @@ const initialPerson: Person = {
   height: '',
 };
 
-const HERO_IMAGE = '/images/loveons-hero-600.webp';
-
 type ActiveTool = 'love-calculator' | 'cosmic-tarot' | null;
 
 export default function Home() {
@@ -604,20 +602,20 @@ const closeCosmicTarot = () => {
               </div>
               
 {/* HERO IMAGE */}
-<div className="relative w-full aspect-[4/3] sm:aspect-auto sm:min-h-[440px] lg:min-h-[600px] overflow-hidden bg-rose-50/30">
-  <img
-    src="/images/loveons-hero-600.webp"
-    srcSet="/images/loveons-hero-600.webp 600w, /images/loveons-hero.webp 1440w"
-    sizes="(max-width: 640px) 100vw, 50vw"
-    alt="Couple sharing a loving moment"
-    width="600"
-    height="450"
-    className="absolute inset-0 h-full w-full object-cover object-center"
-    loading="eager"
-    fetchPriority="high"
-    decoding="sync"
-  />
-
+                  <div className="relative w-full aspect-[4/3] sm:aspect-auto sm:min-h-[440px] lg:min-h-[600px] overflow-hidden bg-rose-50/30">
+                  <picture>
+                    <source media="(max-width: 640px)" srcSet="/images/loveons-hero-600.webp" />
+                    <img
+                      src="/images/loveons-hero.webp"
+                      alt="Couple sharing a loving moment"
+                      width="1440"
+                      height="960"
+                      className="absolute inset-0 h-full w-full object-cover object-center"
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="sync"
+                    />
+                  </picture>
                 <div
                   aria-hidden="true"
                   className="absolute inset-0 bg-gradient-to-r from-white/15 via-transparent to-transparent lg:from-white/25"
