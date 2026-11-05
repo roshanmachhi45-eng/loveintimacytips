@@ -497,11 +497,13 @@ const closeCosmicTarot = () => {
   {!isStandaloneToolRoute && (
     <> 
 
+      <div className="flex flex-col">
+
       {/* =====================================================
           HERO
       ===================================================== */}
 
-      <section className="relative overflow-hidden px-4 pb-10 pt-6 sm:px-6 sm:pb-14 sm:pt-8 lg:px-8 lg:pb-16">
+      <section className="order-2 relative overflow-hidden px-4 pb-10 pt-6 sm:px-6 sm:pb-14 sm:pt-8 lg:order-1 lg:px-8 lg:pb-16">
 
         <div
           aria-hidden="true"
@@ -535,7 +537,7 @@ const closeCosmicTarot = () => {
 <h1 className="max-w-xl text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-[3.6rem] xl:text-[4rem]">
   <span className="block text-purple-600">Build</span>
   <span className="block text-purple-600">Authentic</span>
-  <span className="mt-1 block bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">
+  <span className="mt-1 block text-rose-500 lg:bg-gradient-to-r lg:from-rose-500 lg:via-pink-500 lg:to-purple-500 lg:bg-clip-text lg:text-transparent">
     Connections Beyond the Screen
   </span>
 </h1>
@@ -635,12 +637,12 @@ const closeCosmicTarot = () => {
 
       <section
         id="tools"
-        className="relative scroll-mt-24 px-4 pb-12 pt-4 sm:px-6 lg:px-8"
+        className="order-1 relative scroll-mt-20 px-4 pb-8 pt-2 sm:order-2 sm:scroll-mt-24 sm:px-6 sm:pb-12 sm:pt-4 lg:px-8"
       >
 
         <div className="mx-auto max-w-4xl">
 
-          <div className="mb-6 text-center">
+          <div className="mb-4 text-center sm:mb-6">
 
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-rose-100 bg-white/80 px-3 py-1.5 text-xs font-semibold text-rose-500 shadow-sm">
 
@@ -665,7 +667,7 @@ const closeCosmicTarot = () => {
               ONLY TWO CARDS
           ================================================= */}
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
 
             {/* =================================================
                 LOVE CALCULATOR CARD
@@ -675,7 +677,7 @@ const closeCosmicTarot = () => {
               type="button"
               onClick={openLoveCalculator}
               aria-label="Open Love Calculator"
-              className="group relative overflow-hidden rounded-[1.75rem] border border-rose-100 bg-white/85 p-5 text-left shadow-[0_12px_40px_rgba(236,72,153,0.08)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-rose-200 hover:shadow-[0_20px_50px_rgba(236,72,153,0.14)] focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2 sm:p-6"
+              className="group relative h-full overflow-hidden rounded-[1.75rem] border border-rose-100 bg-white/85 p-3 text-left sm:p-6 shadow-[0_12px_40px_rgba(236,72,153,0.08)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-rose-200 hover:shadow-[0_20px_50px_rgba(236,72,153,0.14)] focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2 sm:p-6"
             >
 
               <div
@@ -690,11 +692,11 @@ const closeCosmicTarot = () => {
 
               <div className="relative">
 
-                <div className="mb-5 flex items-start justify-between">
+                <div className="mb-3 flex items-start justify-between sm:mb-5">
 
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-200">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl sm:h-12 sm:w-12 bg-gradient-to-br from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-200">
 
-                    <Heart className="h-6 w-6 fill-white" />
+                    <Heart className="h-5 w-5 fill-white sm:h-6 sm:w-6" />
 
                   </div>
 
@@ -704,16 +706,16 @@ const closeCosmicTarot = () => {
 
                 </div>
 
-                <h3 className="font-display text-lg font-bold text-slate-900 sm:text-xl">
+                <h3 className="font-display text-sm font-bold text-slate-900 sm:text-xl">
                   Love Calculator
                 </h3>
 
-                <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                <p className="mt-2 max-w-sm text-xs leading-5 text-slate-500 sm:text-sm">
                   Explore your connection and discover
                   personalized relationship insights.
                 </p>
 
-                <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-rose-500 transition-colors group-hover:text-rose-600">
+                <div className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold sm:mt-5 sm:gap-1.5 sm:text-sm text-rose-500 transition-colors group-hover:text-rose-600">
 
                   Try Love Calculator
 
@@ -733,7 +735,7 @@ const closeCosmicTarot = () => {
               type="button"
               onClick={openCosmicTarot}
               aria-label="Open Cosmic Love Tarot"
-              className="group relative overflow-hidden rounded-[1.75rem] border border-purple-100 bg-white/85 p-5 text-left shadow-[0_12px_40px_rgba(139,92,246,0.08)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-purple-200 hover:shadow-[0_20px_50px_rgba(139,92,246,0.14)] focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 sm:p-6"
+              className="group relative h-full overflow-hidden rounded-[1.75rem] border border-purple-100 bg-white/85 p-3 text-left sm:p-6 shadow-[0_12px_40px_rgba(139,92,246,0.08)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-purple-200 hover:shadow-[0_20px_50px_rgba(139,92,246,0.14)] focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 sm:p-6"
             >
 
               <div
@@ -748,11 +750,11 @@ const closeCosmicTarot = () => {
 
               <div className="relative">
 
-                <div className="mb-5 flex items-start justify-between">
+                <div className="mb-3 flex items-start justify-between sm:mb-5">
 
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 via-violet-500 to-pink-500 text-white shadow-lg shadow-purple-200">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl sm:h-12 sm:w-12 bg-gradient-to-br from-purple-500 via-violet-500 to-pink-500 text-white shadow-lg shadow-purple-200">
 
-                    <Sparkles className="h-6 w-6" />
+                    <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
 
                   </div>
 
@@ -762,16 +764,16 @@ const closeCosmicTarot = () => {
 
                 </div>
 
-                <h3 className="font-display text-lg font-bold text-slate-900 sm:text-xl">
+                <h3 className="font-display text-sm font-bold text-slate-900 sm:text-xl">
                   Cosmic Love Tarot
                 </h3>
 
-                <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                <p className="mt-2 max-w-sm text-xs leading-5 text-slate-500 sm:text-sm">
                   Discover your daily cosmic love reading,
                   tarot message, and romantic energy.
                 </p>
 
-                <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-purple-500 transition-colors group-hover:text-purple-600">
+                <div className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold sm:mt-5 sm:gap-1.5 sm:text-sm text-purple-500 transition-colors group-hover:text-purple-600">
 
                   Try Cosmic Love Tarot
 
@@ -791,7 +793,7 @@ const closeCosmicTarot = () => {
               type="button"
               onClick={openLoveMagicEye}
               aria-label="Open Love Magic Eye"
-              className="group relative overflow-hidden rounded-[1.75rem] border border-violet-200 bg-white/85 p-5 text-left shadow-[0_12px_40px_rgba(139,92,246,0.10)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-violet-300 hover:shadow-[0_20px_50px_rgba(139,92,246,0.18)] focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 sm:p-6"
+              className="group relative h-full overflow-hidden rounded-[1.75rem] border border-violet-200 bg-white/85 p-3 text-left shadow-[0_12px_40px_rgba(139,92,246,0.10)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-violet-300 hover:shadow-[0_20px_50px_rgba(139,92,246,0.18)] focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 sm:p-6"
               style={{ boxShadow: '0 0 20px rgba(168,85,247,0.08)' }}
             >
 
@@ -807,11 +809,11 @@ const closeCosmicTarot = () => {
 
               <div className="relative">
 
-                <div className="mb-5 flex items-start justify-between">
+                <div className="mb-3 flex items-start justify-between sm:mb-5">
 
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-violet-200">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl sm:h-12 sm:w-12 bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-violet-200">
 
-                    <Eye className="h-6 w-6" />
+                    <Eye className="h-5 w-5 sm:h-6 sm:w-6" />
 
                   </div>
 
@@ -821,17 +823,17 @@ const closeCosmicTarot = () => {
 
                 </div>
 
-                <h3 className="font-display text-lg font-bold text-slate-900 sm:text-xl">
+                <h3 className="font-display text-sm font-bold text-slate-900 sm:text-xl">
                   Lover Astro Card
                 </h3>
 
-                <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                <p className="mt-2 max-w-sm text-xs leading-5 text-slate-500 sm:text-sm">
                   Discover the beauty of a celestial planet and
                   a sparkling gemstone in your Lover Astro Card.
                   
                 </p>
 
-                <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-violet-500 transition-colors group-hover:text-violet-600">
+                <div className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold sm:mt-5 sm:gap-1.5 sm:text-sm text-violet-500 transition-colors group-hover:text-violet-600">
 
                   Try Lover Astro Card 
 
@@ -846,6 +848,7 @@ const closeCosmicTarot = () => {
           </div>
         </div>
       </section>
+      </div>
     </>
 )}
 

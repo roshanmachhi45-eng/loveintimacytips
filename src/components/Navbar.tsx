@@ -495,7 +495,7 @@ return (
               aria-expanded={menuOpen}
               className="
                 relative z-[120]
-                mr-2 flex h-10 w-10 shrink-0
+                mr-1 flex h-8 w-8 shrink-0 sm:mr-3 sm:h-10 sm:w-10
                 items-center justify-center
                 rounded-xl
                 text-gray-600
@@ -524,17 +524,17 @@ return (
               onClick={closeEverything}
               aria-label="Loveons.com Home"
               className="
-                flex shrink-0 items-center gap-2
+                flex shrink-0 items-center gap-1 sm:gap-2
                 transition-transform duration-200
                 hover:scale-[1.02]
               "
             >
-              <Logo className="h-10 w-10 sm:h-11 sm:w-11" />
+              <Logo className="h-8 w-8 sm:h-11 sm:w-11" />
 
               <span
                 className="
                   whitespace-nowrap
-                  text-[20px]
+                  text-[14px]
                   font-extrabold
                   tracking-[-0.03em]
                   text-rose-600
@@ -960,8 +960,8 @@ return (
                 }
                 aria-expanded={searchOpen}
                 className="
-                  flex h-10 w-10
-                  items-center justify-center
+                  flex h-8 w-8
+                  items-center justify-center sm:h-10 sm:w-10
                   rounded-xl
                   text-gray-600
                   transition-all duration-200
@@ -1053,7 +1053,7 @@ return (
   <button
     onClick={handleLogin}
     disabled={authLoading}
-    className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-bold shadow-sm active:scale-95 transition whitespace-nowrap disabled:opacity-60 min-w-[105px] text-center"
+    className="bg-gradient-to-r from-rose-500 to-pink-500 text-white px-2 py-1.5 rounded-full text-[10px] font-bold shadow-sm active:scale-95 transition whitespace-nowrap disabled:opacity-60 text-center sm:px-3 sm:text-xs sm:min-w-[105px]"
   >
     {authLoading ? '...' : 'Login / Sign Up'}
   </button>
