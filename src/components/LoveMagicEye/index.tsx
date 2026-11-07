@@ -48,10 +48,11 @@ export default function LoveMagicEye() {
   return (
     <>
 <Seo
-  title="Lover Astro Card — Discover Your Lover's Hidden 3D Aura | Loveons"
-  description="Explore the Lover Astro Card on Loveons, an interactive magic eye stereogram experience that reveals a hidden 3D aura through a mesmerizing visual."
+  title="Lover Astro Card — Reveal Your Partner's Cosmic Planet & Gemstone"
+  description="Discover your partner's celestial love aura! Enter their details to reveal their ruling cosmic planet, lucky gemstone, and personalized Astro love predictions."
   path="/lover-astro-card"
 />
+
       <div className="mx-auto max-w-md px-1">
         {/* Header */}
         <div className="mb-5 flex items-center justify-between">
