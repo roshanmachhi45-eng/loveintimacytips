@@ -6,7 +6,7 @@ interface LogoProps {
 export default function Logo({ className = 'w-8 h-8', alt = 'Loveons logo' }: LogoProps) {
   return (
     <img
-      src="https://loveons.com"
+      src="/images/loveons-logo.svg"
       alt={alt}
       className={`object-contain flex-shrink-0 ${className}`}
       loading="eager"
@@ -14,5 +14,3 @@ export default function Logo({ className = 'w-8 h-8', alt = 'Loveons logo' }: Lo
     />
   );
 }
-
-
