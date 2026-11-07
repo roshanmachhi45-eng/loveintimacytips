@@ -208,10 +208,19 @@ export default function ConfigurationForm({
                     }
                   `}
                 >
-                  <span
-                    className="h-8 w-8 rounded-full border-2 border-white shadow-sm"
-                    style={{ backgroundColor: tone.color }}
-                  />
+<svg
+  width="34"
+  height="34"
+  viewBox="0 0 40 40"
+  aria-hidden="true"
+>
+  <path
+    d="M20 3.5C11.4 3.5 5 10.2 5 19.2c0 9.4 6.2 17.3 15 17.3s15-7.9 15-17.3C35 10.2 28.6 3.5 20 3.5Z"
+    fill={tone.color}
+    stroke="#D1D5DB"
+    strokeWidth="1.5"
+  />
+</svg>
 
                   <span className="text-center text-[11px] font-medium leading-tight text-slate-600">
                     {tone.label}
@@ -428,23 +437,19 @@ function MarsIcon() {
 }
 
 function HairIcon({ style }: { style: string }) {
+  const commonProps = {
+    width: 34,
+    height: 34,
+    viewBox: '0 0 40 40',
+    fill: 'currentColor',
+    'aria-hidden': true as const,
+  };
+
   if (style === 'bald') {
     return (
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="12" cy="12" r="9" />
+      <svg {...commonProps}>
         <path
-          d="M3 12c0-4 4-7 9-7s9 3 9 7"
-          strokeDasharray="2 2"
-          opacity="0.3"
+          d="M20 7C13 7 9 11 9 17c0 2 1 3 2 4 1-5 4-8 9-8s8 3 9 8c1-1 2-2 2-4 0-6-4-10-11-10Z"
         />
       </svg>
     );
@@ -452,69 +457,100 @@ function HairIcon({ style }: { style: string }) {
 
   if (style === 'curly') {
     return (
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="12" cy="13" r="8" />
-        <path d="M4 10c2-3 5-4 8-4s6 1 8 4" />
-        <path d="M6 7c1-2 3-3 6-3s5 1 6 3" opacity="0.5" />
+      <svg {...commonProps}>
+        <path d="
+          M10 21
+          C5 18 7 12 12 12
+          C10 6 17 4 20 9
+          C23 3 31 7 29 13
+          C35 14 35 21 30 23
+          L29 18
+          C26 15 23 16 20 16
+          C16 16 13 17 11 20Z
+        " />
       </svg>
     );
   }
 
   return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="13" r="8" />
-      <path d="M4 11c2-4 5-6 8-6s6 2 8 6" />
+    <svg {...commonProps}>
+      <path d="
+        M8 23
+        C7 14 12 7 20 7
+        C28 7 33 14 32 23
+        L28 18
+        C25 15 22 14 19 14
+        C15 14 12 17 10 22Z
+      " />
     </svg>
   );
 }
 
 function BeardIcon({ style }: { style: string }) {
-  const opacity =
-    style === 'full'
-      ? 1
-      : style === 'short'
-        ? 0.7
-        : style === 'stubble'
-          ? 0.35
-          : 0;
+  const commonProps = {
+    width: 34,
+    height: 34,
+    viewBox: '0 0 40 40',
+    fill: 'currentColor',
+    'aria-hidden': true as const,
+  };
+
+  if (style === 'full') {
+    return (
+      <svg {...commonProps}>
+        <path d="
+          M7 7
+          C10 13 9 19 11 25
+          C13 32 17 36 20 38
+          C23 36 27 32 29 25
+          C31 19 30 13 33 7
+          C29 13 25 15 20 15
+          C15 15 11 13 7 7Z
+        " />
+      </svg>
+    );
+  }
+
+  if (style === 'short') {
+    return (
+      <svg {...commonProps}>
+        <path d="
+          M10 9
+          C12 15 12 22 15 27
+          C17 30 19 32 20 33
+          C21 32 23 30 25 27
+          C28 22 28 15 30 9
+          C26 15 23 17 20 17
+          C17 17 14 15 10 9Z
+        " />
+      </svg>
+    );
+  }
+
+  if (style === 'stubble') {
+    return (
+      <svg {...commonProps}>
+        <path
+          d="
+            M11 12
+            L14 17 L17 15 L20 18
+            L23 15 L26 17 L29 12
+            L27 23 L24 27 L20 29
+            L16 27 L13 23Z
+          "
+        />
+      </svg>
+    );
+  }
 
   return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="11" r="7" />
-
-      <path
-        d="M5 13c1 5 4 7 7 7s6-2 7-7"
-        fill="currentColor"
-        fillOpacity={opacity}
-        strokeOpacity={opacity > 0 ? 1 : 0}
-      />
+    <svg {...commonProps}>
+      <path d="
+        M15 13
+        L17 17 L20 14
+        L23 17 L25 13
+        L23 22 L20 26 L17 22Z
+      " />
     </svg>
   );
 }
