@@ -8,7 +8,7 @@
   "theme_color": "#FF4D8D",
   "icons": [
     {
-      "src": "/loveons-logo.svg",
+      "src": "/images/loveons-logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
