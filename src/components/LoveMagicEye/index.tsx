@@ -167,6 +167,8 @@ export default function LoveMagicEye() {
             </p>
           </div>
         )}
+        {generateKey === 0 && (
+          <>
         {/* Lover Astro Card SEO Content */}
         <section className="mt-6 rounded-2xl border border-purple-100 bg-white p-5 shadow-sm">
 
@@ -219,6 +221,8 @@ export default function LoveMagicEye() {
           </p>
 
         </section>
+      </>
+    )}
 
       </div>
     </>
