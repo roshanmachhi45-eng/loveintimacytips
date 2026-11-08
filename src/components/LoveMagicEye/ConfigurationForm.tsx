@@ -129,30 +129,6 @@ export default function ConfigurationForm({
                 love and relationships.
               </p>
             </div>
-
-            {/* SEO Information Section Hidden Inside Help Accordion */}
-            <div className="mt-4 pt-4 border-t border-purple-100 text-left text-xs leading-relaxed text-slate-500 space-y-3">
-              <div>
-                <h6 className="font-bold text-slate-800 mb-0.5">How the Lover Astro Card Mapping Works</h6>
-                <p>
-                  The Lover Astro Card is an advanced relationship exploration tool designed to reveal the cosmic blueprint behind your partner's love aura. By evaluating specific physical and energetic traits, our specialized custom algorithm maps out a unique astrological profile. This profile identifies the fundamental cosmic energies influencing your relationship dynamics, allowing for a deeper understanding of your natural romantic connection.
-                </p>
-              </div>
-
-              <div>
-                <h6 className="font-bold text-slate-800 mb-0.5">The Role of Cosmic Planets & Birth Gemstones</h6>
-                <p>
-                  Every relationship vibrates under the unique frequency of ruling celestial bodies, such as the affectionate energy of Venus or the deep intuitive nature of the Moon. Along with discovering their central love planet, the tool calculates a sacred gemstone—ranging from protective Opals and deep Rubies to stabilizing Amethysts. These natural stones serve as geometric symbols of strength, loyalty, and balance within your bond.
-                </p>
-              </div>
-
-              <div>
-                <h6 className="font-bold text-slate-800 mb-0.5">Daily Relationship Predictions</h6>
-                <p>
-                  Astrological forces shift constantly, meaning your romantic aura receives fresh inspiration day by day. By analyzing the current calendar timeline alongside your custom personal profile key, the card provides updated relationship guidance, gentle affection goals, and cosmic daily check-ins. Read these customized predictions regularly to align your intentions, build meaningful communication, and nurture lasting closeness with your partner.
-                </p>
-              </div>
-            </div>
           </div>
         )}
             
