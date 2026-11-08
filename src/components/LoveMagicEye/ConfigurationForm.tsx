@@ -153,6 +153,7 @@ export default function ConfigurationForm({
                 </p>
               </div>
             </div>
+          </div>
         )}
             
         {/* Partner Name */}
