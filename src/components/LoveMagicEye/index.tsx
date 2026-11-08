@@ -167,6 +167,58 @@ export default function LoveMagicEye() {
             </p>
           </div>
         )}
+        {/* Lover Astro Card SEO Content */}
+        <section className="mt-6 rounded-2xl border border-purple-100 bg-white p-5 shadow-sm">
+
+          <h2 className="mb-3 text-lg font-bold text-slate-900">
+            About Lover Astro Card
+          </h2>
+
+          <div className="space-y-4 text-sm leading-6 text-slate-600">
+
+            <div>
+              <h3 className="mb-1 font-semibold text-slate-800">
+                What Is Lover Astro Card?
+              </h3>
+              <p>
+                Lover Astro Card is a fun cosmic-themed tool
+                that creates a personalized love card featuring
+                a planet, gemstone and romantic message for
+                someone special.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="mb-1 font-semibold text-slate-800">
+                How Does It Work?
+              </h3>
+              <p>
+                Enter your partner's details and generate
+                a unique cosmic-inspired card with personalized
+                visual elements and a romantic message.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="mb-1 font-semibold text-slate-800">
+                Share Your Love Card
+              </h3>
+              <p>
+                Enjoy your cosmic love card and share the
+                experience with someone special on your
+                favourite social platforms.
+              </p>
+            </div>
+
+          </div>
+
+          <p className="mt-4 border-t border-purple-100 pt-3 text-xs leading-5 text-slate-500">
+            This tool is created for entertainment and romantic
+            inspiration. Its cosmic themes are not scientifically
+            proven predictions.
+          </p>
+
+        </section>
 
       </div>
     </>
