@@ -117,7 +117,6 @@ export default function ConfigurationForm({
               <li>Click Generate Lover Astro Card to reveal your personalized cosmic card.</li>
               <li>Explore your card and share it with someone special using the available sharing options.</li>
             </ol>
-
             <div className="mt-4 rounded-xl border border-purple-100 bg-white/80 p-3">
               <h5 className="mb-1 text-sm font-bold text-purple-800">
                 A Little Disclaimer
@@ -130,8 +129,8 @@ export default function ConfigurationForm({
                 love and relationships.
               </p>
             </div>
-          </div>
-                  {/* SEO Information Section Hidden Inside Help Accordion */}
+
+            {/* SEO Information Section Hidden Inside Help Accordion */}
             <div className="mt-4 pt-4 border-t border-purple-100 text-left text-xs leading-relaxed text-slate-500 space-y-3">
               <div>
                 <h6 className="font-bold text-slate-800 mb-0.5">How the Lover Astro Card Mapping Works</h6>
@@ -154,8 +153,9 @@ export default function ConfigurationForm({
                 </p>
               </div>
             </div>
+          </div>
         )}
-
+            
         {/* Partner Name */}
         <div className="mb-4">
           <label
