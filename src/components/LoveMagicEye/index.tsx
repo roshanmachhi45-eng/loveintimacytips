@@ -62,11 +62,12 @@ export default function LoveMagicEye() {
             </div>
 
             <div>
+              {/* यहाँ H1 टैग को SEO-फ्रेंडली और विजिबल बनाया गया है */}
               <h1 className="font-display text-xl font-bold text-slate-900">
-                Lover Astro Card
+                Lover Astro Card — Free Cosmic Love Predictions & Gemstone Mapping
               </h1>
 
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 mt-1">
                 Create your partner's ultimate love card
               </p>
             </div>
@@ -162,31 +163,8 @@ export default function LoveMagicEye() {
           </div>
         )}
 
-        {/* SEO Information Section Added Below to Fix Semrush Warnings */}
-        <article className="mt-10 border-t border-slate-100 pt-8 text-left text-xs leading-relaxed text-slate-500 space-y-4">
-          <section>
-            <h2 className="text-sm font-bold text-slate-800 mb-1">How the Lover Astro Card Mapping Works</h2>
-            <p>
-              The Lover Astro Card is an advanced relationship exploration tool designed to reveal the cosmic blueprint behind your partner's love aura. By evaluating specific physical and energetic traits, our specialized custom algorithm maps out a unique astrological profile. This profile identifies the fundamental cosmic energies influencing your relationship dynamics, allowing for a deeper understanding of your natural romantic connection.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-sm font-bold text-slate-800 mb-1">The Role of Cosmic Planets & Birth Gemstones</h2>
-            <p>
-              Every relationship vibrates under the unique frequency of ruling celestial bodies, such as the affectionate energy of Venus or the deep intuitive nature of the Moon. Along with discovering their central love planet, the tool calculates a sacred gemstone—ranging from protective Opals and deep Rubies to stabilizing Amethysts. These natural stones serve as geometric symbols of strength, loyalty, and balance within your bond.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-sm font-bold text-slate-800 mb-1">Daily Relationship Predictions</h2>
-            <p>
-              Astrological forces shift constantly, meaning your romantic aura receives fresh inspiration day by day. By analyzing the current calendar timeline alongside your custom personal profile key, the card provides updated relationship guidance, gentle affection goals, and cosmic daily check-ins. Read these customized predictions regularly to align your intentions, build meaningful communication, and nurture lasting closeness with your partner.
-            </p>
-          </section>
-        </article>
-
       </div>
     </>
   );
 }
+
