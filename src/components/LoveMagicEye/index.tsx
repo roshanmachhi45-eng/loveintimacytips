@@ -48,11 +48,10 @@ export default function LoveMagicEye() {
   return (
     <>
 <Seo
-  title="Lover Astro Card — Reveal Your Partner's Cosmic Planet & Gemstone"
-  description="Discover your partner's celestial love aura! Enter their details to reveal their ruling cosmic planet, lucky gemstone, and personalized Astro love predictions."
+  title="Lover Astro Card – Free Cosmic Love Card Generator | Loveons"
+  description="Create a personalized Lover Astro Card with a cosmic planet, gemstone and romantic message. Generate and share your love card for free."
   path="/lover-astro-card"
-/>
-
+/>    
       <div className="mx-auto max-w-md px-1">
         {/* Header */}
         <div className="mb-5 flex items-center justify-between">
@@ -62,10 +61,16 @@ export default function LoveMagicEye() {
             </div>
 
             <div>
-              {/* यहाँ H1 टैग को SEO-फ्रेंडली और विजिबल बनाया गया है */}
-              <h1 className="font-display text-xl font-bold text-slate-900">
-                Lover Astro Card — Free Cosmic Love Predictions & Gemstone Mapping
-              </h1>
+{/* यहाँ H1 टैग को SEO-फ्रेंडली और विजिबल बनाया गया है */}
+        
+<h1 className="font-display text-xl font-bold text-slate-900">
+  Lover Astro Card
+</h1>
+
+<p className="text-xs text-slate-500 mt-1">
+  Create a personalized cosmic love card for someone special.
+</p>
+              
 
               <p className="text-xs text-slate-400 mt-1">
                 Create your partner's ultimate love card
