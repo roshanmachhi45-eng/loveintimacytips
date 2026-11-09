@@ -1,9 +1,9 @@
 {
-  "identifier": "urn:alr:loveons:platform",
+  "identifier": "urn:alr:loveons:platform:root",
   "displayName": "Loveons",
   "entries": [
     {
-      "identifier": "urn:alr:loveons:lovecalculator",
+      "identifier": "urn:alr:loveons:tools:lovecalculator",
       "displayName": "Love Calculator",
       "type": "application/ai-catalog+json",
       "url": "https://loveons.com",
@@ -14,7 +14,7 @@
       ]
     },
     {
-      "identifier": "urn:alr:loveons:cosmictarot",
+      "identifier": "urn:alr:loveons:tools:cosmictarot",
       "displayName": "Cosmic Tarot",
       "type": "application/ai-catalog+json",
       "url": "https://loveons.com",
@@ -25,7 +25,7 @@
       ]
     },
     {
-      "identifier": "urn:alr:loveons:blog",
+      "identifier": "urn:alr:loveons:content:blog",
       "displayName": "Loveons Blog",
       "type": "application/ai-catalog+json",
       "url": "https://loveons.com",
