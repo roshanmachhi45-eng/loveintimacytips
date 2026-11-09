@@ -1,27 +1,40 @@
 {
-  "identifier": "did:web:loveons.com",
+  "identifier": "urn:alr:loveons:platform:root",
   "displayName": "Loveons",
   "entries": [
     {
-      "identifier": "urn:ai:loveons.com:love-calculator",
+      "identifier": "urn:alr:loveons:tools:love-calculator",
       "displayName": "Love Calculator",
-      "type": "text/html",
-      "url": "https://loveons.com/tools/love-calculator",
-      "description": "Check love compatibility between two people."
+      "type": "application/ai-catalog+json",
+      "url": "https://loveons.com",
+      "description": "Check love compatibility between two people.",
+      "representativeQueries": [
+        "check love compatibility between two names",
+        "calculate love match percentage"
+      ]
     },
     {
-      "identifier": "urn:ai:loveons.com:cosmic-tarot",
+      "identifier": "urn:alr:loveons:tools:cosmic-tarot",
       "displayName": "Cosmic Tarot",
-      "type": "text/html",
-      "url": "https://loveons.com/cosmic-tarot",
-      "description": "Draw tarot cards for relationship guidance."
+      "type": "application/ai-catalog+json",
+      "url": "https://loveons.com",
+      "description": "Draw tarot cards for relationship guidance.",
+      "representativeQueries": [
+        "draw a tarot card for love",
+        "get relationship guidance tarot reading"
+      ]
     },
     {
-      "identifier": "urn:ai:loveons.com:blog",
+      "identifier": "urn:alr:loveons:content:blog",
       "displayName": "Loveons Blog",
-      "type": "text/html",
-      "url": "https://loveons.com/blog",
-      "description": "Relationship, communication and wellness articles."
+      "type": "application/ai-catalog+json",
+      "url": "https://loveons.com",
+      "description": "Relationship, communication and wellness articles.",
+      "representativeQueries": [
+        "read relationship advice articles",
+        "communication tips for couples"
+      ]
     }
   ]
 }
+
