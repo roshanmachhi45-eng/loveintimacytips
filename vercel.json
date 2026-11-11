@@ -2,6 +2,16 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/love-calculator",
+      "destination": "/tools/love-calculator",
+      "permanent": true
+    },
+    {
+      "source": "/blog/how-to-meet-singles-without-dating-apps-the-ultimate-irl-guide",
+      "destination": "/blog/how-to-meet-singles-without-dating-apps",
+      "permanent": true
+    },
+    {
       "source": "/(.*)",
       "has": [
         {
@@ -52,6 +62,7 @@
     }
   ]
 }
+
 
 
 
