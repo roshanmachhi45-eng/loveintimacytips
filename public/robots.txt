@@ -5,4 +5,4 @@ Allow: /
 Disallow: /admin/
 Disallow: /admin
 
-Sitemap: https://loveons.com/sitemap.xml
+Sitemap: https://www.loveons.com/sitemap.xml
