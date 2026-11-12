@@ -1,3 +1,4 @@
+
 {
   "trailingSlash": false,
   "redirects": [
@@ -9,17 +10,6 @@
     {
       "source": "/blog/how-to-meet-singles-without-dating-apps-the-ultimate-irl-guide",
       "destination": "/blog/how-to-meet-singles-without-dating-apps",
-      "permanent": true
-    },
-    {
-      "source": "/(.*)",
-      "has": [
-        {
-          "type": "host",
-          "value": "://loveons.com"
-        }
-      ],
-      "destination": "https://loveons.com*",
       "permanent": true
     }
   ],
@@ -62,6 +52,7 @@
     }
   ]
 }
+
 
 
 
