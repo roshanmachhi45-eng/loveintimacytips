@@ -1,4 +1,4 @@
-const SITE_URL = 'https://loveons.com';
+const SITE_URL = 'https://www.loveons.com';
 
 function escapeXml(value: string): string {
   return value
