@@ -117,6 +117,9 @@ export default async function handler(
   </url>
   <url>
     <loc>${SITE_URL}/tools/tarot</loc>
+  </url>
+  <url>
+    <loc>${SITE_URL}/lover-astro-card</loc>
   </url>${blogUrls}
 </urlset>`;
 
