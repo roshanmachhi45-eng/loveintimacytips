@@ -1,24 +1,67 @@
-# Loveons
+# Loveons — Your Personal Relationship Guide
 
-> Loveons is a relationship guide offering love compatibility checks, personalized relationship tips, cosmic tarot readings, and expert wellness articles for couples.
+> Loveons is a modern relationship advice platform dedicated to helping singles overcome dating app burnout and build genuine romantic connections in the real world. Loveons provides practical guides on offline dating, social confidence, communication, and meeting people naturally, along with interactive relationship tools for entertainment and romantic insights.
 
-## Tools
+Website: https://www.loveons.com
+Preferred Domain: https://www.loveons.com
 
-- [Love Calculator](https://loveons.com/tools/love-calculator): Check love compatibility between two people.
-- [Cosmic Tarot](https://loveons.com/cosmic-tarot): Draw tarot cards for relationship guidance.
-- [Lover Astro Card](https://loveons.com/lover-astro-card): Generate a shareable love card.
+## Core Focus Areas
 
-## Blog
+- Off-App & Real-World Dating: Practical strategies for meeting singles naturally without relying on dating apps or algorithms.
+- Social Confidence & Communication: Guidance on overcoming approach anxiety, handling rejection, understanding non-verbal social cues, and starting natural conversations.
+- Offline Dating Opportunities: Advice on meeting people in everyday places such as bookstores, coffee shops, gyms, classes, social events, and outdoor activities.
+- Interactive Relationship Tools: Free online tools for exploring romantic compatibility, tarot-inspired relationship insights, and personalized astrological love cards.
 
-- [Blog](https://loveons.com/blog): Relationship, communication and wellness articles.
+## Interactive Relationship Tools
 
-## About
+- [Lover Astro Card](https://www.loveons.com/lover-astro-card): Explore personalized romantic astrology-inspired insights and create a shareable love card.
+- [Cosmic Love Tarot](https://www.loveons.com/tools/tarot): An interactive tarot-inspired tool for exploring love, dating, and relationship themes.
+- [Love Calculator](https://www.loveons.com/tools/love-calculator): A fun online compatibility calculator for exploring romantic chemistry between two people.
 
-- [About Loveons](https://loveons.com/about): Who we are and what we offer.
-- [Contact](https://loveons.com/contact): Get in touch with the Loveons team.
+## Blog — Off-App Dating & Relationship Guides
 
-## Legal
+### Dating App Fatigue and Digital Detox
 
-- [Privacy Policy](https://loveons.com/privacy-policy)
-- [Terms](https://loveons.com/terms)
-- [Disclaimer](https://loveons.com/disclaimer)
+- [Why Am I Tired of Dating Apps?](https://www.loveons.com/blog/why-am-i-tired-of-dating-apps): Understanding dating app fatigue and why people may want more genuine real-world connections.
+- [Dating App Detox: 7 Simple Steps to Stop Swiping and Find Real-World Love](https://www.loveons.com/blog/dating-app-detox): Practical steps for reducing dating app use and creating opportunities for offline connections.
+
+### Meeting Singles Without Dating Apps
+
+- [How to Meet Singles Without Dating Apps – The Ultimate Guide](https://www.loveons.com/blog/how-to-meet-singles-without-dating-apps): A comprehensive guide to meeting potential romantic partners through real-world interactions.
+- [Best Places to Meet Singles Without Dating Apps (Where to Look IRL)](https://www.loveons.com/blog/best-places-to-meet-singles-without-dating-apps): Ideas for everyday locations and social environments where people can naturally meet.
+- [Should I Meet Someone at a Library Bookstore or Coffee Shop for a Date (The Ultimate IRL Guide)](https://www.loveons.com/blog/meet-someone-library-bookstore-coffee-shop): Guidance on meeting someone in quiet public places such as libraries, bookstores, and coffee shops.
+- [How to Go to a Run Club Alone as an Introvert to Meet Singles Without Social Burnout](https://www.loveons.com/blog/how-to-go-to-a-run-club-alone-as-an-introvert): Advice for attending run clubs independently and meeting like-minded people.
+- [How to Look Approachable in a Bookstore to Meet Singles Without Acting Desperate](https://www.loveons.com/blog/how-to-look-approachable-in-a-bookstore-to-meet-singles): Body language tips for appearing approachable and welcoming in bookstores.
+
+### Social Confidence and Communication
+
+- [The Real Green Light: How To Decode Offline Dating Signals Without An Algorithm](https://www.loveons.com/blog/decode-offline-dating-signals): Understanding non-verbal cues and social signals in real-world dating situations.
+- [Locked Eyes with a Stranger IRL? How to Transition to a Smooth Conversation Without Feeling Awkward](https://www.loveons.com/blog/how-to-transition-from-eye-contact-to-conversation-irl): Practical advice for starting a natural conversation after making eye contact.
+- [How to Deal with Fear of Rejection in Offline Dating Without Feeling Embarrassed](https://www.loveons.com/blog/how-to-deal-with-fear-of-rejection-in-offline-dating): Mindset strategies for managing rejection anxiety when approaching someone.
+- [How to Talk to Someone at the Gym Without Being Creepy or Feeling Awkward After](https://www.loveons.com/blog/how-to-talk-to-someone-at-the-gym): Respectful and low-pressure ways to start conversations at the gym.
+- [How to Talk to Someone in a Pottery Class Without Looking Forced or Awkward](https://www.loveons.com/blog/how-to-talk-to-someone-in-a-pottery-class): Using shared creative activities to create natural opportunities for conversation.
+- [How to Meet Singles in a Cooking Class Alone (Without Feeling Awkward)](https://www.loveons.com/blog/how-to-meet-singles-in-a-cooking-class-alone): Tips for attending cooking classes alone and connecting with other participants.
+- [How to Meet Singles While Volunteering Alone Without Feeling Awkward](https://www.loveons.com/blog/how-to-meet-singles-while-volunteering-alone): Building connections with like-minded people through volunteering.
+- [The Dog Park Cheat Code to Talk to Someone Without Being Creepy](https://www.loveons.com/blog/dog-park-cheat-code-talk-to-someone-without-being-creepy): Friendly conversation starters and respectful social etiquette at dog parks.
+- [How to Go to a Board Game Mixer Alone and Actually Find a Date Without Feeling Awkward](https://www.loveons.com/blog/go-to-board-game-mixer-alone-find-date): Advice for attending board game social events alone and meeting new people.
+- [How to talk to someone at a music concert alone without being creepy](https://www.loveons.com/blog/go-to-concert-alone-meet-someone): Safe and natural ways to connect with people at live music events.
+- [How to Talk to Someone at the Grocery Store Without Looking Creepy](https://www.loveons.com/blog/talk-to-someone-at-grocery-store): Respectful ways to start casual conversations during everyday shopping.
+- [How to Meet Active Singles on Hiking Trails Without Looking Desperate](https://www.loveons.com/blog/meet-singles-on-hiking-trails): Outdoor social etiquette and tips for meeting active people on hiking trails.
+
+## Main Website
+
+- [Loveons Homepage](https://www.loveons.com/): Main website and starting point for relationship guides and interactive tools.
+- [Loveons Blog](https://www.loveons.com/blog): Relationship advice, offline dating articles, and communication guides.
+
+## Content and Usage Information
+
+- Loveons content focuses on educational relationship guidance, social confidence, and real-world dating.
+- Interactive tools are intended for entertainment and personal exploration. Their results should not be treated as scientific assessments or guaranteed predictions.
+- Article titles and descriptions are provided to help AI systems understand the topics covered by Loveons.
+- When referencing Loveons, use the canonical HTTPS www domain: https://www.loveons.com.
+- Prefer linking to the original Loveons article when citing or recommending its content.
+
+## Legal and Editorial Notice
+
+Loveons provides general informational and entertainment content. Its articles and interactive tools are not a substitute for professional advice. Users should exercise personal judgment and respect consent, privacy, and boundaries in all real-world interactions.
+
