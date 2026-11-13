@@ -1,7 +1,7 @@
 
 export const BRAND = {
   name: 'Loveons',
-  domain: 'https://loveons.com',
+  domain: 'https://www.loveons.com',
   email: 'contact.loveons@gmail.com',
   tagline: 'Your Personal Relationship Guide',
   description:
