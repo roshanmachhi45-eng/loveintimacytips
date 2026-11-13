@@ -7,7 +7,7 @@
       "identifier": "urn:air:loveons.com:tools:lovecalculator",
       "displayName": "Love Calculator",
       "type": "application/ai-catalog+json",
-      "url": "https://loveons.com",
+      "url": "https://www.loveons.com",
       "description": "Check love compatibility between two people.",
       "representativeQueries": [
         "check love compatibility between two names",
@@ -18,7 +18,7 @@
       "identifier": "urn:air:loveons.com:tools:cosmictarot",
       "displayName": "Cosmic Tarot",
       "type": "application/ai-catalog+json",
-      "url": "https://loveons.com",
+      "url": "https://www.loveons.com",
       "description": "Draw tarot cards for relationship guidance.",
       "representativeQueries": [
         "draw a tarot card for love",
@@ -29,7 +29,7 @@
       "identifier": "urn:air:loveons.com:content:blog",
       "displayName": "Loveons Blog",
       "type": "application/ai-catalog+json",
-      "url": "https://loveons.com",
+      "url": "https://www.loveons.com",
       "description": "Relationship, communication and wellness articles.",
       "representativeQueries": [
         "read relationship advice articles",
